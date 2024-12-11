@@ -61,17 +61,19 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.tag
 
     def save(self, *args, **kwargs):
+        if not self.tag:
+            self.generate_tag()
+
+        super().save(*args, **kwargs)
+
+    def generate_tag(self):
         with transaction.atomic():
             last_user_id = User.objects.order_by('-id').values_list('id', flat=True).first()
-
-            if not self.tag:
-                base_tag = self.username.lower()
-                tag = base_tag
-                if User.objects.filter(tag=tag).exists():
-                    tag = f'{base_tag}_{last_user_id+1}'
-                self.tag = tag
-
-            super().save(*args, **kwargs)
+            base_tag = self.username.lower()
+            tag = base_tag
+            if User.objects.filter(tag=tag).exists():
+                tag = f'{base_tag}_{last_user_id + 1}'
+            self.tag = tag
 
     def clean(self):
         super().clean()
