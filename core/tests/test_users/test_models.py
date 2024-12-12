@@ -63,8 +63,8 @@ class UserExampleTestCase(TestCase):
         self.assertEqual(self.user_example.__str__(), self.user_example.creation_date)
 
     def test_verbose_name(self):
-        self.assertEqual(self.example._meta.verbose_name, _("UserExample"))
-        self.assertEqual(self.example._meta.verbose_name_plural, _("UsersExamples"))
+        self.assertEqual(self.user_example._meta.verbose_name, _("UserExample"))
+        self.assertEqual(self.user_example._meta.verbose_name_plural, _("UsersExamples"))
 
     def test_ordering(self):
-        self.assertEqual(self.example._meta.ordering, ('user', 'creation_date'))
+        self.assertEqual(self.user_example._meta.ordering, ('user', 'creation_date'))
