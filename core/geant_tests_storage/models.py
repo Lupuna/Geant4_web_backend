@@ -1,5 +1,7 @@
+from datetime import datetime
 from uuid import uuid4
 
+from django.utils.timezone import make_naive
 from django.utils.translation import gettext_lazy as _
 from django.db import models
 
@@ -18,8 +20,8 @@ class Version(models.Model):
 class TestResult(models.Model):
     version = models.ForeignKey(Version, on_delete=models.SET_NULL, related_name='tests_results', null=True)
     title = models.CharField(max_length=255)
-    date_to_update = models.DateTimeField(auto_now=True)
-    creation_date = models.DateTimeField(auto_now_add=True)
+    date_to_update = models.DateField(auto_now=True)
+    creation_date = models.DateField(auto_now_add=True)
     day_to_delete = models.DateField(blank=True, null=True)
 
     class Meta:
@@ -31,10 +33,13 @@ class TestResult(models.Model):
 
     def clean(self):
         super().clean()
+        self.date_to_delete_validator()
+
+    def date_to_delete_validator(self):
         if self.day_to_delete:
-            if self.creation_date.date() > self.day_to_delete:
+            if self.creation_date > self.day_to_delete:
                 raise ValueError(_('The "day_to_delete" field must be later than "creation_date".'))
-            if self.date_to_update.date() > self.day_to_delete:
+            if self.date_to_update >= self.day_to_delete:
                 raise ValueError(_('The "day_to_delete" field must be later than "date_to_update".'))
 
 
