@@ -24,7 +24,7 @@ class UserManagerTestCase(TestCase):
         with self.assertRaises(ValueError):
             self.user_model.objects.create_user(email=None, password=self.valid_password)
 
-    def test_create_superuser(self):
+    def test_create_user(self):
         user = self.user_model.objects.create_user(
             email=self.valid_email,
             password=self.valid_password,
@@ -32,4 +32,27 @@ class UserManagerTestCase(TestCase):
         )
         self.assertEqual(user.email, self.valid_email)
         self.assertTrue(user.check_password(self.valid_password))
+        self.assertFalse(user.is_staff)
+        self.assertFalse(user.is_employee)
+
+    def test_create_superuser(self):
+        user = self.user_model.objects.create_superuser(
+            email=self.valid_email,
+            password=self.valid_password,
+            username=self.valid_username,
+        )
+        self.assertEqual(user.email, self.valid_email)
+        self.assertTrue(user.check_password(self.valid_password))
+        self.assertTrue(user.is_employee)
+        self.assertTrue(user.is_staff)
+
+    def test_create_employee_user(self):
+        user = self.user_model.objects.create_employee_user(
+            email=self.valid_email,
+            password=self.valid_password,
+            username=self.valid_username,
+        )
+        self.assertEqual(user.email, self.valid_email)
+        self.assertTrue(user.check_password(self.valid_password))
+        self.assertTrue(user.is_employee)
         self.assertFalse(user.is_staff)
