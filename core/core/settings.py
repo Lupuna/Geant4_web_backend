@@ -42,6 +42,7 @@ INSTALLED_APPS = [
 
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
+    'geant_tests_storage.apps.GeantTestsStorageConfig',
 ]
 
 MIDDLEWARE = [
