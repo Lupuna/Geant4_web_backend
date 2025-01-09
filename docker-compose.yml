@@ -4,6 +4,8 @@ services:
   web-app:
     build:
       context: .
+    ports:
+      - "8000:8000"
     volumes:
       - ./core:/core
       - ./core/static:/static

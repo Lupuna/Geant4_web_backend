@@ -1,7 +1,4 @@
-from datetime import datetime
 from uuid import uuid4
-
-from django.utils.timezone import make_naive
 from django.utils.translation import gettext_lazy as _
 from django.db import models
 
