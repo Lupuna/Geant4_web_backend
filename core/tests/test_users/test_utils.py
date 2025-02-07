@@ -22,8 +22,8 @@ class TokenUtilsTestCase(TestCase):
         self.user = User.objects.create(**self.user_data)
 
     def test_get_tokens(self):
-        refresh, access = utils.get_tokens_for_user(self.user)
-        self.assertEqual(RefreshToken(refresh).payload.get(
+        tokens = utils.get_tokens_for_user(self.user)
+        self.assertEqual(RefreshToken(tokens['refresh']).payload.get(
             'user_id'), RefreshToken.for_user(self.user).payload.get('user_id'))
 
     def test_put_token_on_blacklist(self):
