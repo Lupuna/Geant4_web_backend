@@ -5,7 +5,7 @@ from rest_framework_nested.routers import NestedSimpleRouter
 
 from api.v1.views.geant_tests_storage_views import VersionAPIViewSet, TestResultAPIViewSet
 from api.v1.views.users_views import UserProfileViewSet
-from api.v1.views.auth_views import RegistrationAPIView, LoginAPIView, GetAccessByRefreshView
+from api.v1.views.auth_views import RegistrationAPIView, LoginAPIView, GetAccessTokenView, LogoutAPIView
 
 
 version_router = SimpleRouter()
@@ -26,5 +26,6 @@ urlpatterns = [
     path('', include(user_profile_router.urls)),
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
     path('login/', LoginAPIView.as_view(), name='login'),
-    path('token/refresh/', GetAccessByRefreshView.as_view(), name='refresh'),
+    path('token/refresh/', GetAccessTokenView.as_view(), name='refresh'),
+    path('logout/', LogoutAPIView.as_view(), name='logout')
 ]
