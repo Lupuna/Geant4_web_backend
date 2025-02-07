@@ -20,6 +20,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     username = models.CharField(
         max_length=200,
+        unique=True,
         validators=[
             no_at_validator,
         ]
@@ -74,7 +75,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def generate_tag(self):
         with transaction.atomic():
-            last_user_id = User.objects.order_by('-id').values_list('id', flat=True).first()
+            last_user_id = User.objects.order_by(
+                '-id').values_list('id', flat=True).first()
             base_tag = self.username.lower()
             tag = base_tag
             if User.objects.filter(tag=tag).exists():
@@ -94,4 +96,3 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def email_user(self, subject, message, from_email=None, **kwargs):
         send_mail(subject, message, from_email, [self.email], **kwargs)
-

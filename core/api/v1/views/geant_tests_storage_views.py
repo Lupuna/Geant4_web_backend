@@ -18,4 +18,3 @@ class TestResultAPIViewSet(ModelViewSet):
         if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
             queryset = queryset.prefetch_related('files')
         return queryset
-
