@@ -1,7 +1,7 @@
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, CreateModelMixin
 
-from api.v1.serializers.uesrs_serialisers import UserProfileSerializer
+from api.v1.serializers.users_serializers import UserProfileSerializer
 
 from users.models import User
 
@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 @extend_schema(
     tags=['UserProfile']
 )
-class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, CreateModelMixin, GenericViewSet):
+class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
     permission_classes = (IsAuthenticated, )
 
     serializer_class = UserProfileSerializer

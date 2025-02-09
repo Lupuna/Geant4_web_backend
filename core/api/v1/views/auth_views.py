@@ -43,6 +43,7 @@ class LoginAPIView(APIView):
     @extend_schema(request=LoginSerializer)
     def post(self, request):
         user = authenticate(request)
+
         if user is None:
             potential_refresh = request.COOKIES.get('refresh', None)
             potential_access = request.COOKIES.get('access', None)
@@ -68,7 +69,7 @@ class LoginAPIView(APIView):
     tags=['Auth endpoint']
 )
 class LogoutAPIView(APIView):
-    def post(self, request):
+    def get(self, request):
         raw_refresh = request.COOKIES.get('refresh', None)
         if not raw_refresh:
             return response_cookies({'error': 'Refresh token require'}, status=status.HTTP_400_BAD_REQUEST)
@@ -85,7 +86,7 @@ class LogoutAPIView(APIView):
     tags=['Auth endpoint']
 )
 class GetAccessTokenView(APIView):
-    def post(self, request, **kwargs):
+    def get(self, request, **kwargs):
         raw_refresh = request.COOKIES.get('refresh', None)
         serializer = TokenRefreshSerializer(data={'refresh': raw_refresh})
         if serializer.is_valid():

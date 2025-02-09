@@ -1,6 +1,7 @@
 asgiref==3.8.1
 celery==5.4.0
 Django==5.1.5
+django-autoslug
 django-cors-headers==4.6.0
 django-debug-toolbar==5.0.1
 django-environ==0.12.0

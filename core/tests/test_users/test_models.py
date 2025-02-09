@@ -22,11 +22,6 @@ class UserTestCase(TestCase):
         self.assertEqual(self.user._meta.verbose_name, _("User"))
         self.assertEqual(self.user._meta.verbose_name_plural, _("Users"))
 
-    def test_generate_tag_method(self):
-        with self.assertNumQueries(4):
-            self.user.generate_tag()
-        self.assertEqual(self.user.tag, f"{self.user.username}_{self.user.id+1}")
-
     def test_add_employee_in_employee_group(self):
         self.user.is_employee = True
         self.user.save()

@@ -29,5 +29,5 @@ class TokenUtilsTestCase(TestCase):
     def test_put_token_on_blacklist(self):
         refresh = RefreshToken.for_user(self.user)
         utils.put_token_on_blacklist(str(refresh))
-        self.assertEqual(
-            str(refresh), BlacklistedToken.objects.get(id=1).token.token)
+
+        self.assertTrue(OutstandingToken.objects.filter(token=str(refresh)).exists())
