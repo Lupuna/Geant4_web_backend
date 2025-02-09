@@ -1,15 +1,17 @@
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
 from django.contrib.auth import authenticate
 
 from users.models import User
 
 from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSerializer
-from users.auth.utils import get_tokens_for_user
+from api.utils import response_cookies
+
+from users.auth.utils import get_tokens_for_user, put_token_on_blacklist
 
 from drf_spectacular.utils import extend_schema
 
@@ -23,12 +25,13 @@ class RegistrationAPIView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            refresh, access = get_tokens_for_user(
-                user, {'username': user.username})
+            tokens = get_tokens_for_user(user, {'username': user.username})
+            response = response_cookies(
+                {'detail': 'User created'}, status.HTTP_201_CREATED, cookies_data=tokens)
 
-            return Response({'refresh': str(refresh), 'access': str(access)}, status=status.HTTP_201_CREATED)
+            return response
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return response_cookies(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(
@@ -40,29 +43,58 @@ class LoginAPIView(APIView):
     @extend_schema(request=LoginSerializer)
     def post(self, request):
         user = authenticate(request)
+
         if user is None:
-            return Response({'error': 'User does not exist or given incorrect data'}, status=status.HTTP_400_BAD_REQUEST)
+            potential_refresh = request.COOKIES.get('refresh', None)
+            potential_access = request.COOKIES.get('access', None)
 
-        refresh, access = get_tokens_for_user(
-            user, payload={'username': user.username})
+            if (potential_access or potential_refresh):
+                cookie_keys = ['refresh', 'access']
+                response = response_cookies({'error': 'User does not exist or given incorrect data'},
+                                            status.HTTP_400_BAD_REQUEST, cookies_data=cookie_keys, delete=True)
 
-        response = Response(
-            {'detail': 'Logged in successfully'}, status=status.HTTP_200_OK)
-        # не забыть поставить secure=True когда будет https
-        response.set_cookie(key='access_token', value=access,
-                            httponly=True, secure=False, samesite='Lax')
-        response.set_cookie(key='refresh_token', value=refresh,
-                            httponly=True, secure=False, samesite='Lax')
+            response = response_cookies(
+                {'error': 'User does not exist or given incorrect data'}, status.HTTP_400_BAD_REQUEST)
+
+            return response
+
+        tokens = get_tokens_for_user(user, payload={'username': user.username})
+        response = response_cookies(
+            {'detail': 'Logged in successfully'}, status.HTTP_200_OK, cookies_data=tokens)
 
         return response
-
-
-class LogoutAPIView(APIView):
-    pass
 
 
 @extend_schema(
     tags=['Auth endpoint']
 )
-class GetAccessByRefreshView(TokenRefreshView):
-    pass
+class LogoutAPIView(APIView):
+    def get(self, request):
+        raw_refresh = request.COOKIES.get('refresh', None)
+        if not raw_refresh:
+            return response_cookies({'error': 'Refresh token require'}, status=status.HTTP_400_BAD_REQUEST)
+
+        put_token_on_blacklist(refresh_token=raw_refresh)
+        cookie_to_remove = ['refresh', 'access']
+        response = response_cookies(
+            {'detail': 'Logged out'}, status.HTTP_200_OK, cookies_data=cookie_to_remove, delete=True)
+
+        return response
+
+
+@extend_schema(
+    tags=['Auth endpoint']
+)
+class GetAccessTokenView(APIView):
+    def get(self, request, **kwargs):
+        raw_refresh = request.COOKIES.get('refresh', None)
+        serializer = TokenRefreshSerializer(data={'refresh': raw_refresh})
+        if serializer.is_valid():
+            tokens = {
+                'refresh': serializer.validated_data['refresh'], 'access': serializer.validated_data['access']}
+            response = response_cookies(
+                {'detail': 'Given new tokens'}, status=status.HTTP_200_OK, cookies_data=tokens)
+
+            return response
+
+        return response_cookies({'error(token validating)': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)

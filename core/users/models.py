@@ -10,6 +10,8 @@ from uuid import uuid4
 from core.validators import no_at_validator
 from users.managers import UserManager
 
+from autoslug import AutoSlugField
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(
@@ -25,14 +27,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             no_at_validator,
         ]
     )
-    tag = models.CharField(
-        max_length=255,
-        unique=True,
-        db_index=True,
-        validators=[
-            no_at_validator,
-        ],
-    )
+    tag = AutoSlugField(populate_from='username', unique=True)
 
     uuid = models.UUIDField(default=uuid4)
     is_employee = models.BooleanField(default=False)
@@ -56,8 +51,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['tag', 'username']
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['tag', 'email']
 
     class Meta:
         verbose_name = _("User")
@@ -67,21 +62,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.tag
 
     def save(self, *args, **kwargs):
-        if not self.tag:
-            self.generate_tag()
         super().save(*args, **kwargs)
         if self.is_employee:
             self.add_employee_in_employee_group()
-
-    def generate_tag(self):
-        with transaction.atomic():
-            last_user_id = User.objects.order_by(
-                '-id').values_list('id', flat=True).first()
-            base_tag = self.username.lower()
-            tag = base_tag
-            if User.objects.filter(tag=tag).exists():
-                tag = f'{base_tag}_{last_user_id + 1}'
-            self.tag = tag
 
     def add_employee_in_employee_group(self):
         try:

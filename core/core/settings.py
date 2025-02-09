@@ -141,12 +141,17 @@ STATIC_URL = 'static/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'api.v1.auth.JWTAuthenticationByCookies',
+        'api.jwt_authentication.JWTAuthenticationByCookie',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 SIMPLE_JWT = {
+
+    'AUTH_TOKEN_CLASSES': (
+        'rest_framework_simplejwt.tokens.AccessToken',
+        'rest_framework_simplejwt.tokens.RefreshToken',
+    ),
 
     'ROTATE_REFRESH_TOKENS': True,
 
@@ -166,8 +171,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
 
 AUTHENTICATION_BACKENDS = [
-    'users.auth.auth_backend.LoginByUsernameBackend',
     'django.contrib.auth.backends.ModelBackend',
+    'users.auth.auth_backend.LoginByUsernameBackend',
 ]
 
 CACHES = {

@@ -22,12 +22,22 @@ class RegistrationSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        password = data.get('password')
-        password2 = data.get('password2')
+        password = data.get('password', None)
+        password2 = data.get('password2', None)
+        username = data.get('username', None)
+        email = data.get('email', None)
 
         if not check_passwords_match(password, password2):
             raise serializers.ValidationError('Passwords do not match')
         data.pop('password2')
+
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError(
+                'User with this username already exists')
+
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                'User with this email already exists')
 
         return data
 
