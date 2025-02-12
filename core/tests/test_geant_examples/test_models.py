@@ -40,14 +40,18 @@ class UserExampleTestCase(TestCase):
         )
 
     def test_str_method(self):
-        self.assertEqual(self.user_example.__str__(), self.user_example.creation_date)
+        self.assertEqual(self.user_example.__str__(),
+                         str(self.user_example.creation_date))
 
     def test_verbose_name(self):
-        self.assertEqual(self.user_example._meta.verbose_name, _("UserExample"))
-        self.assertEqual(self.user_example._meta.verbose_name_plural, _("UsersExamples"))
+        self.assertEqual(self.user_example._meta.verbose_name,
+                         _("UserExample"))
+        self.assertEqual(
+            self.user_example._meta.verbose_name_plural, _("UsersExamples"))
 
     def test_ordering(self):
-        self.assertEqual(self.user_example._meta.ordering, ('user', 'creation_date'))
+        self.assertEqual(self.user_example._meta.ordering,
+                         ('user', 'creation_date'))
 
 
 class TagTestCase(TestCase):
@@ -63,4 +67,3 @@ class TagTestCase(TestCase):
     def test_verbose_name(self):
         self.assertEqual(self.tag._meta.verbose_name, _("Tag"))
         self.assertEqual(self.tag._meta.verbose_name_plural, _("Tags"))
-
