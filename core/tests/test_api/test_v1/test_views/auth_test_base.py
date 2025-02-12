@@ -3,6 +3,7 @@ import tempfile
 
 from django.conf import settings
 from django.test import TestCase
+from django.urls import reverse
 
 from rest_framework.test import APIClient
 
@@ -26,6 +27,10 @@ class AuthSettingsTest(TestCase):
         cls.user.save()
 
         cls.client = APIClient()
+
+    def login_user(self):
+        self.client.post(reverse('login'), data={
+            'username': self.user.username, 'password': 'test_pas1'})
 
     @classmethod
     def tearDownClass(cls):

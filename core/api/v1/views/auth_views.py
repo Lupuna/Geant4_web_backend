@@ -9,9 +9,8 @@ from django.contrib.auth import authenticate
 from users.models import User
 
 from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSerializer
-from api.utils import response_cookies
 
-from users.auth.utils import get_tokens_for_user, put_token_on_blacklist
+from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies
 
 from drf_spectacular.utils import extend_schema
 
