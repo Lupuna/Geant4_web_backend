@@ -9,7 +9,8 @@ User = get_user_model()
 
 class LoginByUsernameBackend(BaseBackend):
     def authenticate(self, request, **kwargs):
-        serializer = LoginSerializer(data=request.data)
+        data = getattr(request, 'data', request.POST)
+        serializer = LoginSerializer(data=data)
 
         if serializer.is_valid():
             user = self.get_user(serializer.validated_data['username'])

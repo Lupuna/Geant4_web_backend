@@ -7,6 +7,8 @@ from users.models import User
 
 from geant_examples.models import *
 
+from rest_framework.exceptions import ErrorDetail
+
 
 class ExampleForUserSerializerTestCase(TestCase):
     def setUp(self):
@@ -41,7 +43,7 @@ class ExampleSerializerTestCase(TestCase):
             "key_s3": "asxxssdzx",
             "users": [
                 {
-                    "username": "alijan"
+                    "username": "test_username"
                 }
             ],
             "category": "default"
@@ -64,13 +66,47 @@ class ExampleSerializerTestCase(TestCase):
         self.assertTrue(UserExample.objects.filter(
             example__title=data['title'], user__username=data['users'][0]['username']).exists())
 
-    def test_create_fail(self):
-        data = {
-            "title": "test_ex",
-            "key_s3": "asxxssdzx",
-            "category": "default"
-        }
+    def test_validate(self):
+        data = self.data
         serializer = ExampleSerializer(data=data)
 
+        self.assertTrue(serializer.is_valid())
+
+        data.update(
+            {'users': [{'username': 'gashish'}, {'username': 'gashish'}]})
+        serializer = ExampleSerializer(data=data)
         self.assertFalse(serializer.is_valid())
-        self.assertFalse(Example.objects.filter(key_s3=data['key_s3']))
+        self.assertEqual(serializer.errors, {'non_field_errors': [
+                         ErrorDetail(string='Users must be unique', code='invalid')]})
+
+        data.update({'users': [{'username': 'gashish'}]})
+        serializer = ExampleSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(serializer.errors, {'non_field_errors': [ErrorDetail(
+            string='Any of given users do not exist', code='invalid')]})
+
+    def test_update(self):
+        serializer = ExampleSerializer(data=self.data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        new_user = User.objects.create(
+            username='test_username2', email='test_2@gmail.com')
+        data_to_update = {
+            'users': [
+                {
+                    'username': 'test_username2'
+                }
+            ]
+        }
+
+        self.assertFalse(UserExample.objects.filter(user=new_user).exists())
+        self.assertTrue(UserExample.objects.filter(
+            user__username='test_username').exists())
+
+        example = Example.objects.get(key_s3=self.data['key_s3'])
+        serializer = ExampleSerializer(instance=example, data=data_to_update)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        self.assertTrue(UserExample.objects.filter(user=new_user).exists())
+        self.assertTrue(UserExample.objects.filter(
+            user__username='test_username').exists())
