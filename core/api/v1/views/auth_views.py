@@ -24,7 +24,7 @@ class RegistrationAPIView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            tokens = get_tokens_for_user(user, {'username': user.username})
+            tokens = get_tokens_for_user(user)
             response = response_cookies(
                 {'detail': 'User created'}, status.HTTP_201_CREATED, cookies_data=tokens)
 
@@ -57,7 +57,7 @@ class LoginAPIView(APIView):
 
             return response
 
-        tokens = get_tokens_for_user(user, payload={'username': user.username})
+        tokens = get_tokens_for_user(user)
         response = response_cookies(
             {'detail': 'Logged in successfully'}, status.HTTP_200_OK, cookies_data=tokens)
 

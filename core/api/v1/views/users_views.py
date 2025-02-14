@@ -4,11 +4,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework import status
+from rest_framework.generics import get_object_or_404
 
-from api.v1.serializers.users_serializers import UserProfileSerializer, LoginUpdateSerializer, PasswordUpdateSerializer
+
+from api.v1.serializers.users_serializers import UserProfileSerializer, LoginUpdateSerializer, PasswordUpdateSerializer, UserProfileCommonUpdateSerializer
 from api.v1.serializers.examples_serializers import ExampleForUserSerializer
 
 from users.models import User
@@ -18,7 +19,6 @@ from geant_examples.models import Example, Tag, UserExample
 
 from drf_spectacular.utils import extend_schema
 
-from django.forms.models import model_to_dict
 from django.db.models import Prefetch
 
 
@@ -27,10 +27,46 @@ from django.db.models import Prefetch
 )
 class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
     permission_classes = (IsAuthenticated, )
-    serializer_class = UserProfileSerializer
     queryset = User.objects.all()
 
-    @action(methods=['get', ], detail=False, url_path='user_examples', url_name='user-examples')
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method in ['GET', ]:
+            return UserProfileSerializer(*args, **kwargs)
+        elif self.request.method in ['PATCH', ]:
+            return UserProfileCommonUpdateSerializer(*args, **kwargs)
+
+    def get_object(self):
+        raw_access = self.request.COOKIES.get('access')
+        access = AccessToken(raw_access)
+        username = access.payload.get(User.USERNAME_FIELD)
+        obj = get_object_or_404(User, username=username)
+
+        return obj
+
+    @classmethod
+    def get_actions(cls):
+        return {
+            'get': 'retrieve',
+            'patch': 'update',
+            'delete': 'destroy'
+        }
+
+    def destroy(self, request, *args, **kwargs):
+        super().destroy(request, *args, **kwargs)
+        cookies_to_delete = ('access', 'refresh')
+        response = response_cookies(
+            {'detail': 'Profile was deleted successfully'}, status.HTTP_200_OK, cookies_data=cookies_to_delete, delete=True)
+
+        return response
+
+
+@extend_schema(
+    tags=['UserProfile']
+)
+class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
+    permission_classes = (IsAuthenticated, )
+
+    @action(methods=['get', ], detail=False, url_path='my_examples', url_name='user-examples')
     def get_user_examples(self, request, **kwargs):
         raw_token = request.COOKIES.get('access')
         access_token = AccessToken(raw_token)
@@ -45,8 +81,7 @@ class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
             ),
             'tags'
         ).distinct()
-        serializer = ExampleForUserSerializer(
-            instance=examples, many=True)
+        serializer = ExampleForUserSerializer(instance=examples, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 

@@ -6,9 +6,17 @@ from rest_framework.response import Response
 
 from loguru import logger
 
+from django.contrib.auth import get_user_model
+
+
+User = get_user_model()
+
 
 def get_tokens_for_user(user, payload=None):
     refresh = RefreshToken.for_user(user)
+    username_field = User.USERNAME_FIELD
+    refresh.payload.update({username_field: getattr(user, username_field)})
+
     if payload:
         refresh.payload.update(payload)
 

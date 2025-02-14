@@ -13,7 +13,7 @@ from rest_framework.exceptions import ErrorDetail
 
 class UserProfileViewSetTestCase(AuthSettingsTest):
     def setUp(self):
-        self.url = reverse('user-profile-detail', kwargs={'pk': self.user.id})
+        self.url = reverse('user-profile')
 
     def test_retrieve_user_ok(self):
         self.login_user()
@@ -31,20 +31,19 @@ class UserProfileViewSetTestCase(AuthSettingsTest):
 
     def test_update_ok(self):
         self.login_user()
-        new_data = {'username': 'new_username'}
+        new_data = {'first_name': 'new_fname'}
         response = self.client.patch(
             self.url, data=new_data, content_type='application/json')
-
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, UserProfileSerializer(
-            User.objects.get(username=new_data['username'])).data)
+        self.assertEqual(User.objects.get(
+            username=self.user.username).first_name, new_data['first_name'])
 
     def test_delete_user(self):
         self.login_user()
 
         response = self.client.delete(self.url)
 
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.status_code, 200)
         self.assertFalse(User.objects.filter(
             username=self.user.username).exists())
 

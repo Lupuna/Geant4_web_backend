@@ -10,13 +10,23 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ('email', 'username', 'first_name', 'last_name', )
 
 
+class UserProfileCommonUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', )
+        extra_kwargs = {
+            'first_name': {'required': False},
+            'last_name': {'required': False}
+        }
+
+
 class UserQuickInfoSerializer(serializers.Serializer):
     username = serializers.CharField()
 
 
 class LoginUpdateSerializer(serializers.Serializer):
     new_username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True, write_only=True)
+    password = serializers.CharField(required=True)
 
     def validate(self, attrs):
         user = self.instance
