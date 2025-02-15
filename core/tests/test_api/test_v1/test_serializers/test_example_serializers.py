@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.db.models import Prefetch
 
-from api.v1.serializers.examples_serializers import ExampleForUserSerializer, ExampleSerializer, UserExample
+from api.v1.serializers.examples_serializers import ExampleForUserSerializer, ExamplePATCHSerializer, ExamplePOSTSerializer, UserExample
 
 from users.models import User
 
@@ -36,11 +36,11 @@ class ExampleForUserSerializerTestCase(TestCase):
                          {'title': 'test_ex', 'tags': [], 'status': 2}])
 
 
-class ExampleSerializerTestCase(TestCase):
+class ExamplePOSTSerializerTestCase(TestCase):
     def setUp(self):
         self.data = {
             "title": "test_ex",
-            "key_s3": "asxxssdzx",
+            "params": 'safsfa',
             "users": [
                 {
                     "username": "test_username"
@@ -54,39 +54,62 @@ class ExampleSerializerTestCase(TestCase):
     def test_create(self):
         data = self.data
 
-        self.assertFalse(Example.objects.filter(key_s3=data['key_s3']))
+        self.assertFalse(Example.objects.filter(key_s3=self.data['params']))
         self.assertFalse(UserExample.objects.filter(
             example__title=data['title'], user__username=data['users'][0]['username']).exists())
 
-        serializer = ExampleSerializer(data=data)
+        serializer = ExamplePOSTSerializer(data=data)
         serializer.is_valid()
         serializer.save()
 
-        self.assertTrue(Example.objects.filter(key_s3=data['key_s3']))
+        self.assertTrue(Example.objects.filter(key_s3=self.data['params']))
         self.assertTrue(UserExample.objects.filter(
             example__title=data['title'], user__username=data['users'][0]['username']).exists())
 
     def test_validate(self):
         data = self.data
-        serializer = ExampleSerializer(data=data)
+        serializer = ExamplePOSTSerializer(data=data)
 
         self.assertTrue(serializer.is_valid())
 
         data.update(
             {'users': [{'username': 'gashish'}, {'username': 'gashish'}]})
-        serializer = ExampleSerializer(data=data)
+        serializer = ExamplePOSTSerializer(data=data)
         self.assertFalse(serializer.is_valid())
         self.assertEqual(serializer.errors, {'non_field_errors': [
                          ErrorDetail(string='Users must be unique', code='invalid')]})
 
         data.update({'users': [{'username': 'gashish'}]})
-        serializer = ExampleSerializer(data=data)
+        serializer = ExamplePOSTSerializer(data=data)
         self.assertFalse(serializer.is_valid())
         self.assertEqual(serializer.errors, {'non_field_errors': [ErrorDetail(
             string='Any of given users do not exist', code='invalid')]})
 
+        data = self.data
+        data.update({'title': '', 'params': ''})
+        serializer = ExamplePOSTSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(serializer.errors, {'title': [ErrorDetail(string='This field may not be blank.', code='blank')], 'params': [
+                         ErrorDetail(string='This field may not be blank.', code='blank')]})
+
+
+class ExamplePATCHSerializerTestCAse(TestCase):
+    def setUp(self):
+        self.data = {
+            "title": "test_ex",
+            "params": 'safsfa',
+            "users": [
+                {
+                    "username": "test_username"
+                }
+            ],
+            "category": "default"
+        }
+        User.objects.create(
+            username=self.data['users'][0]['username'], email='test@gmail.com')
+
     def test_update(self):
-        serializer = ExampleSerializer(data=self.data)
+        serializer = ExamplePOSTSerializer(data=self.data)
         self.assertTrue(serializer.is_valid())
         serializer.save()
         new_user = User.objects.create(
@@ -96,16 +119,17 @@ class ExampleSerializerTestCase(TestCase):
                 {
                     'username': 'test_username2'
                 }
-            ]
+            ],
         }
 
         self.assertFalse(UserExample.objects.filter(user=new_user).exists())
         self.assertTrue(UserExample.objects.filter(
             user__username='test_username').exists())
 
-        example = Example.objects.get(key_s3=self.data['key_s3'])
-        serializer = ExampleSerializer(instance=example, data=data_to_update)
-        self.assertTrue(serializer.is_valid())
+        example = Example.objects.get(key_s3=self.data['params'])
+        serializer = ExamplePATCHSerializer(
+            instance=example, data=data_to_update)
+        serializer.is_valid()
         serializer.save()
         self.assertTrue(UserExample.objects.filter(user=new_user).exists())
         self.assertTrue(UserExample.objects.filter(
