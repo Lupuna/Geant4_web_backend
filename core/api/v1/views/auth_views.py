@@ -9,9 +9,8 @@ from django.contrib.auth import authenticate
 from users.models import User
 
 from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSerializer
-from api.utils import response_cookies
 
-from users.auth.utils import get_tokens_for_user, put_token_on_blacklist
+from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies
 
 from drf_spectacular.utils import extend_schema
 
@@ -25,7 +24,7 @@ class RegistrationAPIView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            tokens = get_tokens_for_user(user, {'username': user.username})
+            tokens = get_tokens_for_user(user)
             response = response_cookies(
                 {'detail': 'User created'}, status.HTTP_201_CREATED, cookies_data=tokens)
 
@@ -58,7 +57,7 @@ class LoginAPIView(APIView):
 
             return response
 
-        tokens = get_tokens_for_user(user, payload={'username': user.username})
+        tokens = get_tokens_for_user(user)
         response = response_cookies(
             {'detail': 'Logged in successfully'}, status.HTTP_200_OK, cookies_data=tokens)
 

@@ -4,6 +4,9 @@ from users.models import User
 
 
 class Example(models.Model):
+    class CategoryChoices(models.TextChoices):
+        default = 'default', _('Default category')
+
     title = models.CharField(max_length=255)
     key_s3 = models.CharField(
         max_length=255,
@@ -11,8 +14,15 @@ class Example(models.Model):
         unique=True
     )
     date_to_update = models.DateField(auto_now=True)
-    users = models.ManyToManyField(User, related_name='examples', through='UserExample')
-    tags = models.ManyToManyField('Tag', related_name='examples')
+    users = models.ManyToManyField(
+        User, related_name='examples', through='UserExample')
+    tags = models.ManyToManyField('Tag', related_name='examples', blank=True)
+    category = models.CharField(
+        max_length=255,
+        choices=CategoryChoices.choices,
+        default=CategoryChoices.default,
+        help_text=_('Category of example')
+    )
 
     class Meta:
         verbose_name = _("Example")
@@ -23,9 +33,21 @@ class Example(models.Model):
 
 
 class UserExample(models.Model):
-    user = models.ForeignKey(User, on_delete=models.Case, related_name='user_examples')
-    example = models.ForeignKey(Example, on_delete=models.CASCADE, related_name='example_users')
+    class StatusChoice(models.IntegerChoices):
+        executing = 0, _('In process')
+        executed = 1, _('Completed')
+        never_executed = 2, _('Examples was never executed')
+
+    user = models.ForeignKey(User, on_delete=models.Case,
+                             related_name='user_examples')
+    example = models.ForeignKey(
+        Example, on_delete=models.CASCADE, related_name='example_users')
     creation_date = models.DateTimeField(auto_now_add=True)
+    status = models.SmallIntegerField(
+        choices=StatusChoice.choices,
+        help_text=_('Current status of example executing'),
+        default=StatusChoice.never_executed
+    )
 
     class Meta:
         verbose_name = _("UserExample")
@@ -33,7 +55,7 @@ class UserExample(models.Model):
         ordering = ('user', 'creation_date')
 
     def __str__(self):
-        return self.creation_date
+        return str(self.creation_date)
 
 
 class Tag(models.Model):
