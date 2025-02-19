@@ -1,5 +1,9 @@
+aiohttp
+aiofiles
 asgiref==3.8.1
 celery==5.4.0
+channels
+channels-redis
 Django==5.1.5
 django-autoslug
 django-cors-headers==4.6.0
@@ -40,4 +44,5 @@ requests-oauthlib==2.0.0
 social-auth-app-django==5.4.2
 social-auth-core==4.5.4
 typing_extensions==4.12.2
+websockets
 websocket-client==1.8.0

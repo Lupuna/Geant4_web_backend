@@ -10,6 +10,7 @@ from geant_examples.models import Example, Tag, UserExample
 from drf_spectacular.utils import extend_schema
 
 from rest_framework.permissions import IsAuthenticated
+import requests
 
 
 @extend_schema(

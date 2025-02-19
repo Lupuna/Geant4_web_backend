@@ -34,5 +34,6 @@ urlpatterns = [
     path('token/refresh/', GetAccessTokenView.as_view(), name='refresh'),
     path('logout/', LogoutAPIView.as_view(), name='logout'),
     path('profile/', UserProfileViewSet.as_view(
-        actions=UserProfileViewSet.get_actions()), name='user-profile')
+        actions=UserProfileViewSet.get_actions()), name='user-profile'),
+    path('files/', include('file_client.urls')),
 ]
