@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from file_client.client import FileLoader
+from file_client.tasks import download_file, update_file, upload_file, remove_file
 
 from api.v1.serializers.files_serializers import FileDataSerializer
 
@@ -21,12 +21,7 @@ class DownloadTemporaryFileAPIWiew(APIView):
         serializer = FileDataSerializer(data=request.data)
 
         if serializer.is_valid():
-            file_obj = FileLoader(serializer.data)
-
-            try:
-                file_obj.download()
-            except ValueError as val_err:
-                return Response({'error': str(val_err)})
+            download_file.delay(serializer.data)
 
             return Response({'detail': 'Downloading started'}, status=status.HTTP_202_ACCEPTED)
 
@@ -44,8 +39,7 @@ class UploadTemporaryFileAPIView(APIView):
         serializer = FileDataSerializer(data=request.data)
 
         if serializer.is_valid():
-            file_obj = FileLoader(serializer.data)
-            file_obj.upload()
+            upload_file.delay(serializer.data)
 
             return Response({'detail': 'File upload started'}, status=status.HTTP_202_ACCEPTED)
 
@@ -63,8 +57,7 @@ class UpdateTemporaryFileAPIView(APIView):
         serializer = FileDataSerializer(data=request.data)
 
         if serializer.is_valid():
-            file_obj = FileLoader(serializer.data)
-            file_obj.update()
+            update_file.delay(serializer.data)
 
             return Response({'detail': 'File update started'}, status=status.HTTP_202_ACCEPTED)
 
@@ -82,8 +75,7 @@ class RemoveTemporaryFileAPIView(APIView):
         serializer = FileDataSerializer(data=request.data)
 
         if serializer.is_valid():
-            file_obj = FileLoader(serializer.data)
-            file_obj.remove()
+            remove_file.delay(serializer.data)
 
             return Response({'detail': 'File removed'}, status=status.HTTP_202_ACCEPTED)
 
