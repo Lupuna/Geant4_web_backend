@@ -237,5 +237,5 @@ hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
 INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 
 CACHE_LIVE_TIME = 60 * 60
-STORAGE_URL = os.getenv('STORAGE_URL')
-PATH_TO_LOCAL_STORAGE = os.getenv('PATH_TO_LOCAL_STORAGE')
+STORAGE_URL = ''
+PATH_TO_LOCAL_STORAGE = 'files/'
