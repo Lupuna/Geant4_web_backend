@@ -1,6 +1,9 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
 from users.models import User
+
+from geant_examples.validators import title_not_verbose_view
 
 
 class Example(models.Model):
@@ -8,11 +11,6 @@ class Example(models.Model):
         default = 'default', _('Default category')
 
     title = models.CharField(max_length=255)
-    key_s3 = models.CharField(
-        max_length=255,
-        help_text=_('in this field encoded all info about example'),
-        unique=True
-    )
     date_to_update = models.DateField(auto_now=True)
     users = models.ManyToManyField(
         User, related_name='examples', through='UserExample')
@@ -30,6 +28,50 @@ class Example(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class ExampleGeant(models.Model):
+    title = models.CharField(
+        max_length=10,
+        help_text='Title format should be like: TSU_XX_00. Title will be selected automatically, after selecting FK'
+    )
+    key_s3 = models.CharField(
+        max_length=255,
+        help_text=_('in this field encoded all info about example'),
+        unique=True
+    )
+    example = models.ForeignKey(
+        Example,
+        on_delete=models.CASCADE,
+        related_name='examples_geant'
+    )
+
+    class Meta:
+        verbose_name = _('ExampleGeant')
+        verbose_name_plural = _('ExamplesGeant')
+
+    def __str__(self):
+        return self.key_s3
+
+
+class ExamplesTitleRelation(models.Model):
+    title_verbose = models.CharField(
+        max_length=255,
+        unique=True,
+    )
+    title_not_verbose = models.CharField(
+        max_length=10,
+        validators=[title_not_verbose_view],
+        unique=True
+    )
+
+    class Meta:
+        verbose_name = _("Possible meanings of Examples titles")
+        verbose_name_plural = _("Possible meanings of Examples titles")
+        ordering = ('title_not_verbose', )
+
+    def __str__(self):
+        return self.title_verbose
 
 
 class UserExample(models.Model):

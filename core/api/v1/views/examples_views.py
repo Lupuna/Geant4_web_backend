@@ -1,16 +1,15 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 
-from api.v1.serializers.examples_serializers import ExamplePOSTSerializer, ExampleGETSerializer, TagSerializer, ExamplePATCHSerializer
+from api.v1.serializers.examples_serializers import ExamplePOSTSerializer, ExampleGETSerializer, TagSerializer, ExamplePATCHSerializer, ExampleGeantGETSerializer, ExampleGeantPOSTSerializer
 
 from users.models import User
 
-from geant_examples.models import Example, Tag, UserExample
+from geant_examples.models import Example, Tag, UserExample, ExampleGeant, ExamplesTitleRelation
 
 from drf_spectacular.utils import extend_schema
 
 from rest_framework.permissions import IsAuthenticated
-import requests
 
 
 @extend_schema(
@@ -29,9 +28,33 @@ class ExampleViewSet(ModelViewSet):
                 return ExamplePOSTSerializer(*args, **kwargs)
             case 'PATCH':
                 return ExamplePATCHSerializer(*args, **kwargs)
-            case _:
-                raise ValueError(
-                    'Cannot get serializer for current HTTP method')
+
+
+@extend_schema(
+    tags=['ExampleGeant endpoint']
+)
+class ExampleGeantViewSet(ModelViewSet):
+    permission_classes = (IsAuthenticated, )
+    http_method_names = ['get', 'post', 'delete', ]
+
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method in ['GET', ]:
+            return ExampleGeantGETSerializer(*args, **kwargs)
+
+        if self.request.method in ['POST', ]:
+            kwargs.setdefault('context', self.get_serializer_context())
+            return ExampleGeantPOSTSerializer(*args, **kwargs)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.setdefault('example_pk', int(self.kwargs['example_pk']))
+
+        return context
+
+    def get_queryset(self):
+        example = int(self.kwargs.get('example_pk'))
+
+        return ExampleGeant.objects.filter(example=example)
 
     def create(self, request, *args, **kwargs):
         params = request.data.pop('params', {})
