@@ -1,5 +1,21 @@
 version: '3.8'
 
+x-worker-template: &worker-template
+  build:
+    context: .
+  entrypoint: celery
+  command: -A celery_app.app worker --loglevel=info
+  volumes:
+    - ./core:/core
+  depends_on:
+    - redis
+    - database
+  environment:
+    - DB_HOST=database
+    - DB_NAME=dbname
+    - DB_USER=dbuser
+    - DB_PASS=password
+
 services:
   web-app:
     build:
@@ -19,6 +35,7 @@ services:
       sh -c "python manage.py runserver 0.0.0.0:8000"
     depends_on:
       - database
+      - redis
 
   database:
     image: postgres:14.6-alpine
@@ -32,6 +49,34 @@ services:
   redis:
     image: redis:7.0.5-alpine
     hostname: redis
+
+  worker1:
+    <<: *worker-template
+    hostname: worker1
+
+  worker2:
+    <<: *worker-template
+    hostname: worker2
+
+  worker3:
+    <<: *worker-template
+    hostname: worker3
+
+  worker4:
+    <<: *worker-template
+    hostname: worker4
+
+  flower:
+    build:
+      context: .
+    entrypoint: celery
+    command: -A core.celery_app flower
+    volumes:
+      - ./core:/core
+    depends_on:
+      - redis
+    ports:
+      - "5555:5555"
 
 volumes:
   db_data:

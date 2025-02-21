@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 from loguru import logger
 from core.loguru_handler import InterceptHandler
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -29,6 +30,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-33x&5-_t=df$2%z2%6*fuw%xcf4teif+fcc=*$t9r6+c#m6f+0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+load_dotenv()
 DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", '127.0.0.1', ]
@@ -88,6 +90,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+ASGI_APPLICATION = 'core.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -188,6 +191,10 @@ CACHES = {
 CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_TIMEZONE = 'UTC'
 
 LOGGING = {
     'version': 1,
@@ -230,3 +237,5 @@ hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
 INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 
 CACHE_LIVE_TIME = 60 * 60
+STORAGE_URL = 'http://172.20.0.2:8001/'
+PATH_TO_LOCAL_STORAGE = 'files/'

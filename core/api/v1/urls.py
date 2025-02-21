@@ -7,6 +7,7 @@ from api.v1.views.geant_tests_storage_views import VersionAPIViewSet, TestResult
 from api.v1.views.users_views import UserProfileViewSet, UserProfileUpdateImportantInfoViewSet
 from api.v1.views.auth_views import RegistrationAPIView, LoginAPIView, GetAccessTokenView, LogoutAPIView
 from api.v1.views.examples_views import ExampleViewSet
+from api.v1.views.files_views import DownloadTemporaryFileAPIWiew, UploadTemporaryFileAPIView, UpdateTemporaryFileAPIView, RemoveTemporaryFileAPIView
 
 
 version_router = SimpleRouter()
@@ -34,5 +35,10 @@ urlpatterns = [
     path('token/refresh/', GetAccessTokenView.as_view(), name='refresh'),
     path('logout/', LogoutAPIView.as_view(), name='logout'),
     path('profile/', UserProfileViewSet.as_view(
-        actions=UserProfileViewSet.get_actions()), name='user-profile')
+        actions=UserProfileViewSet.get_actions()), name='user-profile'),
+    path('files/download/', DownloadTemporaryFileAPIWiew.as_view(),
+         name='download-file'),
+    path('files/upload/', UploadTemporaryFileAPIView.as_view(), name='upload-file'),
+    path('files/update/', UpdateTemporaryFileAPIView.as_view(), name='update-file'),
+    path('files/remove/', RemoveTemporaryFileAPIView.as_view(), name='remove-file')
 ]
