@@ -31,12 +31,20 @@ class ExampleGeantPOSTSerializer(serializers.ModelSerializer):
         example_pk = self.context.get('example_pk')
         attrs.setdefault('example_id', example_pk)
 
+        try:
+            example = Example.objects.get(id=example_pk)
+        except Example.DoesNotExist:
+            raise ValidationError('Provided Example does not exists')
+
+        try:
+            example_geant_title = ExamplesTitleRelation.objects.get(
+                title_verbose=example.title).title_not_verbose
+        except ExamplesTitleRelation.DoesNotExist:
+            raise ValidationError('Example title is impossible')
+
+        attrs.setdefault('title', example_geant_title)
+
         return attrs
-
-
-class ExampleGeantForExampleSerializer(serializers.Serializer):
-    title = serializers.CharField()
-    key_s3 = serializers.CharField()
 
 
 class ExampleGETSerializer(serializers.Serializer):
@@ -46,7 +54,7 @@ class ExampleGETSerializer(serializers.Serializer):
     users = UserQuickInfoSerializer(many=True)
     tags = TagSerializer(many=True)
     category = serializers.CharField()
-    examples_geant = ExampleGeantForExampleSerializer(many=True)
+    examples_geant = ExampleGeantGETSerializer(many=True)
 
 
 class ExamplePOSTSerializer(serializers.ModelSerializer):
@@ -175,7 +183,7 @@ class ExampleForUserSerializer(serializers.Serializer):
     title = serializers.CharField()
     tags = TagSerializer(many=True)
     status = serializers.SerializerMethodField(method_name='get_status')
-    examples_geant = ExampleGeantForExampleSerializer(many=True)
+    examples_geant = ExampleGeantGETSerializer(many=True)
 
     def get_status(self, obj):
         return obj.example_user[0].status

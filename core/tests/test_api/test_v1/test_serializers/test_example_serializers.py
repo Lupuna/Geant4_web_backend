@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.db.models import Prefetch
 
-from api.v1.serializers.examples_serializers import ExampleForUserSerializer, ExamplePATCHSerializer, ExamplePOSTSerializer, UserExample
+from api.v1.serializers.examples_serializers import ExampleForUserSerializer, ExamplePATCHSerializer, ExamplePOSTSerializer, UserExample, ExampleGeantGETSerializer, ExampleGeantPOSTSerializer
 
 from users.models import User
 
@@ -39,8 +39,7 @@ class ExampleForUserSerializerTestCase(TestCase):
 class ExamplePOSTSerializerTestCase(TestCase):
     def setUp(self):
         self.data = {
-            "title": "test_ex",
-            "params": 'safsfa',
+            "title": "test_verbose",
             "users": [
                 {
                     "username": "test_username"
@@ -50,11 +49,13 @@ class ExamplePOSTSerializerTestCase(TestCase):
         }
         User.objects.create(
             username=self.data['users'][0]['username'], email='test@gmail.com')
+        self.example_title_rel = ExamplesTitleRelation.objects.create(
+            title_verbose='test_verbose', title_not_verbose='TSU_XX_00')
 
     def test_create(self):
         data = self.data
 
-        self.assertFalse(Example.objects.filter(key_s3=self.data['params']))
+        self.assertFalse(Example.objects.filter(title=self.data['title']))
         self.assertFalse(UserExample.objects.filter(
             example__title=data['title'], user__username=data['users'][0]['username']).exists())
 
@@ -62,7 +63,7 @@ class ExamplePOSTSerializerTestCase(TestCase):
         serializer.is_valid()
         serializer.save()
 
-        self.assertTrue(Example.objects.filter(key_s3=self.data['params']))
+        self.assertTrue(Example.objects.filter(title=self.data['title']))
         self.assertTrue(UserExample.objects.filter(
             example__title=data['title'], user__username=data['users'][0]['username']).exists())
 
@@ -89,15 +90,21 @@ class ExamplePOSTSerializerTestCase(TestCase):
         data.update({'title': '', 'params': ''})
         serializer = ExamplePOSTSerializer(data=data)
         self.assertFalse(serializer.is_valid())
-        self.assertEqual(serializer.errors, {'title': [ErrorDetail(string='This field may not be blank.', code='blank')], 'params': [
-                         ErrorDetail(string='This field may not be blank.', code='blank')]})
+        self.assertEqual(serializer.errors, {'title': [ErrorDetail(
+            string='This field may not be blank.', code='blank')]})
+
+        data = self.data
+        data.update({'title': 'bla'})
+        serializer = ExamplePOSTSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(serializer.errors, {'non_field_errors': [ErrorDetail(
+            string='This title not in possible title list', code='invalid')]})
 
 
-class ExamplePATCHSerializerTestCAse(TestCase):
+class ExamplePATCHSerializerTestCase(TestCase):
     def setUp(self):
         self.data = {
-            "title": "test_ex",
-            "params": 'safsfa',
+            'title': 'test_verbose',
             "users": [
                 {
                     "username": "test_username"
@@ -107,6 +114,8 @@ class ExamplePATCHSerializerTestCAse(TestCase):
         }
         User.objects.create(
             username=self.data['users'][0]['username'], email='test@gmail.com')
+        self.example_title_rel = ExamplesTitleRelation.objects.create(
+            title_verbose='test_verbose', title_not_verbose='TSU_XX_00')
 
     def test_update(self):
         serializer = ExamplePOSTSerializer(data=self.data)
@@ -126,7 +135,7 @@ class ExamplePATCHSerializerTestCAse(TestCase):
         self.assertTrue(UserExample.objects.filter(
             user__username='test_username').exists())
 
-        example = Example.objects.get(key_s3=self.data['params'])
+        example = Example.objects.get(title=self.data['title'])
         serializer = ExamplePATCHSerializer(
             instance=example, data=data_to_update)
         serializer.is_valid()
@@ -134,3 +143,28 @@ class ExamplePATCHSerializerTestCAse(TestCase):
         self.assertTrue(UserExample.objects.filter(user=new_user).exists())
         self.assertTrue(UserExample.objects.filter(
             user__username='test_username').exists())
+
+
+class ExampleGeantPOSTSerializerTestCase(TestCase):
+    def setUp(self):
+        self.example_title_rel = ExamplesTitleRelation.objects.create(
+            title_verbose='test_verbose', title_not_verbose='TSU_XX_00')
+        self.example = Example.objects.create(title='test_verbose')
+        self.data = {
+            'params': 'key-s3_velocity_333'
+        }
+
+    def test_validate(self):
+        data = self.data
+
+        serializer = ExampleGeantPOSTSerializer(
+            data=data, context={'example_pk': self.example.id})
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        self.assertTrue(ExampleGeant.objects.filter(
+            title=self.example_title_rel.title_not_verbose, example=self.example, key_s3=data['params']).exists())
+
+        data = self.data
+        serializer = ExampleGeantPOSTSerializer(
+            data=data, context={'example_pk': 12123})
+        self.assertFalse(serializer.is_valid())

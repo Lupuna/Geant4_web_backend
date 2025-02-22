@@ -1,7 +1,14 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 
-from api.v1.serializers.examples_serializers import ExamplePOSTSerializer, ExampleGETSerializer, TagSerializer, ExamplePATCHSerializer, ExampleGeantGETSerializer, ExampleGeantPOSTSerializer
+from api.v1.serializers.examples_serializers import (
+    ExamplePOSTSerializer,
+    ExampleGETSerializer,
+    TagSerializer,
+    ExamplePATCHSerializer,
+    ExampleGeantGETSerializer,
+    ExampleGeantPOSTSerializer
+)
 
 from users.models import User
 
@@ -56,18 +63,20 @@ class ExampleGeantViewSet(ModelViewSet):
 
         return ExampleGeant.objects.filter(example=example)
 
+    @extend_schema(request=ExampleGeantPOSTSerializer)
     def create(self, request, *args, **kwargs):
-        params = request.data.pop('params', {})
+        params = request.data.get('params', {})
 
         if params:
             str_params_vals = {str(key): str(val)
                                for key, val in params.items()}
             key_s3 = 'key-s3_' + '_'.join('_'.join(key_val)
                                           for key_val in str_params_vals.items())
-            request.data.setdefault('params', key_s3)
+            request.data['params'] = key_s3
 
         response = super().create(request, *args, **kwargs)
-        del response.data['params']
-        response.data.setdefault('key_s3', key_s3)
+        info_serializer = ExampleGeantGETSerializer(
+            instance=ExampleGeant.objects.get(key_s3=key_s3))
+        response.data = info_serializer.data
 
         return response
