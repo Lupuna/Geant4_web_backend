@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from geant_examples.models import Example, UserExample, Tag
+from geant_examples.models import Example, UserExample, Tag, ExampleGeant, ExamplesTitleRelation
 from users.models import User
 from django.utils.translation import gettext_lazy as _
 
@@ -8,9 +8,10 @@ from django.utils.translation import gettext_lazy as _
 class ExampleTestCase(TestCase):
 
     def setUp(self):
+        self.example_title_rel = ExamplesTitleRelation.objects.create(
+            title_verbose='test_verbose', title_not_verbose='TSU_XX_00')
         self.example = Example.objects.create(
-            title='test_example_title_1',
-            key_s3='test_key_s3_1',
+            title='test_verbose'
         )
 
     def test_str_method(self):
@@ -30,8 +31,7 @@ class UserExampleTestCase(TestCase):
             username='test_username',
         )
         self.example = Example.objects.create(
-            title='test_example_title_1',
-            key_s3='test_key_s3_1',
+            title='test_verbose',
         )
 
         self.user_example = UserExample.objects.create(
@@ -67,3 +67,44 @@ class TagTestCase(TestCase):
     def test_verbose_name(self):
         self.assertEqual(self.tag._meta.verbose_name, _("Tag"))
         self.assertEqual(self.tag._meta.verbose_name_plural, _("Tags"))
+
+
+class ExampleGeantTestCase(TestCase):
+    def setUp(self):
+        self.example_title_rel = ExamplesTitleRelation.objects.create(
+            title_verbose='test_verbose', title_not_verbose='TSU_XX_00')
+        self.example = Example.objects.create(
+            title='test_verbose'
+        )
+        self.example_geant = ExampleGeant.objects.create(
+            title=self.example_title_rel.title_not_verbose, key_s3='key-s3_velocity_666', example=self.example)
+
+    def test_str(self):
+        self.assertEqual(self.example_geant.__str__(),
+                         self.example_geant.key_s3)
+
+    def test_verbose_name(self):
+        self.assertEqual(
+            self.example_geant._meta.verbose_name, _("ExampleGeant"))
+        self.assertEqual(
+            self.example_geant._meta.verbose_name_plural, _("ExamplesGeant"))
+
+
+class ExamplesTitleRelationTestcase(TestCase):
+    def setUp(self):
+        self.example_title_rel = ExamplesTitleRelation.objects.create(
+            title_verbose='test_verbose', title_not_verbose='TSU_XX_00')
+
+    def test_str(self):
+        self.assertEqual(self.example_title_rel.__str__(),
+                         self.example_title_rel.title_verbose)
+
+    def test_verbose_name(self):
+        self.assertEqual(self.example_title_rel._meta.verbose_name, _(
+            "Possible meanings of Examples titles"))
+        self.assertEqual(self.example_title_rel._meta.verbose_name_plural, _(
+            "Possible meanings of Examples titles"))
+
+    def test_ordering(self):
+        self.assertEqual(self.example_title_rel._meta.ordering,
+                         ('title_not_verbose', ))

@@ -2,7 +2,7 @@ from django.urls import reverse
 
 from users.models import User
 
-from geant_examples.models import Example
+from geant_examples.models import Example, ExampleGeant, ExamplesTitleRelation
 
 from tests.test_api.test_v1.test_views.auth_test_base import AuthSettingsTest
 
@@ -14,6 +14,8 @@ from rest_framework.exceptions import ErrorDetail
 class UserProfileViewSetTestCase(AuthSettingsTest):
     def setUp(self):
         self.url = reverse('user-profile')
+        self.example_title_rel = ExamplesTitleRelation.objects.create(
+            title_verbose='test_verbose', title_not_verbose='TSU_XX_00')
 
     def test_retrieve_user_ok(self):
         self.login_user()
@@ -49,8 +51,7 @@ class UserProfileViewSetTestCase(AuthSettingsTest):
 
     def test_get_examples(self):
         ex_data = {
-            "title": "haha",
-            "key_s3": "asxxzx",
+            "title": "test_verbose",
             "category": "default"
         }
         example = Example.objects.create(**ex_data)
@@ -61,7 +62,7 @@ class UserProfileViewSetTestCase(AuthSettingsTest):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.data, [{'title': 'haha', 'tags': [], 'status': 2}])
+            response.data, [{'title': 'test_verbose', 'tags': [], 'status': 2, 'examples_geant': []}])
 
     def test_change_username(self):
         data = {
