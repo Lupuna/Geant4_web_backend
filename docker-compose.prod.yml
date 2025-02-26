@@ -21,7 +21,7 @@ services:
     build:
       context: .
     ports:
-      - "8000:8000"
+      - "8001:8001"
     volumes:
       - ./core:/core
     environment:
@@ -29,12 +29,27 @@ services:
       - DB_NAME=dbname
       - DB_USER=dbuser
       - DB_PASS=password
-      - IS_DEBUG=True
+      - IS_DEBUG=False
     command: >
-      sh -c "python manage.py runserver 0.0.0.0:8000"
+      sh -c "python manage.py migrate &&
+             gunicorn --bind 0.0.0.0:8001 core.wsgi:application"
+    expose:
+      - "8001"
     depends_on:
       - database
       - redis
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: DockerFile
+    ports:
+      - "81:81"
+      - "443:443"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - web-app
 
   database:
     image: postgres:14.6-alpine
@@ -69,7 +84,7 @@ services:
     build:
       context: .
     entrypoint: celery
-    command: -A core.celery_app flower
+    command: -A core.celery_app flower --port=5555
     volumes:
       - ./core:/core
     depends_on:

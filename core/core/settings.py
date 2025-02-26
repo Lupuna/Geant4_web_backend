@@ -33,7 +33,7 @@ SECRET_KEY = 'django-insecure-33x&5-_t=df$2%z2%6*fuw%xcf4teif+fcc=*$t9r6+c#m6f+0
 load_dotenv()
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", '127.0.0.1', ]
+ALLOWED_HOSTS = ["localhost", '127.0.0.1', 'web-app', '92.63.76.159']
 
 
 # Application definition
@@ -140,7 +140,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

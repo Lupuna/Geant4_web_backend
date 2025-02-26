@@ -16,6 +16,7 @@ drf-spectacular==0.28.0
 fastjsonschema==2.21.1
 flower==2.0.1
 freezegun==1.5.1
+gunicorn
 humanize==4.11.0
 idna==3.10
 inflection==0.5.1
