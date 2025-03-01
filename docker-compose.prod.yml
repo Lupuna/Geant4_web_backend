@@ -80,6 +80,22 @@ services:
     <<: *worker-template
     hostname: worker4
 
+  celery_beat:
+    build:
+      context: .
+    entrypoint: celery
+    volumes:
+      - ./core:/core
+    environment:
+      - DB_HOST=database
+      - DB_NAME=dbname
+      - DB_USER=dbuser
+      - DB_PASS=password
+    command: -A core.celery_app beat --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      - redis
+      - database
+
   flower:
     build:
       context: .

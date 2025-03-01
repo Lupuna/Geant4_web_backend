@@ -1,4 +1,4 @@
-from django.contrib.auth.backends import BaseBackend
+from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
 
 from api.v1.serializers.auth_serializers import LoginSerializer
@@ -7,7 +7,7 @@ from api.v1.serializers.auth_serializers import LoginSerializer
 User = get_user_model()
 
 
-class LoginByUsernameBackend(BaseBackend):
+class LoginByUsernameBackend(ModelBackend):
     def authenticate(self, request, **kwargs):
         data = getattr(request, 'data', request.POST)
         serializer = LoginSerializer(data=data)

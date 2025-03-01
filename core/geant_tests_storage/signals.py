@@ -1,6 +1,6 @@
 from django.contrib.auth.models import Group, Permission
 
-from geant_tests_storage.permissions import version_permissions, test_result_permissions, test_result_file_permissions
+from core.permissions import version_permissions, test_result_permissions, test_result_file_permissions
 
 
 def create_default_groups(sender, **kwargs):
@@ -9,6 +9,10 @@ def create_default_groups(sender, **kwargs):
             'name': 'Employees',
             'permissions': version_permissions + test_result_permissions + test_result_file_permissions
         },
+        {
+            'name': 'LimitedEmployeeGroup',
+            'permissions': version_permissions + test_result_permissions + test_result_file_permissions
+        }
     ]
 
     for data in groups_data:
@@ -20,4 +24,5 @@ def create_default_groups(sender, **kwargs):
                     permission = Permission.objects.get(codename=perm_codename)
                     group.permissions.add(permission)
                 except Permission.DoesNotExist:
-                    print(f"Permission with codename '{perm_codename}' not found.")
+                    print(
+                        f"Permission with codename '{perm_codename}' not found.")

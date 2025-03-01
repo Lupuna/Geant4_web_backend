@@ -1,5 +1,5 @@
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, CreateModelMixin
+from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -8,8 +8,12 @@ from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
 
-
-from api.v1.serializers.users_serializers import UserProfileSerializer, LoginUpdateSerializer, PasswordUpdateSerializer, UserProfileCommonUpdateSerializer
+from api.v1.serializers.users_serializers import (
+    UserProfileSerializer,
+    LoginUpdateSerializer,
+    PasswordUpdateSerializer,
+    UserProfileCommonUpdateSerializer,
+)
 from api.v1.serializers.examples_serializers import ExampleForUserSerializer
 
 from users.models import User

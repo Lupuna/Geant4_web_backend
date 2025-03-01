@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'debug_toolbar',
     'drf_spectacular',
+    'django_celery_beat',
 
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
