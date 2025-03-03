@@ -11,10 +11,10 @@ x-worker-template: &worker-template
     - redis
     - database
   environment:
-    - DB_HOST=database
-    - DB_NAME=dbname
-    - DB_USER=dbuser
-    - DB_PASS=password
+    - DB_HOST=${DB_HOST}
+    - DB_NAME=${DB_NAME}
+    - DB_USER=${DB_USER}
+    - DB_PASS=&{DB_PASS}
 
 services:
   web-app:
@@ -25,10 +25,10 @@ services:
     volumes:
       - ./core:/core
     environment:
-      - DB_HOST=database
-      - DB_NAME=dbname
-      - DB_USER=dbuser
-      - DB_PASS=password
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=&{DB_PASS}
       - IS_DEBUG=False
     command: >
       sh -c "python manage.py migrate &&
@@ -54,9 +54,9 @@ services:
   database:
     image: postgres:14.6-alpine
     environment:
-      - POSTGRES_DB=dbname
-      - POSTGRES_USER=dbuser
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql/data
 
