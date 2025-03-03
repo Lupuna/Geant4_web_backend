@@ -13,7 +13,7 @@ from api.v1.views.files_views import (
     UpdateTemporaryFileAPIView,
     RemoveTemporaryFileAPIView
 )
-from api.v1.views.groups_views import LimitedEmployeeGroupAPIViewSet
+from api.v1.views.groups_views import GroupAPIViewSet
 
 
 version_router = SimpleRouter()
@@ -28,9 +28,9 @@ user_update_router = SimpleRouter()
 user_update_router.register(
     r'profile', UserProfileUpdateImportantInfoViewSet, basename='user-profile')
 
-manage_limited_employee_group = SimpleRouter()
-manage_limited_employee_group.register(
-    r'manage/leg', LimitedEmployeeGroupAPIViewSet, basename='manage-leg')
+group_router = SimpleRouter()
+group_router.register(
+    r'groups', GroupAPIViewSet, basename='groups')
 
 example_router = SimpleRouter()
 example_router.register(r'examples', ExampleViewSet, basename='examples')
@@ -46,7 +46,7 @@ urlpatterns = [
     path('', include(example_router.urls)),
     path('', include(user_update_router.urls)),
     path('', include(example_geant_router.urls)),
-    path('groups/', include(manage_limited_employee_group.urls)),
+    path('', include(group_router.urls)),
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
     path('login/', LoginAPIView.as_view(), name='login'),
     path('token/refresh/', GetAccessTokenView.as_view(), name='refresh'),

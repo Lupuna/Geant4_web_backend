@@ -2,11 +2,12 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import UpdateModelMixin
+from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 
 from api.v1.serializers.geant_tests_storage_serializers import VersionSerializer, TestResultSerializer, ModeSerializer
 
 from geant_tests_storage.models import Version, TestResult, FileModeModel
-from core.permissions import IsEmployeePermission, IsStaffPermission, InLimitedEmployeeGroupPermission
+from core.permissions import IsStaffPermission, GroupPermission
 
 from drf_spectacular.utils import extend_schema
 
@@ -28,19 +29,22 @@ class FileModeAPIView(UpdateModelMixin, GenericViewSet):
 class VersionAPIViewSet(ModelViewSet):
     serializer_class = VersionSerializer
     queryset = Version.objects.all()
-    base_fail_perm_msg = 'Only {} can interact with versions'
+    model_name = 'Version'
+    base_fail_perm_msg = 'Only {} ' + \
+        f'can interact with {model_name} or group(s) you are in has no permission for this action'
 
     def get_file_mode(self):
         return FileModeModel.objects.first().mode
 
     def get_permissions(self):
         mode = self.get_file_mode()
-        if mode == 3:
-            return (IsAuthenticated(), IsEmployeePermission(), )
-        elif mode == 2:
-            return (IsAuthenticated(), InLimitedEmployeeGroupPermission(), )
-        elif mode == 1:
+
+        if mode == 1:
             return (IsAuthenticated(), IsStaffPermission(), )
+        if mode == 2:
+            return (IsAuthenticated(), GroupPermission(self.model_name, self.request.method), )
+        if mode == 3:
+            return (IsAuthenticated(), GroupPermission(self.model_name, self.request.method, 'Employees'), )
         else:
             raise ValueError('Error occured: file mode did not define')
 
@@ -55,7 +59,9 @@ class VersionAPIViewSet(ModelViewSet):
         elif mode == 1:
             message = message.format('staff')
 
-        return super().permission_denied(request, message, code)
+        if request.authenticators and not request.successful_authenticator:
+            raise NotAuthenticated()
+        raise PermissionDenied(detail=message, code=code)
 
 
 @extend_schema(
@@ -63,7 +69,9 @@ class VersionAPIViewSet(ModelViewSet):
 )
 class TestResultAPIViewSet(ModelViewSet):
     serializer_class = TestResultSerializer
-    base_fail_perm_msg = 'Only {} can interact with test results'
+    model_name = 'TestResult'
+    base_fail_perm_msg = 'Only {} ' + \
+        f'can interact with {model_name} or group(s) you are in has no permission for this action'
 
     def get_file_mode(self):
         return FileModeModel.objects.first().mode
@@ -80,14 +88,4 @@ class TestResultAPIViewSet(ModelViewSet):
         return VersionAPIViewSet.get_permissions(self)
 
     def permission_denied(self, request, message=None, code=None):
-        message = self.base_fail_perm_msg
-        mode = self.get_file_mode()
-
-        if mode == 3:
-            message = message.format('employees')
-        elif mode == 2:
-            message = message.format('part of employees')
-        elif mode == 1:
-            message = message.format('staff')
-
-        return super().permission_denied(request, message, code)
+        return VersionAPIViewSet.permission_denied(self, request, message, code)

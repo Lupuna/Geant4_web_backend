@@ -1,8 +1,10 @@
 from uuid import uuid4
+
 from django.utils.translation import gettext_lazy as _
 from django.db import models
+from django.contrib.auth.models import Group
 
-from users.models import User
+from geant_tests_storage.managers import FileModeManager
 
 
 class Version(models.Model):
@@ -84,8 +86,10 @@ class FileModeModel(models.Model):
 
         if existing:
             raise ValueError(_('Only one mode can be set'))
+        else:
+            return super().save(*args, **kwags)
 
-        return super().save(*args, **kwags)
+    objects = FileModeManager()
 
     def delete(self):
         raise ValueError(_('Cannot delete file mode, only update'))

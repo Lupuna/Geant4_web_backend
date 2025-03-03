@@ -1,12 +1,22 @@
 from django.urls import reverse
-from rest_framework.test import APIRequestFactory
 from django.test import TestCase
-from geant_tests_storage.models import Version, TestResult, TestResultFile
-from api.v1.views.geant_tests_storage_views import TestResultAPIViewSet
+
+from rest_framework.test import APIRequestFactory
+from rest_framework.exceptions import ErrorDetail
+
+from geant_tests_storage.models import Version, TestResult, TestResultFile, FileModeModel
+
+from api.v1.views.geant_tests_storage_views import TestResultAPIViewSet, VersionAPIViewSet, FileModeAPIView
+
+from .auth_test_base import AuthSettingsTest
+
+from django.contrib.auth.models import Group, Permission
 
 
-class TestResultAPIViewSetTestCase(TestCase):
+class TestResultAPIViewSetTestCase(AuthSettingsTest):
     def setUp(self):
+        self.filemode = FileModeModel.objects.create(
+            mode=FileModeModel.ModeChoice.employees_only)
         self.factory = APIRequestFactory()
         self.version = Version.objects.create(title="Version 1")
         self.another_version = Version.objects.create(title="Version 2")
@@ -29,8 +39,10 @@ class TestResultAPIViewSetTestCase(TestCase):
         request = self.factory.get(url)
         self.view.setup(request, **kwargs)
 
-        expected_queryset = TestResult.objects.prefetch_related('files').filter(version=self.version.id)
-        self.assertQuerySetEqual(self.view.get_queryset(), expected_queryset, ordered=False)
+        expected_queryset = TestResult.objects.prefetch_related(
+            'files').filter(version=self.version.id)
+        self.assertQuerySetEqual(
+            self.view.get_queryset(), expected_queryset, ordered=False)
 
     def test_get_queryset_for_post_request(self):
         kwargs = {'version_pk': self.version.id}
@@ -39,4 +51,82 @@ class TestResultAPIViewSetTestCase(TestCase):
         self.view.setup(request, **kwargs)
 
         expected_queryset = TestResult.objects.filter(version=self.version.id)
-        self.assertQuerySetEqual(self.view.get_queryset(), expected_queryset, ordered=False)
+        self.assertQuerySetEqual(
+            self.view.get_queryset(), expected_queryset, ordered=False)
+
+    def test_permissions(self):
+        self.login_user()
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data, {'detail': ErrorDetail(
+            string='Only employees can interact with TestResult or group(s) you are in has no permission for this action', code='permission_denied')})
+
+        self.logout()
+        self.login_employee()
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 200)
+
+        self.logout()
+        self.login_staff()
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 200)
+
+        self.logout()
+        self.filemode.mode = 2
+        self.filemode.save()
+        self.assertFalse(self.emp_group.permissions.all().exists())
+        self.sub_emp.user_set.add(self.user)
+        perm = Permission.objects.get(codename='view_testresult')
+        self.sub_emp.permissions.add(perm)
+        self.login_user()
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.patch(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}), data={'any': 'data'})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data, {'detail': ErrorDetail(
+            string='Only part of employees can interact with TestResult or group(s) you are in has no permission for this action', code='permission_denied')})
+
+        self.logout()
+        self.login_staff()
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 200)
+
+        self.logout()
+        self.login_employee()
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 403)
+        self.sub_emp.user_set.add(self.employee)
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 200)
+
+        self.logout()
+        self.login_staff()
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 200)
+
+        self.logout()
+        self.filemode.mode = 1
+        self.filemode.save()
+        self.login_user()
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 403)
+        self.logout()
+        self.login_employee()
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 403)
+        self.logout()
+        self.login_staff()
+        response = self.client.get(path=reverse(
+            'version-test-result-list', kwargs={'version_pk': self.version.id}))
+        self.assertEqual(response.status_code, 200)

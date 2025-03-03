@@ -6,7 +6,7 @@ from geant_examples.models import Example, Tag, UserExample, ExampleGeant, Examp
 from users.models import User
 
 from api.v1.serializers.users_serializers import UserQuickInfoSerializer
-from api.v1.serializers.validators import m2m_add_validators
+from api.v1.serializers.validators import m2m_validator
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -132,10 +132,10 @@ class ExamplePATCHSerializer(serializers.ModelSerializer):
         tags_data = attrs.get('tags', [])
 
         if users_data:
-            m2m_add_validators(users_data, User, 'username')
+            m2m_validator(users_data, User, 'username')
 
         if tags_data:
-            m2m_add_validators(tags_data, Tag, 'title')
+            m2m_validator(tags_data, Tag, 'title')
 
         return attrs
 
