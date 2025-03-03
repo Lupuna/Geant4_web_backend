@@ -16,6 +16,8 @@ x-worker-template: &worker-template
     - DB_USER=${DB_USER}
     - DB_PASS=${DB_PASS}
     - SECRET_KEY=${SECRET_KEY}
+  env_file:
+    - .env
 
 services:
   web-app:
@@ -25,6 +27,8 @@ services:
       - "8001:8001"
     volumes:
       - ./core:/core
+    env_file:
+      - .env
     environment:
       - DB_HOST=${DB_HOST}
       - DB_NAME=${DB_NAME}
@@ -55,6 +59,8 @@ services:
 
   database:
     image: postgres:14.6-alpine
+    env_file:
+      - .env
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
