@@ -95,6 +95,8 @@ services:
     command: -A core.celery_app flower --port=5555
     volumes:
       - ./core:/core
+    env_file:
+      - .env
     depends_on:
       - redis
     ports:
