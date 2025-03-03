@@ -10,7 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
+import socket
+import sys
+from datetime import timedelta
 from pathlib import Path
+from dotenv import load_dotenv
+from loguru import logger
+from core.loguru_handler import InterceptHandler
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +27,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-33x&5-_t=df$2%z2%6*fuw%xcf4teif+fcc=*$t9r6+c#m6f+0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+load_dotenv()
+SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", '127.0.0.1', 'web-app', '92.63.76.159']
 
 
 # Application definition
@@ -39,10 +47,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'debug_toolbar',
+    'drf_spectacular',
 
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
     'geant_tests_storage.apps.GeantTestsStorageConfig',
+    'geant_examples.apps.GeantExamplesConfig',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +66,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -75,6 +90,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+ASGI_APPLICATION = 'core.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -124,7 +140,31 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'api.jwt_authentication.JWTAuthenticationByCookie',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SIMPLE_JWT = {
+
+    'AUTH_TOKEN_CLASSES': (
+        'rest_framework_simplejwt.tokens.AccessToken',
+        'rest_framework_simplejwt.tokens.RefreshToken',
+    ),
+
+    'ROTATE_REFRESH_TOKENS': True,
+
+    'BLACKLIST_AFTER_ROTATION': True,
+
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
+
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=90),
+
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -132,6 +172,11 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'users.auth.auth_backend.LoginByUsernameBackend',
+]
 
 CACHES = {
     "default": {
@@ -142,4 +187,55 @@ CACHES = {
         },
     }
 }
+
 CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_TIMEZONE = 'UTC'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'intercept': {
+            '()': InterceptHandler,
+            'level': 0,
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['intercept'],
+            'level': "ERROR",
+            'propagate': True,
+        },
+    }
+}
+
+logger.remove()
+logger.add(sys.stdout, level="DEBUG", backtrace=True)
+logger.add("logs/debug.log", level="DEBUG", rotation="30 MB",
+           backtrace=True, retention="1 days")
+logger.add("logs/info.log", level="INFO", rotation="30 MB",
+           backtrace=True, retention="3 days")
+logger.add("logs/error.log", level="ERROR", rotation="30 MB",
+           backtrace=True, retention="7 days")
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'API Schema',
+    'DESCRIPTION': 'Guide for the REST API',
+    'VERSION': '1.0.0',
+}
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
+hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
+INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
+
+CACHE_LIVE_TIME = 60 * 60
+STORAGE_URL = 'http://172.20.0.2:8001/'
+PATH_TO_LOCAL_STORAGE = 'files/'

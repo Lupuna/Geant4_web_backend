@@ -1,12 +1,16 @@
-from django.contrib.auth.models import PermissionsMixin
+from django.contrib.auth.models import PermissionsMixin, Group
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.utils import timezone
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.utils.translation import gettext_lazy as _
 from django.db import models, transaction
+from uuid import uuid4
 
 from core.validators import no_at_validator
 from users.managers import UserManager
+
+from autoslug import AutoSlugField
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -18,19 +22,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     username = models.CharField(
         max_length=200,
+        unique=True,
         validators=[
             no_at_validator,
         ]
     )
-    tag = models.CharField(
-        max_length=255,
-        unique=True,
-        db_index=True,
-        validators=[
-            no_at_validator,
-        ],
-    )
+    tag = AutoSlugField(populate_from='username', unique=True)
 
+    uuid = models.UUIDField(default=uuid4)
     is_employee = models.BooleanField(default=False)
     is_staff = models.BooleanField(
         _("staff status"),
@@ -47,11 +46,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         ),
     )
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
+    first_name = models.CharField()
+    last_name = models.CharField()
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['tag', 'username']
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['tag', 'email']
 
     class Meta:
         verbose_name = _("User")
@@ -61,19 +62,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.tag
 
     def save(self, *args, **kwargs):
-        if not self.tag:
-            self.generate_tag()
-
         super().save(*args, **kwargs)
+        if self.is_employee:
+            self.add_employee_in_employee_group()
 
-    def generate_tag(self):
-        with transaction.atomic():
-            last_user_id = User.objects.order_by('-id').values_list('id', flat=True).first()
-            base_tag = self.username.lower()
-            tag = base_tag
-            if User.objects.filter(tag=tag).exists():
-                tag = f'{base_tag}_{last_user_id + 1}'
-            self.tag = tag
+    def add_employee_in_employee_group(self):
+        try:
+            employee_group = Group.objects.get(name="Employees")
+            self.groups.add(employee_group)
+        except ObjectDoesNotExist:
+            print('Group Employees not eyt')
 
     def clean(self):
         super().clean()
@@ -81,35 +79,3 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def email_user(self, subject, message, from_email=None, **kwargs):
         send_mail(subject, message, from_email, [self.email], **kwargs)
-
-
-class UserExample(models.Model):
-    user = models.ForeignKey(User, on_delete=models.Case, related_name='user_examples')
-    example = models.ForeignKey('Example', on_delete=models.CASCADE, related_name='example_users')
-    creation_date = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = _("UserExample")
-        verbose_name_plural = _("UsersExamples")
-        ordering = ('user', 'creation_date')
-
-    def __str__(self):
-        return self.creation_date
-
-
-class Example(models.Model):
-    title = models.CharField(max_length=255)
-    key_s3 = models.CharField(
-        max_length=255,
-        help_text=_('in this field encoded all info about example'),
-        unique=True
-    )
-    date_to_update = models.DateField(auto_now=True)
-    users = models.ManyToManyField(User, related_name='examples')
-
-    class Meta:
-        verbose_name = _("Example")
-        verbose_name_plural = _("Examples")
-
-    def __str__(self):
-        return self.title

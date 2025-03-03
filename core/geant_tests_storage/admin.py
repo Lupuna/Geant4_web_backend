@@ -1,3 +1,6 @@
 from django.contrib import admin
+from geant_tests_storage.models import Version, TestResult, TestResultFile
 
-# Register your models here.
+admin.site.register(Version)
+admin.site.register(TestResult)
+admin.site.register(TestResultFile)

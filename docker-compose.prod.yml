@@ -1,0 +1,98 @@
+version: '3.8'
+
+x-worker-template: &worker-template
+  build:
+    context: .
+  entrypoint: celery
+  command: -A celery_app.app worker --loglevel=info
+  volumes:
+    - ./core:/core
+  depends_on:
+    - redis
+    - database
+  environment:
+    - DB_HOST=${DB_HOST}
+    - DB_NAME=${DB_NAME}
+    - DB_USER=${DB_USER}
+    - DB_PASS=${DB_PASS}
+    - SECRET_KEY=${SECRET_KEY}
+
+services:
+  web-app:
+    build:
+      context: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./core:/core
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - SECRET_KEY=${SECRET_KEY}
+      - IS_DEBUG=False
+    command: >
+      sh -c "python manage.py migrate &&
+             gunicorn --bind 0.0.0.0:8001 core.wsgi:application"
+    expose:
+      - "8001"
+    depends_on:
+      - database
+      - redis
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: DockerFile
+    ports:
+      - "81:81"
+      - "444:444"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - web-app
+
+  database:
+    image: postgres:14.6-alpine
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.0.5-alpine
+    hostname: redis
+
+  worker1:
+    <<: *worker-template
+    hostname: worker1
+
+  worker2:
+    <<: *worker-template
+    hostname: worker2
+
+  worker3:
+    <<: *worker-template
+    hostname: worker3
+
+  worker4:
+    <<: *worker-template
+    hostname: worker4
+
+  flower:
+    build:
+      context: .
+    entrypoint: celery
+    command: -A core.celery_app flower --port=5555
+    volumes:
+      - ./core:/core
+    depends_on:
+      - redis
+    ports:
+      - "5555:5555"
+
+volumes:
+  db_data:
