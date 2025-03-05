@@ -27,11 +27,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-33x&5-_t=df$2%z2%6*fuw%xcf4teif+fcc=*$t9r6+c#m6f+0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 load_dotenv()
-DEBUG = True
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('IS_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = ["localhost", '127.0.0.1', 'web-app', '92.63.76.159']
 
@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'geant_tests_storage.apps.GeantTestsStorageConfig',
     'geant_examples.apps.GeantExamplesConfig',
+    'cacheops',
 ]
 
 MIDDLEWARE = [
@@ -188,6 +189,22 @@ CACHES = {
         },
     }
 }
+CACHE_LIVE_TIME = 60 * 60
+CACHEOPS_REDIS = "redis://redis:6379/1"
+CACHEOPS = {
+    'users.user': {
+        'ops': 'all',
+        'timeout': CACHE_LIVE_TIME
+    },
+    'geant_examples.*': {
+        'ops': 'all',
+        'timeout': CACHE_LIVE_TIME
+    },
+    'geant_tests_storage.*': {
+        'ops': 'all',
+        'timeout': CACHE_LIVE_TIME
+    }
+}
 
 CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_TASK_ALWAYS_EAGER = True
@@ -237,6 +254,5 @@ INTERNAL_IPS = [
 hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
 INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 
-CACHE_LIVE_TIME = 60 * 60
 STORAGE_URL = 'http://172.20.0.2:8001/'
 PATH_TO_LOCAL_STORAGE = 'files/'

@@ -7,6 +7,7 @@ channels-redis
 Django==5.1.5
 django-autoslug
 django-celery-beat
+django-cacheops
 django-cors-headers==4.6.0
 django-debug-toolbar==5.0.1
 django-environ==0.12.0
