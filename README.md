@@ -26,7 +26,7 @@
 Микросервис построен на принципе **контейнеризации**.  
 Каждый компонент запускается в отдельном **Docker-контейнере**:
 
-- Веб-приложение (Django)
+- Веб-приложение (**Django**)
 - База данных (**PostgreSQL**)
 - **Redis**
 - Веб-сервер (**Nginx**)
@@ -52,7 +52,8 @@ core/
   ├── celery_app.py 
   └── manage.py 
 nginx/ 
-  └── nginx.conf 
+  ├── nginx.conf 
+  └── DockerFile
 docker-compose.prod.yml 
 Dockerfile 
 requirements.txt
@@ -60,9 +61,12 @@ requirements.txt
 ## Установка и запуск
 
 1. **Клонируйте репозиторий:**
-   git clone <репозиторий>
-   cd <папка_проекта>
+  git clone <репозиторий>
+  cd <папка_проекта>
 2. **Соберите образы Docker:**
-   docker-compose build
-3. **Запустите контейнеры:**
-   docker-compose up
+  docker-compose build
+3. **Выполните миграции(на данной стадии проекта миграции выполняются вручную):**
+  docker-compose run --rm web-app sh -c "python manage.py makemigrations"
+  docker-compose run --rm web-app sh -c "python manage.py migrate"
+4. **Запустите контейнеры:**
+  docker-compose up

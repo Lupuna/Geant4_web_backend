@@ -14,15 +14,32 @@ class PermissionQuickInfoSerializer(serializers.Serializer):
     codename = serializers.CharField()
 
 
-class GroupPATCHSerializer(serializers.Serializer):
-    user_set = UserQuickInfoSerializer(many=True, required=False)
-    permissions = PermissionQuickInfoSerializer(many=True, required=False)
+class BaseGroupSerializer(serializers.Serializer):
+    def validate_name(self, value):
+        return value
 
     def validate_user_set(self, value):
         return m2m_validator(value, User, 'username')
 
     def validate_permissions(self, value):
         return m2m_validator(value, Permission, 'codename')
+
+    def create(self, validated_data):
+        return super().create(validated_data)
+
+    def update_objs(self, instance, validated_data) -> None:
+        return None
+
+    def delete_objs(self, instance, validated_data) -> dict:
+        return {}
+
+    def save(self, **kwargs):
+        return super().save(**kwargs)
+
+
+class GroupPATCHSerializer(BaseGroupSerializer):
+    user_set = UserQuickInfoSerializer(many=True, required=False)
+    permissions = PermissionQuickInfoSerializer(many=True, required=False)
 
     def delete_objs(self, instance, validated_data):
         delete_info = {}
@@ -56,7 +73,7 @@ class GroupPATCHSerializer(serializers.Serializer):
             self.update_objs(self.instance, self.validated_data)
 
 
-class GroupPOSTSerializer(serializers.Serializer):
+class GroupPOSTSerializer(BaseGroupSerializer):
     name = serializers.CharField(required=True)
     user_set = UserQuickInfoSerializer(many=True, required=False)
     permissions = PermissionQuickInfoSerializer(many=True, required=False)
@@ -65,12 +82,6 @@ class GroupPOSTSerializer(serializers.Serializer):
         if Group.objects.filter(name=value).exists():
             raise ValidationError('Group already exists')
         return value
-
-    def validate_user_set(self, value):
-        return m2m_validator(value, User, 'username')
-
-    def validate_permissions(self, value):
-        return m2m_validator(value, Permission, 'codename')
 
     def create(self, validated_data):
         group = Group.objects.create(name=validated_data['name'])

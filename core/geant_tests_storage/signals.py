@@ -2,9 +2,20 @@ from django.contrib.auth.models import Group, Permission
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from loguru import logger
+
 from geant_tests_storage.models import FileModeModel
 
 from core.permissions import version_permissions, test_result_permissions, test_result_file_permissions
+
+
+def set_file_mode(sender, **kwargs):
+    filemode = FileModeModel.objects.filter(mode__in=(1, 2, 3, )).first()
+
+    if not filemode:
+        filemode = FileModeModel.objects.create(mode=3)
+
+    logger.info(f'File mode was set. Value - {filemode.mode}')
 
 
 def create_default_groups(sender, **kwargs):
@@ -29,7 +40,7 @@ def create_default_groups(sender, **kwargs):
 
 
 @receiver(post_save, sender=FileModeModel)
-def remove_perms(sender, instance, **kwargs):
+def employees_perms_default(sender, instance, **kwargs):
     employees_group = Group.objects.filter(
         name='Employees').prefetch_related('permissions').first()
 

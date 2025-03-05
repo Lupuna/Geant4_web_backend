@@ -97,7 +97,8 @@ class TestResultFileTestCase(TestCase):
 
 class FileModeModelTestCase(TestCase):
     def test_create(self):
-        mode = FileModeModel.objects.create(mode=3)
+        mode, created = FileModeModel.objects.get_or_create(mode=3)
+        self.assertFalse(created)
 
         with self.assertRaises(ValueError):
             try_mode = FileModeModel.objects.create(mode=1)

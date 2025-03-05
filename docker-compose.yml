@@ -73,6 +73,8 @@ services:
     entrypoint: celery
     volumes:
       - ./core:/core
+    env_file:
+      - .env
     environment:
       - DB_HOST=database
       - DB_NAME=dbname

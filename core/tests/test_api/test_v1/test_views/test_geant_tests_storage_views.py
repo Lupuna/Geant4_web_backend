@@ -15,8 +15,8 @@ from django.contrib.auth.models import Group, Permission
 
 class TestResultAPIViewSetTestCase(AuthSettingsTest):
     def setUp(self):
-        self.filemode = FileModeModel.objects.create(
-            mode=FileModeModel.ModeChoice.employees_only)
+        self.filemode, created = FileModeModel.objects.get_or_create(
+            mode=3)
         self.factory = APIRequestFactory()
         self.version = Version.objects.create(title="Version 1")
         self.another_version = Version.objects.create(title="Version 2")

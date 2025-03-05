@@ -65,7 +65,7 @@ class TestResultFile(models.Model):
 class FileModeModel(models.Model):
     class ModeChoice(models.IntegerChoices):
         creator_only = 1, _(
-            'Only version creator can interact with versions and objects related with them')
+            'Only staff can interact with versions and objects related with them')
         any_employees_only = 2, _(
             'Only part of employees can interact with versions and objects related with them')
         employees_only = 3, _(
