@@ -56,3 +56,13 @@ nginx/
 docker-compose.prod.yml 
 Dockerfile 
 requirements.txt
+
+## Установка и запуск
+
+1. **Клонируйте репозиторий:**
+   git clone <репозиторий>
+   cd <папка_проекта>
+2. **Соберите образы Docker:**
+   docker-compose build
+3. **Запустите контейнеры:**
+   docker-compose up
