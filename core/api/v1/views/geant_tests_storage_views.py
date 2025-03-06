@@ -23,13 +23,8 @@ class FileModeAPIView(UpdateModelMixin, GenericViewSet):
         return FileModeModel.objects.first()
 
 
-@extend_schema(
-    tags=['VersionViewSet']
-)
-class VersionAPIViewSet(ModelViewSet):
-    serializer_class = VersionSerializer
-    queryset = Version.objects.all()
-    model_name = 'Version'
+class BaseTestStorageViewSet(ModelViewSet):
+    model_name = None
     base_fail_perm_msg = 'Only {} ' + \
         f'can interact with {model_name} or group(s) you are in has no permission for this action'
 
@@ -65,16 +60,24 @@ class VersionAPIViewSet(ModelViewSet):
 
 
 @extend_schema(
+    tags=['VersionViewSet']
+)
+class VersionAPIViewSet(BaseTestStorageViewSet):
+    serializer_class = VersionSerializer
+    queryset = Version.objects.all()
+    model_name = 'Version'
+    base_fail_perm_msg = 'Only {} ' + \
+        f'can interact with {model_name} or group(s) you are in has no permission for this action'
+
+
+@extend_schema(
     tags=['TestResultViewSet']
 )
-class TestResultAPIViewSet(ModelViewSet):
+class TestResultAPIViewSet(BaseTestStorageViewSet):
     serializer_class = TestResultSerializer
     model_name = 'TestResult'
     base_fail_perm_msg = 'Only {} ' + \
         f'can interact with {model_name} or group(s) you are in has no permission for this action'
-
-    def get_file_mode(self):
-        return FileModeModel.objects.first().mode
 
     def get_queryset(self):
         version = self.kwargs.get('version_pk')
@@ -83,9 +86,3 @@ class TestResultAPIViewSet(ModelViewSet):
         if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
             queryset = queryset.prefetch_related('files')
         return queryset
-
-    def get_permissions(self):
-        return VersionAPIViewSet.get_permissions(self)
-
-    def permission_denied(self, request, message=None, code=None):
-        return VersionAPIViewSet.permission_denied(self, request, message, code)
