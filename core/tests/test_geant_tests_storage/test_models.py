@@ -1,5 +1,5 @@
 from django.test import TestCase
-from geant_tests_storage.models import Version, TestResult, TestResultFile
+from geant_tests_storage.models import Version, TestResult, TestResultFile, FileModeModel
 from django.utils.translation import gettext_lazy as _
 from datetime import datetime, timedelta
 
@@ -35,7 +35,8 @@ class TestResultTestCase(TestCase):
 
     def test_verbose_name(self):
         self.assertEqual(self.test_result._meta.verbose_name, _("TestResult"))
-        self.assertEqual(self.test_result._meta.verbose_name_plural, _("TestsResults"))
+        self.assertEqual(
+            self.test_result._meta.verbose_name_plural, _("TestsResults"))
 
     def test_date_to_delete_validator_raise_create_exception(self):
         test_result = TestResult(
@@ -90,4 +91,17 @@ class TestResultFileTestCase(TestCase):
 
     def test_verbose_name(self):
         self.assertEqual(self.file._meta.verbose_name, _("TestResultFile"))
-        self.assertEqual(self.file._meta.verbose_name_plural, _("TestsResultsFiles"))
+        self.assertEqual(self.file._meta.verbose_name_plural,
+                         _("TestsResultsFiles"))
+
+
+class FileModeModelTestCase(TestCase):
+    def test_create(self):
+        mode, created = FileModeModel.objects.get_or_create(mode=3)
+        self.assertFalse(created)
+
+        with self.assertRaises(ValueError):
+            try_mode = FileModeModel.objects.create(mode=1)
+
+        with self.assertRaises(ValueError):
+            FileModeModel.objects.filter(mode=3).delete()

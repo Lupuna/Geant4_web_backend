@@ -3,7 +3,7 @@ from django.urls import path, include
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from api.v1.views.geant_tests_storage_views import VersionAPIViewSet, TestResultAPIViewSet
+from api.v1.views.geant_tests_storage_views import VersionAPIViewSet, TestResultAPIViewSet, FileModeAPIView
 from api.v1.views.users_views import UserProfileViewSet, UserProfileUpdateImportantInfoViewSet
 from api.v1.views.auth_views import RegistrationAPIView, LoginAPIView, GetAccessTokenView, LogoutAPIView
 from api.v1.views.examples_views import ExampleViewSet, ExampleGeantViewSet
@@ -13,6 +13,7 @@ from api.v1.views.files_views import (
     UpdateTemporaryFileAPIView,
     RemoveTemporaryFileAPIView
 )
+from api.v1.views.groups_views import GroupAPIViewSet
 
 
 version_router = SimpleRouter()
@@ -26,6 +27,10 @@ test_result_router.register(
 user_update_router = SimpleRouter()
 user_update_router.register(
     r'profile', UserProfileUpdateImportantInfoViewSet, basename='user-profile')
+
+group_router = SimpleRouter()
+group_router.register(
+    r'groups', GroupAPIViewSet, basename='groups')
 
 example_router = SimpleRouter()
 example_router.register(r'examples', ExampleViewSet, basename='examples')
@@ -41,6 +46,7 @@ urlpatterns = [
     path('', include(example_router.urls)),
     path('', include(user_update_router.urls)),
     path('', include(example_geant_router.urls)),
+    path('', include(group_router.urls)),
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
     path('login/', LoginAPIView.as_view(), name='login'),
     path('token/refresh/', GetAccessTokenView.as_view(), name='refresh'),
@@ -52,4 +58,6 @@ urlpatterns = [
     path('files/upload/', UploadTemporaryFileAPIView.as_view(), name='upload-file'),
     path('files/update/', UpdateTemporaryFileAPIView.as_view(), name='update-file'),
     path('files/remove/', RemoveTemporaryFileAPIView.as_view(), name='remove-file'),
+    path('files/set_mode/',
+         FileModeAPIView.as_view({'patch': 'update'}), name='set-file-mode'),
 ]
