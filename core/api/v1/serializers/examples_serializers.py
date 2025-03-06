@@ -6,6 +6,7 @@ from geant_examples.models import Example, Tag, UserExample, ExampleGeant, Examp
 from users.models import User
 
 from api.v1.serializers.users_serializers import UserQuickInfoSerializer
+from api.v1.serializers.validators import m2m_validator
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -74,31 +75,14 @@ class ExamplePOSTSerializer(serializers.ModelSerializer):
         example = super().create(validated_data)
 
         if users_data:
-            usernames_set = {user_data['username'] for user_data in users_data}
-            usernames = tuple(user_data['username']
-                              for user_data in users_data)
-
-            if len(usernames) == len(usernames_set):
-                users = User.objects.filter(username__in=usernames)
-
-                for user in users:
-                    example.users.add(user)
-            else:
-                raise ValidationError(
-                    'Cannot add more than one user with the same username')
+            usernames = [user_data['username'] for user_data in users_data]
+            users = User.objects.filter(username__in=usernames)
+            example.users.add(*users)
 
         if tags_data:
-            tags_titles_set = {tag_data['title'] for tag_data in tags_data}
-            tags_titles = tuple(tag_data['title'] for tag_data in tags_data)
-
-            if len(tags_titles_set) == len(tags_titles):
-                tags = Tag.objects.filter(title__in=tags_titles)
-
-                for tag in tags:
-                    example.tags.add(tag)
-            else:
-                raise ValidationError(
-                    'Cannot add more than one tag with the same title')
+            tags_titles = [tag_data['title'] for tag_data in tags_data]
+            tags = Tag.objects.filter(title__in=tags_titles)
+            example.tags.add(*tags)
 
         return example
 
@@ -134,16 +118,12 @@ class ExamplePATCHSerializer(serializers.ModelSerializer):
                               for user_data in users_data)
             users_to_instanse = User.objects.filter(
                 username__in=usernames)
-
-            for user in users_to_instanse:
-                updated_instance.users.add(user)
+            updated_instance.users.add(*users_to_instanse)
 
         if tags_data:
             titles = tuple(tag_data['title'] for tag_data in tags_data)
             tags_to_instanse = Tag.objects.filter(title__in=titles)
-
-            for tag in tags_to_instanse:
-                updated_instance.tags.add(tag)
+            updated_instance.tags.add(*tags_to_instanse)
 
         return updated_instance
 
@@ -152,29 +132,10 @@ class ExamplePATCHSerializer(serializers.ModelSerializer):
         tags_data = attrs.get('tags', [])
 
         if users_data:
-            usernames_set = {user_data['username'] for user_data in users_data}
-            usernames = tuple(user_data['username']
-                              for user_data in users_data)
-
-            if len(usernames) == len(usernames_set):
-                users = User.objects.filter(username__in=usernames)
-
-                if len(users) != len(usernames):
-                    raise ValidationError('Any of given users do not exist')
-            else:
-                raise ValidationError('Users must be unique')
+            m2m_validator(users_data, User, 'username')
 
         if tags_data:
-            tags_titles_set = {tag_data['title'] for tag_data in tags_data}
-            tags_titles = tuple(tag_data['title'] for tag_data in tags_data)
-
-            if len(tags_titles_set) == len(tags_titles):
-                tags = Tag.objects.filter(title__in=tags_titles)
-
-                if len(tags) != len(tags_titles):
-                    raise ValidationError('Any of given tags do not exist')
-            else:
-                raise ValidationError('Tags must be unique')
+            m2m_validator(tags_data, Tag, 'title')
 
         return attrs
 
