@@ -2,6 +2,8 @@ from django.urls import reverse
 
 from users.models import User
 
+from unittest.mock import patch
+
 from geant_examples.models import Example, ExampleGeant, ExamplesTitleRelation
 
 from tests.test_api.test_v1.test_views.auth_test_base import AuthSettingsTest
@@ -108,17 +110,21 @@ class UserProfileViewSetTestCase(AuthSettingsTest):
         self.assertEqual(response.data, {'non_field_errors': [
                          ErrorDetail(string='Given wrong password', code='invalid')]})
 
-    def test_change_pas(self):
+    @patch('api.v1.tasks.send_celery_mail.delay')
+    def test_email_verify(self, mock_mail):
         self.login_user()
-        data = {
-            'new_password': 'sdklfas',
-            'new_password2': 'sdklfas'
-        }
+        self.user.is_email_verified = True
+        self.user.save()
+        url = reverse('user-profile-email-verify')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data, {'error': 'Your email already verified'})
 
-        response = self.client.post(
-            reverse('user-profile-update-password'), data=data)
-
+        self.user.is_email_verified = False
+        self.user.save()
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        user = User.objects.get(username=self.user.username)
-        self.assertFalse(user.check_password('test_pas1'))
-        self.assertTrue(user.check_password(data['new_password']))
+        self.assertEqual(
+            response.data, {'detail': 'We sent mail on your email to email verify'})
+        mock_mail.assert_called_once()

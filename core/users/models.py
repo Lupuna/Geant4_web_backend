@@ -45,6 +45,12 @@ class User(AbstractBaseUser, PermissionsMixin):
             "Unselect this instead of deleting accounts."
         ),
     )
+    is_email_verified = models.BooleanField(
+        _("email verification status"),
+        default=False,
+        help_text=_(
+            "For sending messages into email need to verificate email adress")
+    )
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
     first_name = models.CharField()
     last_name = models.CharField()

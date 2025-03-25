@@ -1,20 +1,16 @@
-from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from django.conf import settings
 
-from rest_framework import status
-
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
-from rest_framework_simplejwt.exceptions import TokenError
-
-from itsdangerous import BadSignature, SignatureExpired
 
 from freezegun import freeze_time
 
 from unittest.mock import patch, MagicMock
 
 from users.models import User
+
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from tests.test_api.test_v1.test_views.auth_test_base import AuthSettingsTest
 
@@ -142,3 +138,101 @@ class GetAccessTestCase(AuthSettingsTest):
             response = self.client.get(self.url)
 
             self.assertNotEqual(response.status_code, 200)
+
+
+class PasswordRecoveryAPIViewTestCase(AuthSettingsTest):
+    @patch('api.v1.tasks.send_celery_mail.delay')
+    def test_send_mail(self, mock_send_mail):
+        response = self.client.post(
+            reverse('password-recovery'), data={'email': self.user.email})
+        self.assertEqual(response.status_code, 406)
+        self.assertEqual(response.data, {'error': 'This email was not verify'})
+
+        self.user.is_email_verified = True
+        self.user.save()
+        response = self.client.post(
+            reverse('password-recovery'), data={'email': self.user.email})
+        mock_send_mail.assert_called_once()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data, {'detail': 'We sent mail on your email to password recovery'})
+
+
+class PasswordRecoveryConfirmAPIViewTestCase(AuthSettingsTest):
+    def setUp(self):
+        token_serializer = URLSafeTimedSerializer(
+            secret_key=settings.SECRET_KEY)
+        self.token = token_serializer.dumps(
+            {'email': self.user.email}, salt='password-recovery')
+        self.url = reverse('confirm-password-recovery',
+                           kwargs={'token': self.token})
+        self.new_passws = {'new_password': 'new_pas1',
+                           'new_password2': 'new_pas1'}
+
+    def test_chpas_confirm(self):
+        self.assertTrue(self.user.check_password('test_pas1'))
+
+        response = self.client.post(self.url, data=self.new_passws)
+        self.user.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.user.check_password('test_pas1'))
+        self.assertTrue(self.user.check_password(
+            self.new_passws['new_password']))
+
+    def test_chpas_confirm_bad_token(self):
+        url = self.url[:-1]
+        response = self.client.post(url, data=self.new_passws)
+        self.assertEqual(response.status_code, 406)
+        self.assertEqual(response.data, {'error': 'Invalid token'})
+
+    def test_chpas_confirm_token_expired(self):
+        with freeze_time(timezone.now() + timezone.timedelta(seconds=405)):
+            response = self.client.post(self.url, self.new_passws)
+            self.assertEqual(response.status_code, 406)
+            self.assertEqual(response.data, {'error': 'Token expired'})
+
+    def test_wrong_data(self):
+        data = self.new_passws
+        data.update({'new_password': 'asasf'})
+        response = self.client.post(self.url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+
+class EmailVerifyConfirmAPIViewTestCase(AuthSettingsTest):
+    def setUp(self):
+        token_serializer = URLSafeTimedSerializer(
+            secret_key=settings.SECRET_KEY)
+        self.token = token_serializer.dumps(
+            {'email': self.user.email}, salt='email-verify')
+
+    def test_email_verified_ok(self):
+        self.assertFalse(self.user.is_email_verified)
+        url = reverse('confirm-email-verify', kwargs={'token': self.token})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data, {'detail': 'Email verified successfully'})
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_email_verified)
+
+    def test_email_verify_bad_token(self):
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_email_verified)
+        url = reverse('confirm-email-verify',
+                      kwargs={'token': self.token[:-1]})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 406)
+        self.assertEqual(
+            response.data, {'error': 'Invalid token'})
+        self.assertFalse(self.user.is_email_verified)
+
+    def test_email_verify_token_expired(self):
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_email_verified)
+        with freeze_time(timezone.now() + timezone.timedelta(seconds=305)):
+            url = reverse('confirm-email-verify', kwargs={'token': self.token})
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 406)
+            self.assertEqual(
+                response.data, {'error': 'Token expired'})
+            self.assertFalse(self.user.is_email_verified)
