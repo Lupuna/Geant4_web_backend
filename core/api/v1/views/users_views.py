@@ -4,20 +4,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework import status
-from rest_framework.generics import get_object_or_404
 
 from api.v1.serializers.users_serializers import (
     UserProfileSerializer,
     LoginUpdateSerializer,
-    PasswordUpdateSerializer,
     UserProfileCommonUpdateSerializer,
 )
 from api.v1.serializers.examples_serializers import ExampleForUserSerializer
 
 from users.models import User
-from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist
+from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist, send_disposable_mail
 
 from geant_examples.models import Example, Tag, UserExample
 
@@ -40,12 +37,7 @@ class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
             return UserProfileCommonUpdateSerializer(*args, **kwargs)
 
     def get_object(self):
-        raw_access = self.request.COOKIES.get('access')
-        access = AccessToken(raw_access)
-        username = access.payload.get(User.USERNAME_FIELD)
-        obj = get_object_or_404(User, username=username)
-
-        return obj
+        return self.request.user
 
     @classmethod
     def get_actions(cls):
@@ -105,15 +97,14 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
 
         return response_cookies(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-    @extend_schema(request=PasswordUpdateSerializer)
-    @action(methods=['post', ], detail=False, url_path='update_password', url_name='update-password')
-    def update_password(self, request, *args, **kwargs):
+    @action(methods=['get', ], detail=False, url_path='email_verify', url_name='email-verify')
+    def email_verify(self, request, *args, **kwargs):
         user = request.user
-        serializer = PasswordUpdateSerializer(instance=user, data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
+        if not user.is_email_verified:
+            response = send_disposable_mail(
+                user.email, 'email verify', 'api.v1.tasks.send_celery_mail')
 
-            return response_cookies({'detail': 'Password updated successfully'}, status.HTTP_200_OK)
+            return response
 
-        return response_cookies(serializer.errors, status.HTTP_400_BAD_REQUEST)
+        return response_cookies({'error': 'Your email already verified'}, status=status.HTTP_400_BAD_REQUEST)
