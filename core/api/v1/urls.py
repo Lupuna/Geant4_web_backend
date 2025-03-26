@@ -5,7 +5,15 @@ from rest_framework_nested.routers import NestedSimpleRouter
 
 from api.v1.views.geant_tests_storage_views import VersionAPIViewSet, TestResultAPIViewSet, FileModeAPIView
 from api.v1.views.users_views import UserProfileViewSet, UserProfileUpdateImportantInfoViewSet
-from api.v1.views.auth_views import RegistrationAPIView, LoginAPIView, GetAccessTokenView, LogoutAPIView
+from api.v1.views.auth_views import (
+    RegistrationAPIView,
+    LoginAPIView,
+    GetAccessTokenView,
+    LogoutAPIView,
+    PasswordRecoveryAPIView,
+    PasswordRecoveryConfirmAPIView,
+    EmailVerifyConfirmAPIView,
+)
 from api.v1.views.examples_views import ExampleViewSet, ExampleGeantViewSet
 from api.v1.views.files_views import (
     DownloadTemporaryFileAPIWiew,
@@ -51,6 +59,12 @@ urlpatterns = [
     path('login/', LoginAPIView.as_view(), name='login'),
     path('token/refresh/', GetAccessTokenView.as_view(), name='refresh'),
     path('logout/', LogoutAPIView.as_view(), name='logout'),
+    path('password_recovery/', PasswordRecoveryAPIView.as_view(),
+         name='password-recovery'),
+    path('password_recovery_confirm/<str:token>',
+         PasswordRecoveryConfirmAPIView.as_view(), name='confirm-password-recovery'),
+    path('email_verify_confirm/<str:token>', EmailVerifyConfirmAPIView.as_view(),
+         name='confirm-email-verify'),
     path('profile/', UserProfileViewSet.as_view(
         actions=UserProfileViewSet.get_actions()), name='user-profile'),
     path('files/download/', DownloadTemporaryFileAPIWiew.as_view(),
