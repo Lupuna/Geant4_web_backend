@@ -58,13 +58,11 @@ INSTALLED_APPS = [
     'geant_tests_storage.apps.GeantTestsStorageConfig',
     'geant_examples.apps.GeantExamplesConfig',
     'cacheops',
-    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -258,18 +256,6 @@ INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 
 STORAGE_URL = 'http://172.20.0.2:8001/'
 PATH_TO_LOCAL_STORAGE = 'files/'
-
-CORS_ALLOWED_ORIGINS = [
-    "https://localhost:3000",
-    "https://92.63.76.159",
-]
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = [
-    "authorization",
-    "content-type",
-    "x-csrftoken",
-]
-CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
 WEB_BACKEND_URL = 'https://92.63.76.159:444'
 
