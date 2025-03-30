@@ -270,3 +270,5 @@ CORS_ALLOW_HEADERS = [
     "x-csrftoken",
 ]
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
+BACKEND_URL = "http://localhost:8000"
