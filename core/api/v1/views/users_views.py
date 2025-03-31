@@ -1,10 +1,12 @@
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import status
+from rest_framework.views import APIView
 
 from api.v1.serializers.users_serializers import (
     UserProfileSerializer,
@@ -16,11 +18,11 @@ from api.v1.serializers.examples_serializers import ExampleForUserSerializer
 from users.models import User
 from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist, send_disposable_mail
 
-from geant_examples.models import Example, Tag, UserExample
+from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
 
 from drf_spectacular.utils import extend_schema
 
-from django.db.models import Prefetch
+from django.conf import settings
 
 
 @extend_schema(
@@ -61,24 +63,7 @@ class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 )
 class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
     permission_classes = (IsAuthenticated, )
-
-    @extend_schema(responses=ExampleForUserSerializer)
-    @action(methods=['get', ], detail=False, url_path='my_examples', url_name='user-examples')
-    def get_user_examples(self, request, **kwargs):
-        user = request.user
-
-        examples = Example.objects.filter(users__id=user.id).only('title').prefetch_related(
-            Prefetch(
-                'example_users',
-                queryset=UserExample.objects.filter(
-                    user=user.id).only('example', 'status'),
-                to_attr='example_user'
-            ),
-            'tags'
-        ).distinct()
-        serializer = ExampleForUserSerializer(instance=examples, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    queryset = None
 
     @extend_schema(request=LoginUpdateSerializer)
     @action(methods=['post', ], detail=False, url_path='update_username', url_name='update-username')
@@ -103,8 +88,25 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
 
         if not user.is_email_verified:
             response = send_disposable_mail(
-                user.email, 'email verify', 'api.v1.tasks.send_celery_mail')
+                user.email, 'email verify', settings.MAIL_TASK_PATH)
 
             return response
 
         return response_cookies({'error': 'Your email already verified'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    tags=['UserProfile']
+)
+class UserExampleView(GenericAPIView):
+    queryset = UserExampleCommand.objects.prefetch_related(
+        'example_command__example')
+    serializer_class = ExampleForUserSerializer
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        user_ex_commands = self.queryset.filter(user=user)
+        serializer = self.serializer_class(
+            instance=user_ex_commands, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -31,6 +31,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: don't run with debug turned on in production!
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 DEBUG = os.getenv('IS_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = ["localhost", '127.0.0.1', 'web-app', '92.63.76.159']
@@ -185,14 +186,14 @@ AUTHENTICATION_BACKENDS = [
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://redis:6379",
+        "LOCATION": f"redis://:{REDIS_PASSWORD}@redis:6379",
         "OPTIONS": {
             "db": "1",
         },
     }
 }
 CACHE_LIVE_TIME = 60 * 60
-CACHEOPS_REDIS = "redis://redis:6379/1"
+CACHEOPS_REDIS = CACHES['default']['LOCATION']
 CACHEOPS = {
     'users.user': {
         'ops': 'all',
@@ -208,12 +209,12 @@ CACHEOPS = {
     }
 }
 
-CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_BROKER_URL = CACHES['default']['LOCATION']
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = CACHES['default']['LOCATION']
 CELERY_TIMEZONE = 'UTC'
 
 LOGGING = {
@@ -256,22 +257,11 @@ INTERNAL_IPS = [
 hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
 INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 
-STORAGE_URL = 'http://172.20.0.2:8001/'
+STORAGE_URL = 'http://92.63.76.158'
 PATH_TO_LOCAL_STORAGE = 'files/'
 
-CORS_ALLOWED_ORIGINS = [
-    "https://localhost:3000",
-    "https://92.63.76.159",
-]
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = [
-    "authorization",
-    "content-type",
-    "x-csrftoken",
-]
-CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-
 WEB_BACKEND_URL = 'https://92.63.76.159:444'
+GEANT_BACKEND_RUN_EXAMPLE_URL = 'https://92.63.76.157/examples/run'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.ru'
@@ -281,3 +271,4 @@ EMAIL_USE_TLS = False
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+MAIL_TASK_PATH = 'api.tasks.send_celery_mail'

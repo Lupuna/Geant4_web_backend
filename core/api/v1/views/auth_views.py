@@ -4,6 +4,7 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework.exceptions import ValidationError
 
 from django.contrib.auth import authenticate
+from django.conf import settings
 
 from users.models import User
 
@@ -115,7 +116,7 @@ class PasswordRecoveryAPIView(APIView):
 
             if user.is_email_verified:
                 response = send_disposable_mail(
-                    user.email, 'password recovery', 'api.v1.tasks.send_celery_mail')
+                    user.email, 'password recovery', settings.MAIL_TASK_PATH)
 
                 return response
 

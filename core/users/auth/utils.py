@@ -48,7 +48,7 @@ def response_cookies(response_data, status, cookies_data=None, delete=False):
         if not delete:
             for key in cookies_data:
                 response.set_cookie(
-                    key=key, value=cookies_data[key], httponly=True, secure=True, samesite='Lax')
+                    key=key, value=cookies_data[key], httponly=True, secure=True, samesite='None')
         else:
             for key in cookies_data:
                 response.delete_cookie(key=key)
@@ -79,7 +79,7 @@ def send_disposable_mail(recipient_email, reason, task_path) -> Response:
         {'email': recipient_email}, salt=base_path_name)
 
     try:
-        recovery_url = settings.WEB_BACKEND_URL + \
+        disposable_url = settings.WEB_BACKEND_URL + \
             reverse(disposable_link_view_path_name,
                     kwargs={'token': token})
     except NoReverseMatch:
@@ -90,7 +90,7 @@ def send_disposable_mail(recipient_email, reason, task_path) -> Response:
     module = '.'.join(decomposed_path_to_task[:-1])
     mail_task = getattr(importlib.import_module(module), mail_task_name)
 
-    mail_task.delay(subject=reason.capitalize(), message=f'For {reason} follow this link\n{recovery_url}', from_email=settings.DEFAULT_FROM_EMAIL, recipient_list=[
+    mail_task.delay(subject=reason.capitalize(), message=f'For {reason} follow this link\n{disposable_url}', from_email=settings.DEFAULT_FROM_EMAIL, recipient_list=[
                     recipient_email], auth_user=settings.EMAIL_HOST_USER, auth_password=settings.EMAIL_HOST_PASSWORD)
 
     return response_cookies({'detail': f'We sent mail on your email to {reason}'}, status=status.HTTP_200_OK)

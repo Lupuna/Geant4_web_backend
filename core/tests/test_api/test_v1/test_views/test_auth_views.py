@@ -141,7 +141,7 @@ class GetAccessTestCase(AuthSettingsTest):
 
 
 class PasswordRecoveryAPIViewTestCase(AuthSettingsTest):
-    @patch('api.v1.tasks.send_celery_mail.delay')
+    @patch('api.tasks.send_celery_mail.delay')
     def test_send_mail(self, mock_send_mail):
         response = self.client.post(
             reverse('password-recovery'), data={'email': self.user.email})
