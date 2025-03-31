@@ -72,9 +72,9 @@ class ExampleCommandViewSetTestCase(AuthSettingsTest):
         response = self.client.post(reverse(
             'example-example-command-list', kwargs={'example_pk': self.example.id}), data=self.params, content_type='application/json')
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.data, {'error': 'Example already executed, wait for results'})
+            response.data, {'detail': 'Example already executed, wait for results'})
         self.assertTrue(self.user in ex_command.users.all())
 
     @patch('requests.post', autospec=True)

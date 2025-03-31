@@ -137,7 +137,7 @@ class ExampleCommandViewSet(ModelViewSet):
 
             return FileResponse(BytesIO(storage_response.content), as_attachment=True, filename=filename)
 
-        return Response({'error': 'You cannot start executing example without define paramrters'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'You cannot start executing example without define parameters'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(
