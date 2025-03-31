@@ -122,7 +122,7 @@ class ExampleCommandViewSet(ModelViewSet):
                 if not (user in ex_command.users.all()):
                     ex_command.users.add(user)
 
-                return Response({'error': 'Example already executed, wait for results'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': 'Example already executed, wait for results'}, status=status.HTTP_200_OK)
 
             content_disposition = storage_response.headers.get(
                 'Content-Disposition')
