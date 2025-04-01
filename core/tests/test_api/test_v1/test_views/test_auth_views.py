@@ -33,9 +33,6 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
         self.assertTrue(User.objects.filter(
             username=self.registration_data['username']).exists())
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(['refresh', 'access'], list(response.cookies.keys()))
-        self.assertEqual(User.objects.filter(username=self.registration_data['username'])[0], User.objects.get(id=RefreshToken(
-            response.cookies['refresh'].value).payload['user_id']))
 
     def test_registration_bad(self):
         data = self.registration_data

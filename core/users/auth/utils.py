@@ -21,13 +21,16 @@ User = get_user_model()
 
 def get_tokens_for_user(user, payload=None):
     refresh = RefreshToken.for_user(user)
+    access = refresh.access_token
     username_field = User.USERNAME_FIELD
     refresh.payload.update({username_field: getattr(user, username_field)})
+    access.payload.update({username_field: getattr(user, username_field)})
 
     if payload:
         refresh.payload.update(payload)
+        access.payload.update(payload)
 
-    return {'refresh': str(refresh), 'access': str(refresh.access_token)}
+    return {'refresh': str(refresh), 'access': str(access)}
 
 
 def put_token_on_blacklist(refresh_token):
