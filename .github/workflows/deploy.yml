@@ -1,12 +1,19 @@
 name: Core CD
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["Core CI"]  
+    types:
+      - completed
+  pull_request:
+    branches:
+      - main
+  
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.pull_request.merged == true}}
     steps:
       - name: Deploy
         uses: appleboy/ssh-action@v1
