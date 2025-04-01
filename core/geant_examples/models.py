@@ -10,11 +10,15 @@ class Example(models.Model):
     class CategoryChoices(models.TextChoices):
         default = 'default', _('Default category')
 
-    title = models.CharField(max_length=255)
+    title_verbose = models.CharField(
+        max_length=255, unique=True, blank=False, null=True)
+    title_not_verbose = models.CharField(
+        max_length=10, unique=True, validators=[title_not_verbose_view], blank=False, null=True)
+    description = models.TextField(help_text=_(
+        'Description of example'), blank=True)
     date_to_update = models.DateField(auto_now=True)
-    users = models.ManyToManyField(
-        User, related_name='examples', through='UserExample')
-    tags = models.ManyToManyField('Tag', related_name='examples', blank=True)
+    tags = models.ManyToManyField('Tag', related_name='examples', blank=True, default=_(
+        'Here can be description of example'))
     category = models.CharField(
         max_length=255,
         choices=CategoryChoices.choices,
@@ -27,14 +31,12 @@ class Example(models.Model):
         verbose_name_plural = _("Examples")
 
     def __str__(self):
-        return self.title
+        return self.title_not_verbose
 
 
-class ExampleGeant(models.Model):
-    title = models.CharField(
-        max_length=10,
-        help_text='Title format should be like: TSU_XX_00. Title will be selected automatically, after selecting FK'
-    )
+class ExampleCommand(models.Model):
+    users = models.ManyToManyField(
+        User, related_name='example_commands', through='UserExampleCommand')
     key_s3 = models.CharField(
         max_length=255,
         help_text=_('in this field encoded all info about example'),
@@ -43,61 +45,40 @@ class ExampleGeant(models.Model):
     example = models.ForeignKey(
         Example,
         on_delete=models.CASCADE,
-        related_name='examples_geant'
+        related_name='example_commands'
     )
 
     class Meta:
-        verbose_name = _('ExampleGeant')
-        verbose_name_plural = _('ExamplesGeant')
+        verbose_name = _('ExampleCommand')
+        verbose_name_plural = _('ExampleCommands')
 
     def __str__(self):
         return self.key_s3
 
 
-class ExamplesTitleRelation(models.Model):
-    title_verbose = models.CharField(
-        max_length=255,
-        unique=True,
-    )
-    title_not_verbose = models.CharField(
-        max_length=10,
-        validators=[title_not_verbose_view],
-        unique=True
-    )
-
-    class Meta:
-        verbose_name = _("Possible meanings of Examples titles")
-        verbose_name_plural = _("Possible meanings of Examples titles")
-        ordering = ('title_not_verbose', )
-
-    def __str__(self):
-        return self.title_verbose
-
-
-class UserExample(models.Model):
+class UserExampleCommand(models.Model):
     class StatusChoice(models.IntegerChoices):
         executing = 0, _('In process')
         executed = 1, _('Completed')
-        never_executed = 2, _('Examples was never executed')
+        failure = 2, _('Executing failure')
 
-    user = models.ForeignKey(User, on_delete=models.Case,
-                             related_name='user_examples')
-    example = models.ForeignKey(
-        Example, on_delete=models.CASCADE, related_name='example_users')
+    user = models.ForeignKey(User, on_delete=models.Case)
+    example_command = models.ForeignKey(
+        ExampleCommand, on_delete=models.CASCADE)
     creation_date = models.DateTimeField(auto_now_add=True)
     status = models.SmallIntegerField(
         choices=StatusChoice.choices,
         help_text=_('Current status of example executing'),
-        default=StatusChoice.never_executed
+        default=StatusChoice.executing
     )
 
     class Meta:
-        verbose_name = _("UserExample")
-        verbose_name_plural = _("UsersExamples")
+        verbose_name = _("UserExampleCommand")
+        verbose_name_plural = _("UsersExampleCommands")
         ordering = ('user', 'creation_date')
 
     def __str__(self):
-        return str(self.creation_date)
+        return str(self.creation_date) + f', status {self.status}'
 
 
 class Tag(models.Model):

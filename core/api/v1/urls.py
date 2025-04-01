@@ -4,7 +4,7 @@ from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
 from api.v1.views.geant_tests_storage_views import VersionAPIViewSet, TestResultAPIViewSet, FileModeAPIView
-from api.v1.views.users_views import UserProfileViewSet, UserProfileUpdateImportantInfoViewSet
+from api.v1.views.users_views import UserProfileViewSet, UserProfileUpdateImportantInfoViewSet, UserExampleView
 from api.v1.views.auth_views import (
     RegistrationAPIView,
     LoginAPIView,
@@ -13,8 +13,9 @@ from api.v1.views.auth_views import (
     PasswordRecoveryAPIView,
     PasswordRecoveryConfirmAPIView,
     EmailVerifyConfirmAPIView,
+    GetAuthInfoAPIView
 )
-from api.v1.views.examples_views import ExampleViewSet, ExampleGeantViewSet
+from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView
 from api.v1.views.files_views import (
     DownloadTemporaryFileAPIWiew,
     UploadTemporaryFileAPIView,
@@ -43,17 +44,17 @@ group_router.register(
 example_router = SimpleRouter()
 example_router.register(r'examples', ExampleViewSet, basename='examples')
 
-example_geant_router = NestedSimpleRouter(
+example_command_router = NestedSimpleRouter(
     parent_router=example_router, parent_prefix=r'examples', lookup='example')
-example_geant_router.register(
-    r'example_geant', ExampleGeantViewSet, basename='example-example-geant')
+example_command_router.register(
+    r'example_geant', ExampleCommandViewSet, basename='example-example-command')
 
 urlpatterns = [
     path('', include(version_router.urls)),
     path('', include(test_result_router.urls)),
     path('', include(example_router.urls)),
     path('', include(user_update_router.urls)),
-    path('', include(example_geant_router.urls)),
+    path('', include(example_command_router.urls)),
     path('', include(group_router.urls)),
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
     path('login/', LoginAPIView.as_view(), name='login'),
@@ -74,4 +75,8 @@ urlpatterns = [
     path('files/remove/', RemoveTemporaryFileAPIView.as_view(), name='remove-file'),
     path('files/set_mode/',
          FileModeAPIView.as_view({'patch': 'update'}), name='set-file-mode'),
+    path('update_example_status/', ExampleCommandUpdateStatusAPIView.as_view(),
+         name='update-example-status'),
+    path('profile/my_examples/', UserExampleView.as_view(), name='user-examples'),
+    path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized')
 ]
