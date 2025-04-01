@@ -42,27 +42,18 @@ class GroupPATCHSerializer(BaseGroupSerializer):
     permissions = PermissionQuickInfoSerializer(many=True, required=False)
 
     def delete_objs(self, instance, validated_data):
-        delete_info = {}
-
         for field, data in validated_data.items():
             objs = getattr(instance, field)
-            identificator = list(data[0].keys())[0]
-            values_to_delete = tuple(map(lambda x: x[identificator], data))
-            objs_to_delete = objs.filter(
-                **{f'{identificator}__in': values_to_delete})
-            objs.remove(*objs_to_delete)
-            delete_info[f'Deleted {identificator}s'] = values_to_delete
+            objs.remove(*data)
 
-        return delete_info
+        return instance
 
     def update_objs(self, instance, validated_data):
         for field, data in validated_data.items():
             objs = getattr(instance, field)
-            identificator = list(data[0].keys())[0]
-            values_to_add = tuple(map(lambda x: x[identificator], data))
-            objs_to_add = objs.model.objects.filter(
-                **{f'{identificator}__in': values_to_add})
-            objs.add(*objs_to_add)
+            objs.add(*data)
+
+        return instance
 
     def save(self, **kwargs):
         delete = self.context.get('delete', False)

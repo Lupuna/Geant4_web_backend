@@ -21,13 +21,16 @@ User = get_user_model()
 
 def get_tokens_for_user(user, payload=None):
     refresh = RefreshToken.for_user(user)
+    access = refresh.access_token
     username_field = User.USERNAME_FIELD
     refresh.payload.update({username_field: getattr(user, username_field)})
+    access.payload.update({username_field: getattr(user, username_field)})
 
     if payload:
         refresh.payload.update(payload)
+        access.payload.update(payload)
 
-    return {'refresh': str(refresh), 'access': str(refresh.access_token)}
+    return {'refresh': str(refresh), 'access': str(access)}
 
 
 def put_token_on_blacklist(refresh_token):
@@ -79,7 +82,7 @@ def send_disposable_mail(recipient_email, reason, task_path) -> Response:
         {'email': recipient_email}, salt=base_path_name)
 
     try:
-        recovery_url = settings.WEB_BACKEND_URL + \
+        disposable_url = settings.WEB_BACKEND_URL + \
             reverse(disposable_link_view_path_name,
                     kwargs={'token': token})
     except NoReverseMatch:
@@ -90,7 +93,7 @@ def send_disposable_mail(recipient_email, reason, task_path) -> Response:
     module = '.'.join(decomposed_path_to_task[:-1])
     mail_task = getattr(importlib.import_module(module), mail_task_name)
 
-    mail_task.delay(subject=reason.capitalize(), message=f'For {reason} follow this link\n{recovery_url}', from_email=settings.DEFAULT_FROM_EMAIL, recipient_list=[
+    mail_task.delay(subject=reason.capitalize(), message=f'For {reason} follow this link\n{disposable_url}', from_email=settings.DEFAULT_FROM_EMAIL, recipient_list=[
                     recipient_email], auth_user=settings.EMAIL_HOST_USER, auth_password=settings.EMAIL_HOST_PASSWORD)
 
     return response_cookies({'detail': f'We sent mail on your email to {reason}'}, status=status.HTTP_200_OK)

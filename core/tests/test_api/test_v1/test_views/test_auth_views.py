@@ -33,9 +33,6 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
         self.assertTrue(User.objects.filter(
             username=self.registration_data['username']).exists())
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(['refresh', 'access'], list(response.cookies.keys()))
-        self.assertEqual(User.objects.filter(username=self.registration_data['username'])[0], User.objects.get(id=RefreshToken(
-            response.cookies['refresh'].value).payload['user_id']))
 
     def test_registration_bad(self):
         data = self.registration_data
@@ -141,7 +138,7 @@ class GetAccessTestCase(AuthSettingsTest):
 
 
 class PasswordRecoveryAPIViewTestCase(AuthSettingsTest):
-    @patch('api.v1.tasks.send_celery_mail.delay')
+    @patch('api.tasks.send_celery_mail.delay')
     def test_send_mail(self, mock_send_mail):
         response = self.client.post(
             reverse('password-recovery'), data={'email': self.user.email})

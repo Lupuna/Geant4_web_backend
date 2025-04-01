@@ -16,6 +16,7 @@ x-worker-template: &worker-template
     - DB_USER=${DB_USER}
     - DB_PASS=${DB_PASS}
     - SECRET_KEY=${SECRET_KEY}
+    - REDIS_PASSWORD=${REDIS_PASSWORD}
 
 services:
   web-app:
@@ -33,6 +34,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - EMAIL_HOST_USER=${EMAIL_HOST_USER}
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - IS_DEBUG=True
     command: >
       sh -c "python manage.py runserver 0.0.0.0:8000"
@@ -52,6 +54,9 @@ services:
   redis:
     image: redis:7.0.5-alpine
     hostname: redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
   worker1:
     <<: *worker-template
@@ -82,6 +87,7 @@ services:
       - DB_NAME=dbname
       - DB_USER=dbuser
       - DB_PASS=password
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     command: -A core.celery_app beat --scheduler django_celery_beat.schedulers:DatabaseScheduler
     depends_on:
       - redis
@@ -96,6 +102,8 @@ services:
       - ./core:/core
     env_file:
       - .env
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     depends_on:
       - redis
     ports:
