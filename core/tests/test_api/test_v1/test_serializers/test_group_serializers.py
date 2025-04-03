@@ -123,8 +123,7 @@ class GroupPATCHSerializerTestCase(TestCase):
         serializer.is_valid()
         info = serializer.save()
 
-        self.assertEqual(info, {'Deleted usernames': (
-            'test_uname',), 'Deleted codenames': ('add_smth',)})
+        self.assertEqual(info, self.first_group)
 
         self.assertFalse(self.first_group.permissions.filter(
             codename=self.perm1.codename))

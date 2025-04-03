@@ -18,4 +18,4 @@ def m2m_validator(objects_data, model, identificator):
     else:
         raise ValidationError(f'{identificator}s must be unique')
 
-    return objects_data
+    return objects
