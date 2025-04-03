@@ -12,10 +12,10 @@ from unittest.mock import patch, MagicMock
 class ExampleCommandViewSetTestCase(AuthSettingsTest):
     def setUp(self):
         self.example = Example.objects.create(
-            title_verbose='test_verbose', title_not_verbose='TSU_MM_99')
+            title_verbose='test_verbose', title_not_verbose='TSU_99')
         self.params = {
             'params': {
-                'velocity': 144
+                'velocity': '144'
             }
         }
 
@@ -28,34 +28,35 @@ class ExampleCommandViewSetTestCase(AuthSettingsTest):
         mock_post.side_effect = [mock_storage_resp, mock_geant_resp]
 
         self.assertFalse(ExampleCommand.objects.filter(
-            example=self.example, key_s3='key-s3_velocity_144').exists())
+            example=self.example, key_s3='key-s3-TSU_99___velocity=144').exists())
         self.login_user()
         response = self.client.post(reverse(
             'example-example-command-list', kwargs={'example_pk': self.example.id}), data=self.params, content_type='application/json')
         self.assertTrue(ExampleCommand.objects.filter(
-            example=self.example, key_s3='key-s3_velocity_144').exists())
+            example=self.example, key_s3='key-s3-TSU_99___velocity=144').exists())
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.data, {'params': 'key-s3_velocity_144'})
+        self.assertEqual(
+            response.data, {'params': 'key-s3-TSU_99___velocity=144'})
 
     @patch('requests.post')
     def test_create_file_already_exixst(self, mock_post):
         mock_stor_resp = MagicMock()
         mock_stor_resp.status_code = 200
         mock_stor_resp.headers = {
-            'Content-Disposition': 'attachment; filename="key-s3_velocity_144.zip"'}
+            'Content-Disposition': 'attachment; filename="key-s3-TSU_99___velocity=144.zip"'}
         mock_stor_resp.content = b'file data'
         mock_post.return_value = mock_stor_resp
 
         self.login_user()
         self.assertFalse(ExampleCommand.objects.filter(
-            example=self.example, key_s3='key-s3_velocity_144').exists())
+            example=self.example, key_s3='key-s3-TSU_99___velocity=144').exists())
 
         response = self.client.post(reverse(
             'example-example-command-list', kwargs={'example_pk': self.example.id}), data=self.params, content_type='application/json')
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(ExampleCommand.objects.filter(
-            example=self.example, key_s3='key-s3_velocity_144').exists())
+            example=self.example, key_s3='key-s3-TSU_99___velocity=144').exists())
         self.assertEqual(b''.join(response.streaming_content), b'file data')
 
     @patch('requests.post')
@@ -65,7 +66,7 @@ class ExampleCommandViewSetTestCase(AuthSettingsTest):
         mock_storage_post.return_value = mock_resp
 
         ex_command = ExampleCommand.objects.create(
-            key_s3='key-s3_velocity_144', example=self.example)
+            key_s3='key-s3-TSU_99___velocity=144', example=self.example)
         self.assertFalse(self.user in ex_command.users.all())
 
         self.login_user()
