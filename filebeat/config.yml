@@ -2,9 +2,12 @@ filebeat.inputs:
   - type: log
     enabled: true
     paths:
-      - /logs/*.log
+      - /logs/debug.log
     fields:
       service: geant_web_backend
+    multiline.pattern: '^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}.\d{3}\s+\|'
+    multiline.negate: true
+    multiline.match: after
 
 processors:
   - drop_fields:

@@ -149,7 +149,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'api.jwt_authentication.JWTAuthenticationByCookie',
     ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema'
 }
 
 SIMPLE_JWT = {
@@ -236,10 +236,10 @@ LOGGING = {
 logger.remove()
 logger.add(sys.stdout, level="DEBUG", backtrace=True)
 logger.add(
-        "logs/debug.log", level="DEBUG",
-        rotation="10 MB", retention="3 days",
-        format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {file}:{line} - {message}"
-    )
+    "logs/debug.log", level="DEBUG", backtrace=True,
+    rotation="10 MB", retention="3 days",
+    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {file}:{line} - {message}"
+)
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'API Schema',
