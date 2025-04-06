@@ -43,7 +43,7 @@ class ExamplePOSTSerializerTestCase(TestCase):
         self.tag = Tag.objects.create(title='test_tag')
         self.data = {
             "title_verbose": "test_verbose",
-            'title_not_verbose': 'TSU_XX_00',
+            'title_not_verbose': 'TSU_00',
             'tags': [
                 {
                     'title': self.tag.title
@@ -86,7 +86,7 @@ class ExamplePATCHSerializerTestCase(TestCase):
         self.tag = Tag.objects.create(title='test_tag')
         self.data = {
             "title_verbose": "test_verbose",
-            'title_not_verbose': 'TSU_XX_00',
+            'title_not_verbose': 'TSU_00',
             "category": "default"
         }
 

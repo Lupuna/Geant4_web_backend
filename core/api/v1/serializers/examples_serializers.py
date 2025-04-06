@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
+from geant_examples.validators import title_not_verbose_view
 
 from users.models import User
 
@@ -80,6 +81,11 @@ class ExamplePOSTSerializer(serializers.ModelSerializer):
 
         return value
 
+    def validate_title_not_verbose(self, value):
+        title_not_verbose_view(value)
+
+        return value
+
     def create(self, validated_data):
         tags = validated_data.pop('tags', [])
         example = super().create(validated_data)
@@ -100,7 +106,9 @@ class ExamplePATCHSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'description': {'required': False},
             'tags': {'required': False},
-            'category': {'required': False}
+            'category': {'required': False},
+            'title_verbose': {'required': False},
+            'title_not_verbose': {'required': False}
         }
 
     def update(self, instance, validated_data):
