@@ -261,7 +261,7 @@ STORAGE_URL = 'http://92.63.76.158'
 PATH_TO_LOCAL_STORAGE = 'files/'
 
 WEB_BACKEND_URL = 'https://92.63.76.159:444'
-GEANT_BACKEND_RUN_EXAMPLE_URL = 'https://92.63.76.157/examples/run'
+GEANT_BACKEND_RUN_EXAMPLE_URL = 'http://92.63.76.157/examples/run'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.ru'
