@@ -5,10 +5,10 @@ from django.conf import settings
 import requests
 
 
-upload_url = settings.STORAGE_URL + "upload/"
-update_url = settings.STORAGE_URL + "update/"
-download_url = settings.STORAGE_URL + "retrieve/"
-remove_url = settings.STORAGE_URL + "remove/"
+upload_url = settings.STORAGE_URL + "/upload/"
+update_url = settings.STORAGE_URL + "/update/"
+download_url = settings.STORAGE_URL + "/retrieve/"
+remove_url = settings.STORAGE_URL + "/remove/"
 
 
 def local_dir(file_data):
