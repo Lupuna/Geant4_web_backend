@@ -14,7 +14,7 @@ class SendRequestOnCreateSignalTests(TestCase):
         mock_response = mock_post.return_value
         mock_response.status_code = 201
 
-        instance = Example.objects.create(title_not_verbose="TSU_XX_00")
+        instance = Example.objects.create(title_not_verbose="TSU_XX_00", title_verbose="test1")
         mock_post.assert_called_once_with(
             settings.BACKEND_URL,
             json={'title': 'TSU_XX_00'},
@@ -24,7 +24,7 @@ class SendRequestOnCreateSignalTests(TestCase):
 
     @patch('requests.post')
     def test_signal_does_nothing_on_update(self, mock_post):
-        instance = Example.objects.create(title_not_verbose="TSU_XX_00")
+        instance = Example.objects.create(title_not_verbose="TSU_XX_00", title_verbose="test2")
 
         mock_post.reset_mock()
 
