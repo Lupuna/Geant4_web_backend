@@ -96,16 +96,17 @@ class ExampleCommandViewSet(ModelViewSet):
         user = request.user
 
         if params:
-            str_params_vals = {str(key): str(val)
+            example = Example.objects.get(
+                id=self.kwargs.get('example_pk'))
+            title_not_verbose = example.title_not_verbose
+            str_params_vals = {str(key).replace(' ', '---'): str(val).replace(' ', '---')
                                for key, val in params.items()}
-            key_s3 = 'key-s3_' + '_'.join('_'.join(key_val)
-                                          for key_val in str_params_vals.items())
+            key_s3 = f'key-s3-{example.title_not_verbose}___' + '___'.join('='.join(key_val)
+                                                                           for key_val in str_params_vals.items())
             request.data['params'] = key_s3
 
             file_data = {'filename': key_s3 + '.zip'}
             download_from_storage = download_url
-            example = Example.objects.get(
-                id=self.kwargs.get('example_pk'))
             storage_response = requests.post(
                 url=download_from_storage, data=file_data, json='json')
 
@@ -114,7 +115,6 @@ class ExampleCommandViewSet(ModelViewSet):
                     'example', 'users').filter(key_s3=key_s3)
 
                 if not ex_commands.exists():
-                    title_not_verbose = example.title_not_verbose
                     data = {
                         'title': title_not_verbose,
                         'commands': [

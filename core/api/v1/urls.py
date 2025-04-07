@@ -13,6 +13,7 @@ from api.v1.views.auth_views import (
     PasswordRecoveryAPIView,
     PasswordRecoveryConfirmAPIView,
     EmailVerifyConfirmAPIView,
+    GetAuthInfoAPIView
 )
 from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView
 from api.v1.views.files_views import (
@@ -76,5 +77,6 @@ urlpatterns = [
          FileModeAPIView.as_view({'patch': 'update'}), name='set-file-mode'),
     path('update_example_status/', ExampleCommandUpdateStatusAPIView.as_view(),
          name='update-example-status'),
-    path('profile/my_examples/', UserExampleView.as_view(), name='user-examples')
+    path('profile/my_examples/', UserExampleView.as_view(), name='user-examples'),
+    path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized')
 ]

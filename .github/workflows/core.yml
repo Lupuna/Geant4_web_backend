@@ -1,10 +1,6 @@
 name: Core CI
 
 on:
-  push:
-    branches:
-      - main
-      - develop
   pull_request:
     branches:
       - main
@@ -34,6 +30,7 @@ jobs:
         echo "POSTGRES_DB=${{ secrets.DB_NAME }}" >> .env 
         echo "POSTGRES_USER=${{ secrets.DB_USER }}" >> .env 
         echo "POSTGRES_PASSWORD=${{ secrets.DB_PASS }}" >> .env 
+        echo "ELK_IP=${{ secrets.ELK_IP }}" >> .env 
         echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env 
         cat .env
         

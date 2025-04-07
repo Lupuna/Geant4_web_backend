@@ -1,10 +1,14 @@
+import datetime
+
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
 from django.contrib.auth import authenticate
 from django.conf import settings
+from django.utils import timezone
 
 from users.models import User
 
@@ -25,9 +29,8 @@ class RegistrationAPIView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            tokens = get_tokens_for_user(user)
             response = response_cookies(
-                {'detail': 'User created'}, status.HTTP_201_CREATED, cookies_data=tokens)
+                {'detail': 'User created'}, status.HTTP_201_CREATED)
 
             return response
 
@@ -42,6 +45,7 @@ class LoginAPIView(APIView):
 
     @extend_schema(request=LoginSerializer)
     def post(self, request):
+        remember_user = request.data.get('remember_me', False)
         user = authenticate(request)
 
         if user is None:
@@ -58,7 +62,13 @@ class LoginAPIView(APIView):
 
             return response
 
-        tokens = get_tokens_for_user(user)
+        tokens_data = [user]
+
+        if not remember_user:
+            tokens_data.append({'exp': int(datetime.datetime.timestamp(
+                timezone.now() + datetime.timedelta(seconds=3600)))})
+
+        tokens = get_tokens_for_user(*tokens_data)
         response = response_cookies(
             {'detail': 'Logged in successfully'}, status.HTTP_200_OK, cookies_data=tokens)
 
@@ -167,3 +177,19 @@ class EmailVerifyConfirmAPIView(APIView):
             return response_cookies({'detail': 'Email verified successfully'}, status=status.HTTP_200_OK)
 
         return token_info
+
+
+@extend_schema(
+    tags=['Auth endpoint']
+)
+class GetAuthInfoAPIView(APIView):
+    permission_classes = []
+
+    def get(self, request, *args, **kwargs):
+        refresh = request.COOKIES.get('refresh', None)
+        access = request.COOKIES.get('access', None)
+
+        if refresh and access:
+            return response_cookies({'detail': True}, status=status.HTTP_200_OK)
+
+        return response_cookies({'detail': False}, status=status.HTTP_401_UNAUTHORIZED)

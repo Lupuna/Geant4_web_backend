@@ -1,8 +1,9 @@
 import re
+from django.core.exceptions import ValidationError
 
 
-def title_not_verbose_view(title):
-    pattern = r'^TSU_[A-Z]{2,3}_[0-9]{2,3}$'
+def title_not_verbose_view(value):
+    pattern = r'^TSU_\d{2,3}$'
 
-    if not bool(re.match(pattern, title)):
-        raise ValueError('Value should look like this: TSU_XX_00')
+    if not re.match(pattern, str(value)):
+        raise ValidationError('Value should look like this: TSU_00')
