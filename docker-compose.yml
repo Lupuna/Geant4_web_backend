@@ -42,7 +42,6 @@ services:
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
 
-
   elasticsearch:
     image: elasticsearch:8.16.2
     ports:
@@ -68,18 +67,6 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASS=${DB_PASS}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-    command: -A core.celery_app beat --scheduler django_celery_beat.schedulers:DatabaseScheduler
-
-    depends_on:
-      - redis
-      - database
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
-      - SECRET_KEY=${SECRET_KEY}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
 
   flower:
