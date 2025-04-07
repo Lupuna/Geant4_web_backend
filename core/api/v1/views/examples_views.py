@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework import status
+from elasticsearch_dsl import Q
 
 from api.v1.serializers.examples_serializers import (
     ExamplePOSTSerializer,
@@ -21,6 +22,7 @@ from api.v1.serializers.examples_serializers import (
 )
 
 from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
+from geant_examples.documents import ExampleDocument
 
 from drf_spectacular.utils import extend_schema
 
@@ -46,6 +48,19 @@ class ExampleViewSet(ModelViewSet):
                 return ExamplePOSTSerializer(*args, **kwargs)
             case 'PATCH':
                 return ExamplePATCHSerializer(*args, **kwargs)
+
+    def list(self, request):
+        params = request.query_params
+        if params:
+            query = params.get("query", "")
+            q = Q(
+                "multi_match", query=query, fields=settings.ELASTICSEARCH_ANALYZER_FIELDS,
+                fuzziness="auto"
+            )
+            result = ExampleDocument.search().query(q).to_queryset()
+            return Response(ExampleGETSerializer(result, many=True).data)
+        else:
+            return super().list(request)
 
 
 @extend_schema(

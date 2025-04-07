@@ -24,6 +24,7 @@ services:
     depends_on:
       - database
       - redis
+      - elasticsearch
 
   database:
     image: postgres:14.6-alpine
@@ -41,6 +42,17 @@ services:
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
 
+  elasticsearch:
+    image: elasticsearch:8.16.2
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
   worker:
     build:
       context: .
@@ -48,36 +60,14 @@ services:
     command: -A celery_app.app worker --loglevel=info
     volumes:
       - ./core:/core
-    depends_on:
-      - redis
-      - database
+    env_file:
+      - .env
     environment:
       - DB_HOST=${DB_HOST}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASS=${DB_PASS}
-      - SECRET_KEY=${SECRET_KEY}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
-
-#  celery_beat:
-#    build:
-#      context: .
-#    entrypoint: celery
-#    volumes:
-#      - ./core:/core
-#    env_file:
-#      - .env
-#    environment:
-#      - DB_HOST=${DB_HOST}
-#      - DB_NAME=${DB_NAME}
-#      - DB_USER=${DB_USER}
-#      - DB_PASS=${DB_PASS}
-#      - SECRET_KEY=${SECRET_KEY}
-#      - REDIS_PASSWORD=${REDIS_PASSWORD}
-#    command: -A core.celery_app beat --scheduler django_celery_beat.schedulers:DatabaseScheduler
-#    depends_on:
-#      - redis
-#      - database
 
   flower:
     build:
@@ -97,3 +87,4 @@ services:
 
 volumes:
   db_data:
+  esdata:
