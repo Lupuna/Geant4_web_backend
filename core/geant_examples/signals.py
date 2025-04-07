@@ -12,7 +12,7 @@ def send_request_on_create(sender, instance, created, **kwargs):
     if created:
         url = settings.BACKEND_URL
         payload = {
-            'title': instance.title,
+            'title': instance.title_not_verbose,
         }
         headers = {'Content-Type': 'application/json'}
         try:

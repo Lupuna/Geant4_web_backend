@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'drf_spectacular',
     'django_celery_beat',
+    'django_elasticsearch_dsl',
 
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
@@ -248,6 +249,8 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
 }
 
+
+
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
@@ -272,3 +275,62 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 MAIL_TASK_PATH = 'api.tasks.send_celery_mail'
 
 BACKEND_URL = os.getenv("BACKEND_URL")
+
+if DEBUG:
+    ELASTICSEARCH_DSL_AUTOSYNC = False
+
+ELASTICSEARCH_ANALYZER_SETTINGS = {
+    "filter": {
+        "russian_stop": {
+            "type": "stop",
+            "stopwords": "_russian_"
+        },
+        "russian_stemmer": {
+            "type": "stemmer",
+            "language": "russian"
+        },
+        "edge_ngram_filter": {
+            "type": "edge_ngram",
+            "min_gram": 2,
+            "max_gram": 10
+        }
+    },
+    "analyzer": {
+        "russian_analyzer": {
+            "tokenizer": "standard",
+            "filter": [
+                "lowercase",
+                "russian_stop",
+                "russian_stemmer",
+            ]
+        },
+        "english_analyzer": {
+            "tokenizer": "standard",
+            "filter": [
+                "lowercase",
+                "stop",
+                "stemmer",
+            ]
+        },
+        "edge_ngram_analyzer": {
+            "tokenizer": "standard",
+            "filter": [
+                "lowercase",
+                "edge_ngram_filter"
+            ]
+        }
+    }
+}
+ELASTICSEARCH_ANALYZER_FIELDS = [
+    "description.english",
+    "description.russian",
+    "description",
+    "title_verbose.english",
+    "title_verbose.russian",
+    "title_verbose"
+]
+ELASTICSEARCH_DSL = {
+    'default': {
+        'hosts': 'http://elasticsearch:9200'
+    },
+}

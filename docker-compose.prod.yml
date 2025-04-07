@@ -48,6 +48,7 @@ services:
     depends_on:
       - database
       - redis
+      - elasticsearch
 
   nginx:
     build:
@@ -71,6 +72,17 @@ services:
       - POSTGRES_PASSWORD=${DB_PASS}
     volumes:
       - db_data:/var/lib/postgresql/data
+
+  elasticsearch:
+    image: elasticsearch:8.16.2
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
 
   redis:
     image: redis:7.0.5-alpine
@@ -104,10 +116,10 @@ services:
     env_file:
       - .env
     environment:
-      - DB_HOST=database
-      - DB_NAME=dbname
-      - DB_USER=dbuser
-      - DB_PASS=password
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     command: -A core.celery_app beat --scheduler django_celery_beat.schedulers:DatabaseScheduler
     depends_on:
@@ -132,3 +144,4 @@ services:
 
 volumes:
   db_data:
+  esdata:
