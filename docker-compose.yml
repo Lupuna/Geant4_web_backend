@@ -1,6 +1,5 @@
 version: '3.8'
 
-
 services:
   web-app:
     build:
@@ -20,7 +19,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - IS_DEBUG=True
     command: >
-      sh -c "python manage.py runserver 0.0.0.0:8000"
+      sh -c "python manage.py runserver 0.0.0.0:8000 && python manage.py search_index --rebuild -f"
     depends_on:
       - database
       - redis
