@@ -1,25 +1,5 @@
 version: '3.8'
 
-x-worker-template: &worker-template
-  build:
-    context: .
-  entrypoint: celery
-  command: -A celery_app.app worker --loglevel=info
-  volumes:
-    - ./core:/core
-  depends_on:
-    - redis
-    - database
-  environment:
-    - DB_HOST=${DB_HOST}
-    - DB_NAME=${DB_NAME}
-    - DB_USER=${DB_USER}
-    - DB_PASS=${DB_PASS}
-    - SECRET_KEY=${SECRET_KEY}
-    - REDIS_PASSWORD=${REDIS_PASSWORD}
-  env_file:
-    - .env
-
 services:
   web-app:
     build:
@@ -91,40 +71,23 @@ services:
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
 
-  worker1:
-    <<: *worker-template
-    hostname: worker1
-
-  worker2:
-    <<: *worker-template
-    hostname: worker2
-
-  worker3:
-    <<: *worker-template
-    hostname: worker3
-
-  worker4:
-    <<: *worker-template
-    hostname: worker4
-
-  celery_beat:
+  worker:
     build:
       context: .
     entrypoint: celery
+    command: -A celery_app.app worker --loglevel=info
     volumes:
       - ./core:/core
-    env_file:
-      - .env
+    depends_on:
+      - redis
+      - database
     environment:
       - DB_HOST=${DB_HOST}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASS=${DB_PASS}
+      - SECRET_KEY=${SECRET_KEY}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
-    command: -A core.celery_app beat --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    depends_on:
-      - redis
-      - database
 
   flower:
     build:

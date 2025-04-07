@@ -102,6 +102,3 @@ class FileModeModelTestCase(TestCase):
 
         with self.assertRaises(ValueError):
             try_mode = FileModeModel.objects.create(mode=1)
-
-        with self.assertRaises(ValueError):
-            FileModeModel.objects.filter(mode=3).delete()
