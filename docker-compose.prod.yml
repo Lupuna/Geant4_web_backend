@@ -105,7 +105,7 @@ services:
     ports:
       - "5555:5555"
 
-  filebeat:
+  filebeat_backend:
     image: elastic/filebeat:7.16.2
     container_name: filebeat
     user: root
