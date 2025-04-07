@@ -11,9 +11,9 @@ class Example(models.Model):
         default = 'default', _('Default category')
 
     title_verbose = models.CharField(
-        max_length=255, unique=True, blank=False, null=True)
+        max_length=255, unique=True, blank=False, null=False)
     title_not_verbose = models.CharField(
-        max_length=10, unique=True, validators=[title_not_verbose_view], blank=False, null=True)
+        max_length=10, unique=True, validators=[title_not_verbose_view], blank=False, null=False)
     description = models.TextField(help_text=_(
         'Description of example'), blank=True)
     date_to_update = models.DateField(auto_now=True)

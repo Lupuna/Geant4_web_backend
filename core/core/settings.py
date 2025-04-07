@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'drf_spectacular',
     'django_celery_beat',
+    'django_elasticsearch_dsl',
 
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
@@ -149,7 +150,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'api.jwt_authentication.JWTAuthenticationByCookie',
     ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema'
 }
 
 SIMPLE_JWT = {
@@ -235,18 +236,19 @@ LOGGING = {
 
 logger.remove()
 logger.add(sys.stdout, level="DEBUG", backtrace=True)
-logger.add("logs/debug.log", level="DEBUG", rotation="30 MB",
-           backtrace=True, retention="1 days")
-logger.add("logs/info.log", level="INFO", rotation="30 MB",
-           backtrace=True, retention="3 days")
-logger.add("logs/error.log", level="ERROR", rotation="30 MB",
-           backtrace=True, retention="7 days")
+logger.add(
+    "logs/debug.log", level="DEBUG", backtrace=True,
+    rotation="10 MB", retention="3 days",
+    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {file}:{line} - {message}"
+)
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'API Schema',
     'DESCRIPTION': 'Guide for the REST API',
     'VERSION': '1.0.0',
 }
+
+
 
 INTERNAL_IPS = [
     "127.0.0.1",
@@ -270,3 +272,64 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 MAIL_TASK_PATH = 'api.tasks.send_celery_mail'
+
+BACKEND_URL = os.getenv("BACKEND_URL")
+
+if DEBUG:
+    ELASTICSEARCH_DSL_AUTOSYNC = False
+
+ELASTICSEARCH_ANALYZER_SETTINGS = {
+    "filter": {
+        "russian_stop": {
+            "type": "stop",
+            "stopwords": "_russian_"
+        },
+        "russian_stemmer": {
+            "type": "stemmer",
+            "language": "russian"
+        },
+        "edge_ngram_filter": {
+            "type": "edge_ngram",
+            "min_gram": 2,
+            "max_gram": 10
+        }
+    },
+    "analyzer": {
+        "russian_analyzer": {
+            "tokenizer": "standard",
+            "filter": [
+                "lowercase",
+                "russian_stop",
+                "russian_stemmer",
+            ]
+        },
+        "english_analyzer": {
+            "tokenizer": "standard",
+            "filter": [
+                "lowercase",
+                "stop",
+                "stemmer",
+            ]
+        },
+        "edge_ngram_analyzer": {
+            "tokenizer": "standard",
+            "filter": [
+                "lowercase",
+                "edge_ngram_filter"
+            ]
+        }
+    }
+}
+ELASTICSEARCH_ANALYZER_FIELDS = [
+    "description.english",
+    "description.russian",
+    "description",
+    "title_verbose.english",
+    "title_verbose.russian",
+    "title_verbose"
+]
+ELASTICSEARCH_DSL = {
+    'default': {
+        'hosts': 'http://elasticsearch:9200'
+    },
+}
