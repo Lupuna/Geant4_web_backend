@@ -290,7 +290,7 @@ ELASTICSEARCH_ANALYZER_SETTINGS = {
         },
         "edge_ngram_filter": {
             "type": "edge_ngram",
-            "min_gram": 2,
+            "min_gram": 4,
             "max_gram": 10
         }
     },
