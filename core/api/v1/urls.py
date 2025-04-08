@@ -3,7 +3,6 @@ from django.urls import path, include
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from api.v1.views.geant_tests_storage_views import VersionAPIViewSet, TestResultAPIViewSet, FileModeAPIView
 from api.v1.views.users_views import UserProfileViewSet, UserProfileUpdateImportantInfoViewSet, UserExampleView
 from api.v1.views.auth_views import (
     RegistrationAPIView,
@@ -25,14 +24,6 @@ from api.v1.views.files_views import (
 from api.v1.views.groups_views import GroupAPIViewSet
 
 
-version_router = SimpleRouter()
-version_router.register(r'versions', VersionAPIViewSet, basename='version')
-
-test_result_router = NestedSimpleRouter(
-    version_router, r'versions', lookup='version')
-test_result_router.register(
-    r'tests-results', TestResultAPIViewSet, basename='version-test-result')
-
 user_update_router = SimpleRouter()
 user_update_router.register(
     r'profile', UserProfileUpdateImportantInfoViewSet, basename='user-profile')
@@ -50,8 +41,6 @@ example_command_router.register(
     r'example_geant', ExampleCommandViewSet, basename='example-example-command')
 
 urlpatterns = [
-    path('', include(version_router.urls)),
-    path('', include(test_result_router.urls)),
     path('', include(example_router.urls)),
     path('', include(user_update_router.urls)),
     path('', include(example_command_router.urls)),
@@ -73,8 +62,6 @@ urlpatterns = [
     path('files/upload/', UploadTemporaryFileAPIView.as_view(), name='upload-file'),
     path('files/update/', UpdateTemporaryFileAPIView.as_view(), name='update-file'),
     path('files/remove/', RemoveTemporaryFileAPIView.as_view(), name='remove-file'),
-    path('files/set_mode/',
-         FileModeAPIView.as_view({'patch': 'update'}), name='set-file-mode'),
     path('update_example_status/', ExampleCommandUpdateStatusAPIView.as_view(),
          name='update-example-status'),
     path('profile/my_examples/', UserExampleView.as_view(), name='user-examples'),
