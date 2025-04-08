@@ -149,14 +149,10 @@ class ExampleForUserSerializer(serializers.Serializer):
 
     def get_params(self, obj):
         key = obj.example_command.key_s3
-        raw_params = key.split('_', 1)[1].split('_')
+        raw_params = key.split('___', 1)[1].split('___')
+        params = dict([param.split('=') for param in raw_params])
 
-        if len(raw_params) % 2 != 0:
-            raise ValidationError('KeyS3 error')
-
-        aliases, values = raw_params[::2], raw_params[1::2]
-
-        return dict(zip(aliases, values))
+        return params
 
 
 class ExampleCommandUpdateStatusSerializer(serializers.Serializer):

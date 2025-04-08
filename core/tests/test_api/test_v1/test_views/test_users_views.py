@@ -122,7 +122,7 @@ class UserExampleViewTestCase(AuthSettingsTest):
         }
         example = Example.objects.create(**ex_data)
         ex_command = ExampleCommand.objects.create(
-            key_s3='key-s3_v_11', example=example)
+            key_s3='key-s3-TSU_XX_00___v=11', example=example)
         ex_command.users.add(self.user)
         us_ex_command = UserExampleCommand.objects.get(user=self.user)
 
