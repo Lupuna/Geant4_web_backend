@@ -16,7 +16,7 @@ from api.v1.serializers.users_serializers import (
 from api.v1.serializers.examples_serializers import ExampleForUserSerializer
 
 from users.models import User
-from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist, send_disposable_mail
+from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist, send_disposable_mail, make_disposable_url
 
 from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
 
@@ -87,8 +87,11 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
         user = request.user
 
         if not user.is_email_verified:
+            dicposable_url = make_disposable_url(
+                settings.FRONTEND_URL + '/email_verify/', 'email-verify', {'email': user.email})
+            message = f'For email verify follow link\n{dicposable_url}'
             response = send_disposable_mail(
-                user.email, 'email verify', settings.MAIL_TASK_PATH)
+                'Email verify', message, [user.email])
 
             return response
 

@@ -57,7 +57,6 @@ INSTALLED_APPS = [
 
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
-    'geant_tests_storage.apps.GeantTestsStorageConfig',
     'geant_examples.apps.GeantExamplesConfig',
     'cacheops',
 ]
@@ -249,7 +248,6 @@ SPECTACULAR_SETTINGS = {
 }
 
 
-
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
@@ -259,9 +257,10 @@ INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 
 STORAGE_URL = 'http://92.63.76.158'
 PATH_TO_LOCAL_STORAGE = 'files/'
-
 WEB_BACKEND_URL = 'https://92.63.76.159:444'
-GEANT_BACKEND_RUN_EXAMPLE_URL = 'http://92.63.76.157/examples/run'
+BACKEND_URL = 'http://92.63.76.157'
+GEANT_BACKEND_RUN_EXAMPLE_URL = BACKEND_URL + '/examples/run/'
+FRONTEND_URL = 'https://92.63.76.159'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.ru'
@@ -271,9 +270,6 @@ EMAIL_USE_TLS = False
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-MAIL_TASK_PATH = 'api.tasks.send_celery_mail'
-
-BACKEND_URL = os.getenv("BACKEND_URL")
 
 if DEBUG:
     ELASTICSEARCH_DSL_AUTOSYNC = False

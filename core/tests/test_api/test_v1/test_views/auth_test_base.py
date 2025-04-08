@@ -10,8 +10,6 @@ from rest_framework.test import APIClient
 
 from users.models import User
 
-from geant_tests_storage.models import FileModeModel
-
 
 class AuthSettingsTest(TestCase):
     @classmethod
@@ -19,8 +17,6 @@ class AuthSettingsTest(TestCase):
         super().setUpClass()
 
         settings.MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
-        cls.emp_group = Group.objects.get(name='Employees')
-        cls.sub_emp = Group.objects.create(name='Sub')
 
         cls.user = User.objects.create_user(
             email='test_email1@gmail.com',
