@@ -1,6 +1,5 @@
 version: '3.8'
 
-
 services:
   web-app:
     build:
@@ -20,7 +19,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - IS_DEBUG=True
     command: >
-      sh -c "python manage.py runserver 0.0.0.0:8000"
+      sh -c "python manage.py runserver 0.0.0.0:8000 && python manage.py search_index --rebuild -f"
     depends_on:
       - database
       - redis
@@ -84,6 +83,20 @@ services:
       - redis
     ports:
       - "5555:5555"
+
+  filebeat_backend:
+    image: elastic/filebeat:7.16.2
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat/config.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./core/logs:/logs
+    environment:
+      - ELASTICSEARCH_HOST=${ELK_IP}:9200
+      - LOGSTASH_HOST=${ELK_IP}:5044
+      - ELK_IP=${ELK_IP}
+    command: [ "filebeat", "-e", "-strict.perms=false" ]
+    restart: always
 
 volumes:
   db_data:

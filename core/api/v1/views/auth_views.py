@@ -4,7 +4,6 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework.exceptions import ValidationError
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
 from django.contrib.auth import authenticate
 from django.conf import settings
@@ -15,7 +14,7 @@ from users.models import User
 from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSerializer
 from api.v1.serializers.users_serializers import UserEmailSerializer, PasswordUpdateSerializer
 
-from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies, get_token_info_or_return_failure, send_disposable_mail
+from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies, get_token_info_or_return_failure, make_disposable_url, send_disposable_mail
 
 from drf_spectacular.utils import extend_schema
 
@@ -125,8 +124,11 @@ class PasswordRecoveryAPIView(APIView):
             user = User.objects.get(email=user_email)
 
             if user.is_email_verified:
+                dicposable_url = make_disposable_url(
+                    settings.FRONTEND_URL + '/new_password/', 'password-recovery', {'email': user_email})
+                message = f'For password recovery follow link\n{dicposable_url}'
                 response = send_disposable_mail(
-                    user.email, 'password recovery', settings.MAIL_TASK_PATH)
+                    'Password recovery', message, [user_email])
 
                 return response
 
