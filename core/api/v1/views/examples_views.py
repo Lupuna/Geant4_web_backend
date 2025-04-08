@@ -91,7 +91,7 @@ class ExampleCommandViewSet(ModelViewSet):
         file_data = {'filename': key_s3 + '.zip'}
         download_from_storage = download_url
         storage_response = requests.post(
-            url=download_from_storage, data=file_data, json='json')
+            url=download_from_storage, json=file_data)
 
         if storage_response.status_code != 200:
             ex_commands = self.get_queryset().prefetch_related(
@@ -106,7 +106,7 @@ class ExampleCommandViewSet(ModelViewSet):
                 }
                 url = settings.GEANT_BACKEND_RUN_EXAMPLE_URL
                 geant_response = requests.post(
-                    url=url, data=data, json='json')
+                    url=url, json=data)
 
                 if geant_response.status_code == 200:
                     response = super().create(request, *args, **kwargs)
