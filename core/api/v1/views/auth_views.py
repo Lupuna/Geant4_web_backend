@@ -125,7 +125,7 @@ class PasswordRecoveryAPIView(APIView):
 
             if user.is_email_verified:
                 dicposable_url = make_disposable_url(
-                    settings.FRONTEND_URL + '/new_password/', 'password-recovery', {'email': user_email})
+                    settings.FRONTEND_URL + '/auth/password_recovery/', 'password-recovery', {'email': user_email})
                 message = f'For password recovery follow link\n{dicposable_url}'
                 response = send_disposable_mail(
                     'Password recovery', message, [user_email])

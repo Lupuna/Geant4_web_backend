@@ -88,7 +88,7 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
 
         if not user.is_email_verified:
             dicposable_url = make_disposable_url(
-                settings.FRONTEND_URL + '/email_verify/', 'email-verify', {'email': user.email})
+                settings.FRONTEND_URL + '/auth/email_verify/', 'email-verify', {'email': user.email})
             message = f'For email verify follow link\n{dicposable_url}'
             response = send_disposable_mail(
                 'Email verify', message, [user.email])
