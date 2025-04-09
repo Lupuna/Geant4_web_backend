@@ -105,7 +105,18 @@ class UserExampleView(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        user_ex_commands = self.queryset.filter(user=user)
+
+        _filters = {
+            "user" : user
+        }
+
+        params = request.query_params
+        if params:
+            _filters["example_command__example__tags__title__in"] = params.getlist("tags", [])
+
+        user_ex_commands = self.queryset.filter(
+            **_filters
+        )
         serializer = self.serializer_class(
             instance=user_ex_commands, many=True)
 
