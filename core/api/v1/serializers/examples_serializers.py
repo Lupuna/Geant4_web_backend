@@ -150,6 +150,10 @@ class ExampleForUserSerializer(serializers.Serializer):
     def get_params(self, obj):
         key = obj.example_command.key_s3
         raw_params = key.split('___', 1)[1].split('___')
+
+        if not any(raw_params):
+            return {}
+
         params = dict([param.split('=') for param in raw_params])
 
         return params

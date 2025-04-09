@@ -89,7 +89,8 @@ class ExampleCommandViewSet(ModelViewSet):
                                                                        for key_val in str_params_vals.items())
         request.data['params'] = key_s3
 
-        file_data = {'filename': key_s3 + '.zip'}
+        filename = key_s3 + '.zip'
+        file_data = {'filename': filename}
         download_from_storage = download_url
         storage_response = requests.post(
             url=download_from_storage, json=file_data)
@@ -123,16 +124,16 @@ class ExampleCommandViewSet(ModelViewSet):
 
             return Response({'detail': 'Example already executed, wait for results'}, status=status.HTTP_200_OK)
 
-        content_disposition = storage_response.headers.get(
-            'Content-Disposition')
-        re_pattern = r'key-s3-TSU_[0-9]{2,3}___.*\.zip_?"?$'
-        match = re.search(re_pattern, content_disposition)
+        # content_disposition = storage_response.headers.get(
+        #     'Content-Disposition')
+        # re_pattern = r'key-s3-TSU_[0-9]{2,3}___.*\.zip_?"?$'
+        # match = re.search(re_pattern, content_disposition)
 
-        if not match:
-            raise ValueError('Error filename')
+        # if not match:
+        #     raise ValueError('Error filename')
 
-        filename = match.group().replace('%', '=')
-        key_s3 = filename.rstrip('.zip_"')
+        # filename = match.group().replace('%', '=')
+        # key_s3 = filename.rstrip('.zip_"')
         ex_command, created = ExampleCommand.objects.get_or_create(
             key_s3=key_s3, example=example)
 
