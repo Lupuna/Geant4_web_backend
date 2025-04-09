@@ -125,14 +125,14 @@ class ExampleCommandViewSet(ModelViewSet):
 
         content_disposition = storage_response.headers.get(
             'Content-Disposition')
-        re_pattern = r'key-s3-TSU_[0-9]{2,3}___.*\.zip_?'
+        re_pattern = r'key-s3-TSU_[0-9]{2,3}___.*\.zip_?"?$'
         match = re.search(re_pattern, content_disposition)
 
         if not match:
             raise ValueError('Error filename')
 
         filename = match.group().replace('%', '=')
-        key_s3 = filename.split('.')[0]
+        key_s3 = filename.rstrip('.zip_"')
         ex_command, created = ExampleCommand.objects.get_or_create(
             key_s3=key_s3, example=example)
 
