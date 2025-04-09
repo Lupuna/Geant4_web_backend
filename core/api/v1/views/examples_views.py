@@ -1,4 +1,5 @@
 import requests
+import re
 
 from io import BytesIO
 
@@ -124,8 +125,13 @@ class ExampleCommandViewSet(ModelViewSet):
 
         content_disposition = storage_response.headers.get(
             'Content-Disposition')
-        filename = content_disposition.split(
-            'filename=')[-1].strip('"')
+        re_pattern = r'key-s3-TSU_[0-9]{2,3}___.*\.zip_?'
+        match = re.search(re_pattern, content_disposition)
+
+        if not match:
+            raise ValueError('Error filename')
+
+        filename = match.group().replace('%', '=')
         key_s3 = filename.split('.')[0]
         ex_command, created = ExampleCommand.objects.get_or_create(
             key_s3=key_s3, example=example)
