@@ -125,7 +125,7 @@ class ExampleCommandViewSet(ModelViewSet):
 
         content_disposition = storage_response.headers.get(
             'Content-Disposition')
-        re_pattern = r'key-s3-TSU_[0-9]{2,3}___.*\.zip_?$'
+        re_pattern = r'key-s3-TSU_[0-9]{2,3}___.*\.zip_?'
         match = re.search(re_pattern, content_disposition)
 
         if not match:
