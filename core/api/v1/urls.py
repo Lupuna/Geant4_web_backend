@@ -51,8 +51,6 @@ urlpatterns = [
          name='confirm-email-verify'),
     path('profile/', UserProfileViewSet.as_view(
         actions=UserProfileViewSet.get_actions()), name='user-profile'),
-    path('files/set_mode/',
-         FileModeAPIView.as_view({'patch': 'update'}), name='set-file-mode'),
     path('update_example_status/', ExampleCommandUpdateStatusAPIView.as_view(),
          name='update-example-status'),
     path('profile/my_examples/', UserExampleView.as_view(), name='user-examples'),
