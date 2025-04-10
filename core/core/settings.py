@@ -258,7 +258,11 @@ hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
 INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 
 STORAGE_URL = 'http://92.63.76.158'
-PATH_TO_LOCAL_STORAGE = 'files/'
+BASE_S3_URL = os.getenv('BASE_S3_URL')
+PATH_TO_LOCAL_STORAGE = os.path.join(BASE_DIR, "files")
+
+if not os.path.exists(PATH_TO_LOCAL_STORAGE):
+    os.mkdir(PATH_TO_LOCAL_STORAGE)
 
 WEB_BACKEND_URL = 'https://92.63.76.159:444'
 GEANT_BACKEND_RUN_EXAMPLE_URL = 'http://92.63.76.157/examples/run'

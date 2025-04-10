@@ -35,11 +35,11 @@ class BaseTestStorageViewSet(ModelViewSet):
         mode = self.get_file_mode()
 
         if mode == 1:
-            return (IsAuthenticated(), IsStaffPermission(), )
+            return IsAuthenticated(), IsStaffPermission()
         if mode == 2:
-            return (IsAuthenticated(), GroupPermission(self.model_name, self.request.method), )
+            return IsAuthenticated(), GroupPermission(self.model_name, self.request.method)
         if mode == 3:
-            return (IsAuthenticated(), GroupPermission(self.model_name, self.request.method, 'Employees'), )
+            return IsAuthenticated(), GroupPermission(self.model_name, self.request.method, 'Employees')
         else:
             raise ValueError('Error occured: file mode did not define')
 

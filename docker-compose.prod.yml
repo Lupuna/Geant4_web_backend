@@ -19,6 +19,7 @@ services:
       - EMAIL_HOST_USER=${EMAIL_HOST_USER}
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - BASE_S3_URL=${BASE_S3_URL}
       - IS_DEBUG=False
     command: >
       sh -c "python manage.py migrate &&
@@ -88,6 +89,7 @@ services:
       - DB_PASS=${DB_PASS}
       - SECRET_KEY=${SECRET_KEY}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - BASE_S3_URL=${BASE_S3_URL}
 
   flower:
     build:

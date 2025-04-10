@@ -16,12 +16,6 @@ from api.v1.views.auth_views import (
     GetAuthInfoAPIView
 )
 from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView
-from api.v1.views.files_views import (
-    DownloadTemporaryFileAPIWiew,
-    UploadTemporaryFileAPIView,
-    UpdateTemporaryFileAPIView,
-    RemoveTemporaryFileAPIView
-)
 from api.v1.views.groups_views import GroupAPIViewSet
 
 
@@ -68,11 +62,6 @@ urlpatterns = [
          name='confirm-email-verify'),
     path('profile/', UserProfileViewSet.as_view(
         actions=UserProfileViewSet.get_actions()), name='user-profile'),
-    path('files/download/', DownloadTemporaryFileAPIWiew.as_view(),
-         name='download-file'),
-    path('files/upload/', UploadTemporaryFileAPIView.as_view(), name='upload-file'),
-    path('files/update/', UpdateTemporaryFileAPIView.as_view(), name='update-file'),
-    path('files/remove/', RemoveTemporaryFileAPIView.as_view(), name='remove-file'),
     path('files/set_mode/',
          FileModeAPIView.as_view({'patch': 'update'}), name='set-file-mode'),
     path('update_example_status/', ExampleCommandUpdateStatusAPIView.as_view(),

@@ -2,8 +2,6 @@ import requests
 
 from io import BytesIO
 
-from file_client import download_url
-
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -106,7 +104,7 @@ class ExampleCommandViewSet(ModelViewSet):
             request.data['params'] = key_s3
 
             file_data = {'filename': key_s3 + '.zip'}
-            download_from_storage = download_url
+            download_from_storage = settings.STORAGE_URL + "/retrieve/"
             storage_response = requests.post(
                 url=download_from_storage, json=file_data)
 

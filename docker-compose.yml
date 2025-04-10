@@ -18,6 +18,7 @@ services:
       - EMAIL_HOST_USER=${EMAIL_HOST_USER}
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - BASE_S3_URL=${BASE_S3_URL}
       - IS_DEBUG=True
     command: >
       sh -c "python manage.py runserver 0.0.0.0:8000"
@@ -68,6 +69,7 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASS=${DB_PASS}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - BASE_S3_URL=${BASE_S3_URL}
 
   flower:
     build:

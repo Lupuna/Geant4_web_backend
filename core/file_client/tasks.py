@@ -1,23 +1,14 @@
 from celery import shared_task
-
-from . import download, send, remove
-
-
-@shared_task
-def download_file(file_data):
-    download(file_data)
+from file_client.profile_image_client import ProfileImageRendererClient
 
 
 @shared_task
-def upload_file(file_data):
-    send(file_data)
+def render_and_upload_task(old_file_path: str, new_name: str):
+    client = ProfileImageRendererClient(path=old_file_path, new_name=new_name)
+    return client.upload()
 
 
 @shared_task
-def update_file(file_data):
-    send(file_data, update=True)
-
-
-@shared_task
-def remove_file(file_data):
-    remove(file_data)
+def render_and_update_task(old_file_path: str, new_name: str):
+    client = ProfileImageRendererClient(path=old_file_path, new_name=new_name)
+    return client.update()
