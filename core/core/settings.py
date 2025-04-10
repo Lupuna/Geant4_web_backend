@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'geant_tests_storage.apps.GeantTestsStorageConfig',
     'geant_examples.apps.GeantExamplesConfig',
     'cacheops',
+    'utils'
 ]
 
 MIDDLEWARE = [
@@ -273,6 +274,33 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 MAIL_TASK_PATH = 'api.tasks.send_celery_mail'
 
 BACKEND_URL = os.getenv("BACKEND_URL")
+BACKEND_DEFAULT_COMMANDS = [
+      {
+        "title": "physlist",
+        "order_index": 1,
+        "default": "FTFP_BERT"
+      },
+      {
+        "title": "target element",
+        "order_index": 2,
+        "default": "H"
+      },
+      {
+        "title": "number of bins",
+        "order_index": 3,
+        "default": "70"
+      },
+      {
+        "title": "min energy in MeV",
+        "order_index": 4,
+        "default": "0.1"
+      },
+      {
+        "title": "max energy in MeV",
+        "order_index": 5,
+        "default": "10000"
+      }
+    ]
 
 if DEBUG:
     ELASTICSEARCH_DSL_AUTOSYNC = False
@@ -332,3 +360,4 @@ ELASTICSEARCH_DSL = {
         'hosts': 'http://elasticsearch:9200'
     },
 }
+

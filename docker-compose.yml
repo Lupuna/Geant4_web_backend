@@ -85,6 +85,25 @@ services:
     ports:
       - "5555:5555"
 
+  celery_beat:
+    build:
+      context: .
+    entrypoint: celery
+    volumes:
+      - ./core:/core
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: -A core.celery_app beat --loglevel=info
+    depends_on:
+      - redis
+      - database
+
 volumes:
   db_data:
   esdata:
