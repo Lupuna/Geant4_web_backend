@@ -19,6 +19,8 @@ from api.v1.serializers.examples_serializers import (
     ExampleCommandPOSTSerializer,
     ExampleCommandUpdateStatusSerializer
 )
+from file_client.example_csv_client import ExampleRendererClient
+from file_client.exceptions import FileClientException
 
 from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
 from geant_examples.documents import ExampleDocument
@@ -35,7 +37,7 @@ from cacheops import invalidate_model
     tags=['Example ViewSet']
 )
 class ExampleViewSet(ModelViewSet):
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
     queryset = Example.objects.all()
     http_method_names = ['get', 'post', 'patch', 'delete']
 
@@ -66,7 +68,7 @@ class ExampleViewSet(ModelViewSet):
     tags=['ExampleCommand endpoint']
 )
 class ExampleCommandViewSet(ModelViewSet):
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
     http_method_names = ['get', 'post', 'delete', ]
 
     def get_serializer(self, *args, **kwargs):
@@ -93,67 +95,63 @@ class ExampleCommandViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         params = request.data.get('params', {})
         user = request.user
-        example = Example.objects.get(
-            id=self.kwargs.get('example_pk'))
-        title_not_verbose = example.title_not_verbose
-        str_params_vals = {str(key).replace(' ', '---'): str(val).replace(' ', '---')
-                           for key, val in params.items()}
-        key_s3 = f'key-s3-{example.title_not_verbose}___' + '___'.join('='.join(key_val)
-                                                                       for key_val in str_params_vals.items())
+        example = Example.objects.get(id=self.kwargs.get('example_pk'))
+        key_s3 = self._generate_key_s3(example.title_not_verbose, params)
         request.data['params'] = key_s3
+        filename = key_s3 + '.zip'
 
-        file_data = {'filename': key_s3 + '.zip'}
-        download_from_storage = settings.STORAGE_URL + "/retrieve/"
-        storage_response = requests.post(
-            url=download_from_storage, json=file_data)
-
-        if storage_response.status_code != 200:
-            ex_commands = self.get_queryset().prefetch_related(
-                'example', 'users').filter(key_s3=key_s3)
-
+        client = ExampleRendererClient(filename)
+        try:
+            response = client.download()
+        except FileClientException as e:
+            ex_commands = self.get_queryset().prefetch_related('example', 'users').filter(key_s3=key_s3)
             if not ex_commands.exists():
-                data = {
-                    'title': title_not_verbose,
-                    'commands': [
-                        {param: str(val)} for param, val in params.items()
-                    ]
-                }
-                url = settings.GEANT_BACKEND_RUN_EXAMPLE_URL
-                geant_response = requests.post(
-                    url=url, json=data)
+                response = self._run_example(request, example, params)
+            else:
+                response = self._example_executed(ex_commands, user)
 
-                if geant_response.status_code == 200:
-                    response = super().create(request, *args, **kwargs)
+            return response
 
-                    return response
+        self._add_user_in_example_command(example, key_s3, user)
+        return FileResponse(response, as_attachment=True, filename=filename)
 
-                return Response(data=geant_response.json(), status=geant_response.status_code,
-                                headers=geant_response.headers)
+    @staticmethod
+    def _generate_key_s3(title, params):
+        str_params = {
+            str(k).replace(' ', '---'): str(v).replace(' ', '---')
+            for k, v in params.items()
+        }
+        return f'key-s3-{title}___' + '___'.join(f'{k}={v}' for k, v in str_params.items())
 
-            ex_command = ex_commands.first()
+    def _run_example(self, request, example, params):
+        data = {
+            'title': example.title_not_verbose,
+            'commands': [{k: str(v)} for k, v in params.items()]
+        }
+        response = requests.post(settings.GEANT_BACKEND_RUN_EXAMPLE_URL, json=data)
+        if response.status_code == 200:
+            return super().create(request)
 
-            if not (user in ex_command.users.all()):
-                ex_command.users.add(user)
+        return Response(
+            data=response.json(),
+            status=response.status_code,
+            headers=response.headers
+        )
 
-            return Response({'detail': 'Example already executed, wait for results'}, status=status.HTTP_200_OK)
-
-        content_disposition = storage_response.headers.get(
-            'Content-Disposition')
-        re_pattern = r'key-s3-TSU_[0-9]{2,3}___.*\.zip_?"?$'
-        match = re.search(re_pattern, content_disposition)
-
-        if not match:
-            raise ValueError('Error filename')
-
-        filename = match.group().replace('%', '=')
-        key_s3 = filename.rstrip('.zip_"')
-        ex_command, created = ExampleCommand.objects.get_or_create(
-            key_s3=key_s3, example=example)
-
-        if not (user in ex_command.users.all()):
+    def _example_executed(self, ex_commands, user):
+        ex_command = ex_commands.first()
+        if user not in ex_command.users.all():
             ex_command.users.add(user)
+        return Response(
+            {'detail': 'Example already executed, wait for results'},
+            status=status.HTTP_200_OK
+        )
 
-        return FileResponse(BytesIO(storage_response.content), as_attachment=True, filename=filename)
+    @staticmethod
+    def _add_user_in_example_command(example, key_s3, user):
+        ex_command, created = ExampleCommand.objects.get_or_create(key_s3=key_s3, example=example)
+        if user not in ex_command.users.all():
+            ex_command.users.add(user)
 
 
 @extend_schema(
