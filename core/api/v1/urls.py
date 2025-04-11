@@ -3,7 +3,8 @@ from django.urls import path, include
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from api.v1.views.users_views import UserProfileViewSet, UserProfileUpdateImportantInfoViewSet, UserExampleView
+from api.v1.views.users_views import UserProfileViewSet, UserProfileUpdateImportantInfoViewSet, UserExampleView, \
+    UserProfileImageViewSet
 from api.v1.views.auth_views import (
     RegistrationAPIView,
     LoginAPIView,
@@ -49,6 +50,8 @@ urlpatterns = [
          name='password-recovery'),
     path('password_recovery/confirm/<str:token>',
          PasswordRecoveryConfirmAPIView.as_view(), name='confirm-password-recovery'),
+    path('profile/image/', UserProfileImageViewSet.as_view(
+        actions=UserProfileImageViewSet.get_action_map()), name='user-profile-image'),
     path('profile/', UserProfileViewSet.as_view(
         actions=UserProfileViewSet.get_actions()), name='user-profile'),
     path('update_example_status/', ExampleCommandUpdateStatusAPIView.as_view(),
