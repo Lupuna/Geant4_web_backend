@@ -25,6 +25,7 @@ class AuthSettingsTest(TestCase):
             last_name='test_lname1'
         )
         cls.user.set_password('test_pas1')
+        cls.user.is_active = True
         cls.user.save()
 
         cls.employee = User.objects.create_employee_user(

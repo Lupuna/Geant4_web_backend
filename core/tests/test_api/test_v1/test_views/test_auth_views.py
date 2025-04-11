@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.conf import settings
 
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework.exceptions import ErrorDetail
 
 from freezegun import freeze_time
 
@@ -27,30 +28,56 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
         }
         self.url = reverse('registration')
 
-    def test_registration_ok(self):
+    @patch('api.tasks.send_celery_mail.delay')
+    def test_registration_ok(self, mock_send):
         response = self.client.post(self.url, data=self.registration_data)
 
         self.assertTrue(User.objects.filter(
             username=self.registration_data['username']).exists())
         self.assertEqual(response.status_code, 201)
+        self.assertFalse(User.objects.get(
+            username=self.registration_data['username']).is_active)
+        mock_send.assert_called_once()
 
-    def test_registration_bad(self):
+    @patch('api.tasks.send_celery_mail.delay')
+    def test_registration_bad(self, mock_send):
         data = self.registration_data
         data.update({'username': ''})
 
         response = self.client.post(self.url, data)
 
         self.assertNotEqual(response.status_code, 201)
-        self.assertFalse(User.objects.filter(email=data['email']))
+        self.assertFalse(User.objects.filter(email=data['email']).exists())
         self.assertFalse(response.cookies.keys())
+        mock_send.assert_not_called()
 
-    def test_registration_already_exists(self):
+    @patch('api.tasks.send_celery_mail.delay')
+    def test_registration_already_exists(self, mock_send):
         data = self.registration_data
         data.update({'username': self.user.username})
 
         response = self.client.post(self.url, data=data)
-
         self.assertNotEqual(response.status_code, 200)
+        self.assertEqual(response.data, {'error': 'User already exists'})
+        mock_send.assert_not_called()
+
+    @patch('api.tasks.send_celery_mail.delay')
+    def test_registration_second_time(self, mock_send):
+        self.assertFalse(User.objects.filter(
+            email=self.registration_data['email']).exists())
+        response = self.client.post(self.url, data=self.registration_data)
+
+        self.assertTrue(User.objects.filter(
+            username=self.registration_data['username']).exists())
+        self.assertEqual(response.status_code, 201)
+        self.assertFalse(User.objects.get(
+            username=self.registration_data['username']).is_active)
+
+        response2 = self.client.post(self.url, data=self.registration_data)
+        self.assertEqual(response2.status_code, 200)
+        self.assertEqual(response2.data, {
+                         'detail': 'Follow the link in mail to accept your registartion'})
+        self.assertEqual(mock_send.call_count, 2)
 
 
 class LoginAPIViewTestCase(AuthSettingsTest):
@@ -142,17 +169,21 @@ class PasswordRecoveryAPIViewTestCase(AuthSettingsTest):
     def test_send_mail(self, mock_send_mail):
         response = self.client.post(
             reverse('password-recovery'), data={'email': self.user.email})
-        self.assertEqual(response.status_code, 406)
-        self.assertEqual(response.data, {'error': 'This email was not verify'})
-
-        self.user.is_email_verified = True
-        self.user.save()
-        response = self.client.post(
-            reverse('password-recovery'), data={'email': self.user.email})
         mock_send_mail.assert_called_once()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.data, {'detail': 'We sent mail on your email to password recovery'})
+            response.data, {'detail': 'We sent mail on your email to recovery password'})
+
+    @patch('api.tasks.send_celery_mail.delay')
+    def test_send_mail_user_disactive(self, mock_send_mail):
+        self.user.is_active = False
+        self.user.save()
+        response = self.client.post(
+            reverse('password-recovery'), data={'email': self.user.email})
+        mock_send_mail.assert_not_called()
+        self.assertEqual(response.status_code, 406)
+        self.assertEqual(
+            response.data, {'error': 'User with this email is not active'})
 
 
 class PasswordRecoveryConfirmAPIViewTestCase(AuthSettingsTest):
@@ -160,7 +191,7 @@ class PasswordRecoveryConfirmAPIViewTestCase(AuthSettingsTest):
         token_serializer = URLSafeTimedSerializer(
             secret_key=settings.SECRET_KEY)
         self.token = token_serializer.dumps(
-            {'email': self.user.email}, salt='password-recovery')
+            {'username': self.user.username}, salt=settings.PASSWORD_RECOVERY_SALT)
         self.url = reverse('confirm-password-recovery',
                            kwargs={'token': self.token})
         self.new_passws = {'new_password': 'new_pas1',
@@ -195,41 +226,41 @@ class PasswordRecoveryConfirmAPIViewTestCase(AuthSettingsTest):
         self.assertEqual(response.status_code, 400)
 
 
-class EmailVerifyConfirmAPIViewTestCase(AuthSettingsTest):
+class RegistrationConfirmAPIViewTestCase(AuthSettingsTest):
     def setUp(self):
         token_serializer = URLSafeTimedSerializer(
             secret_key=settings.SECRET_KEY)
         self.token = token_serializer.dumps(
-            {'email': self.user.email}, salt='email-verify')
+            {'username': self.user.username}, salt=settings.REGISTRATION_CONFIRM_SALT)
+        self.url = reverse('confirm-registration',
+                           kwargs={'token': self.token})
+        self.user.is_active = False
+        self.user.save()
 
-    def test_email_verified_ok(self):
-        self.assertFalse(self.user.is_email_verified)
-        url = reverse('confirm-email-verify', kwargs={'token': self.token})
-        response = self.client.get(url)
+    def test_confirm_reg_ok(self):
+        self.assertFalse(self.user.is_active)
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.data, {'detail': 'Email verified successfully'})
+            response.data, {'detail': 'Registration successfully!'})
         self.user.refresh_from_db()
-        self.assertTrue(self.user.is_email_verified)
+        self.assertTrue(self.user.is_active)
 
-    def test_email_verify_bad_token(self):
+    def test_confirm_reg_bad_token(self):
         self.user.refresh_from_db()
-        self.assertFalse(self.user.is_email_verified)
-        url = reverse('confirm-email-verify',
-                      kwargs={'token': self.token[:-1]})
-        response = self.client.get(url)
+        self.assertFalse(self.user.is_active)
+        response = self.client.get(self.url[:-3])
         self.assertEqual(response.status_code, 406)
         self.assertEqual(
             response.data, {'error': 'Invalid token'})
-        self.assertFalse(self.user.is_email_verified)
+        self.assertFalse(self.user.is_active)
 
-    def test_email_verify_token_expired(self):
+    def test_confirm_reg_token_expired(self):
         self.user.refresh_from_db()
-        self.assertFalse(self.user.is_email_verified)
+        self.assertFalse(self.user.is_active)
         with freeze_time(timezone.now() + timezone.timedelta(seconds=305)):
-            url = reverse('confirm-email-verify', kwargs={'token': self.token})
-            response = self.client.get(url)
+            response = self.client.get(self.url)
             self.assertEqual(response.status_code, 406)
             self.assertEqual(
                 response.data, {'error': 'Token expired'})
-            self.assertFalse(self.user.is_email_verified)
+            self.assertFalse(self.user.is_active)

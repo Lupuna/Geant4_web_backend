@@ -38,20 +38,3 @@ class RegistrationSerializerTestCase(TestCase):
 
         self.assertEqual(serializer.errors, {'non_field_errors': [
                          ErrorDetail(string='Passwords do not match', code='invalid')]})
-
-        User.objects.create(
-            username=self.data['username'], email='lala@gmail.com')
-        serializer = RegistrationSerializer(data=self.data)
-        serializer.is_valid()
-
-        self.assertEqual(serializer.errors, {'username': [ErrorDetail(
-            string='User with this username already exists.', code='unique')]})
-
-        User.objects.filter(
-            username=self.data['username'], email='lala@gmail.com').delete()
-        User.objects.create(username='sda', email=self.data['email'])
-        serializer = RegistrationSerializer(data=self.data)
-        serializer.is_valid()
-
-        self.assertEqual(serializer.errors, {'email': [ErrorDetail(
-            string='User with this email filed already exists.', code='unique')]})

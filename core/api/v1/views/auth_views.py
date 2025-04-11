@@ -4,6 +4,8 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken
 
 from django.contrib.auth import authenticate
 from django.conf import settings
@@ -13,6 +15,7 @@ from users.models import User
 
 from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSerializer
 from api.v1.serializers.users_serializers import UserEmailSerializer, PasswordUpdateSerializer
+from api.tasks import send_celery_mail
 
 from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies, get_token_info_or_return_failure, make_disposable_url, send_disposable_mail
 
@@ -26,14 +29,50 @@ class RegistrationAPIView(APIView):
     @extend_schema(request=RegistrationSerializer)
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            response = response_cookies(
-                {'detail': 'User created'}, status.HTTP_201_CREATED)
 
-            return response
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            user_email = serializer.validated_data['email']
+            disposable_url = make_disposable_url(settings.FRONTEND_URL + '/auth/confirm/',
+                                                 settings.REGISTRATION_CONFIRM_SALT, {'username': username})
+            message = f'For confirm registration follow the link\n{disposable_url}'
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                serializer.save()
+                send_celery_mail.delay(
+                    'Confirm registration', message, [user_email])
+
+                return response_cookies({'detail': 'Follow the link in mail to accept your registartion'}, status.HTTP_201_CREATED)
+
+            if not user.is_active:
+                send_celery_mail.delay(
+                    'Confirm registration', message, [user_email])
+
+                return response_cookies({'detail': 'Follow the link in mail to accept your registartion'}, status.HTTP_200_OK)
+
+            return response_cookies({'error': 'User already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
         return response_cookies(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    tags=['Auth endpoint']
+)
+class RegistrationConfirmAPIView(APIView):
+    def get(self, request, token, *args, **kwargs):
+        token_info = get_token_info_or_return_failure(
+            token, 300, settings.REGISTRATION_CONFIRM_SALT)
+
+        if isinstance(token_info, dict):
+            username = token_info.get('username')
+            user = User.objects.get(username=username)
+            user.is_active = True
+            user.save()
+
+            return response_cookies({'detail': 'Registration successfully!'}, status=status.HTTP_200_OK)
+
+        return token_info
 
 
 @extend_schema(
@@ -123,16 +162,16 @@ class PasswordRecoveryAPIView(APIView):
             user_email = serializer.validated_data['email']
             user = User.objects.get(email=user_email)
 
-            if user.is_email_verified:
+            if user.is_active:
                 dicposable_url = make_disposable_url(
-                    settings.FRONTEND_URL + '/auth/password_recovery/', 'password-recovery', {'email': user_email})
+                    settings.FRONTEND_URL + '/auth/password_recovery/', settings.PASSWORD_RECOVERY_SALT, {'username': user.username})
                 message = f'For password recovery follow link\n{dicposable_url}'
-                response = send_disposable_mail(
+                send_celery_mail.delay(
                     'Password recovery', message, [user_email])
 
-                return response
+                return response_cookies({'detail': 'We sent mail on your email to recovery password'}, status=status.HTTP_200_OK)
 
-            return response_cookies({'error': 'This email was not verify'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            return response_cookies({'error': 'User with this email is not active'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
         return response_cookies({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -144,11 +183,11 @@ class PasswordRecoveryConfirmAPIView(APIView):
     @extend_schema(request=PasswordUpdateSerializer)
     def post(self, request, token, *args, **kwargs):
         token_info = get_token_info_or_return_failure(
-            token, 300, request.resolver_match.view_name.split('-', 1)[1])
+            token, 300, settings.PASSWORD_RECOVERY_SALT)
 
         if isinstance(token_info, dict):
-            user_email = token_info.get('email')
-            user = User.objects.get(email=user_email)
+            username = token_info.get('username')
+            user = User.objects.get(username=username)
             serializer = PasswordUpdateSerializer(
                 instance=user, data=request.data)
 
@@ -165,25 +204,6 @@ class PasswordRecoveryConfirmAPIView(APIView):
 @extend_schema(
     tags=['Auth endpoint']
 )
-class EmailVerifyConfirmAPIView(APIView):
-    def get(self, request, token, *args, **kwargs):
-        token_info = get_token_info_or_return_failure(
-            token, 300, request.resolver_match.view_name.split('-', 1)[1])
-
-        if isinstance(token_info, dict):
-            user_email = token_info.get('email')
-            user = User.objects.get(email=user_email)
-            user.is_email_verified = True
-            user.save()
-
-            return response_cookies({'detail': 'Email verified successfully'}, status=status.HTTP_200_OK)
-
-        return token_info
-
-
-@extend_schema(
-    tags=['Auth endpoint']
-)
 class GetAuthInfoAPIView(APIView):
     permission_classes = []
 
@@ -192,6 +212,12 @@ class GetAuthInfoAPIView(APIView):
         access = request.COOKIES.get('access', None)
 
         if refresh and access:
+            for token in (access, refresh, ):
+                try:
+                    JWTAuthentication().get_validated_token(token)
+                except InvalidToken:
+                    return response_cookies({'detail': False}, status=status.HTTP_401_UNAUTHORIZED)
+
             return response_cookies({'detail': True}, status=status.HTTP_200_OK)
 
         return response_cookies({'detail': False}, status=status.HTTP_401_UNAUTHORIZED)
