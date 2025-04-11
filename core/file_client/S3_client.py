@@ -13,10 +13,10 @@ from django.conf import settings
 
 @dataclass
 class Endpoint:
-    upload = settings.BASE_S3_URL + "upload/"
-    update = settings.BASE_S3_URL + "update/"
-    retrieve = settings.BASE_S3_URL + "retrieve/"
-    remove = settings.BASE_S3_URL + "remove/"
+    upload = settings.STORAGE_URL + "/upload/"
+    update = settings.STORAGE_URL + "/update/"
+    retrieve = settings.STORAGE_URL + "/retrieve/"
+    remove = settings.STORAGE_URL + "/remove/"
 
 
 class S3FileLoader:
@@ -63,7 +63,8 @@ class S3FileLoader:
             directory = ntpath.basename(head)
             with tempfile.TemporaryDirectory() as tmp_directory:
                 base_name = os.path.join(tmp_directory, directory)
-                shutil.make_archive(base_name=base_name, format=self.format, root_dir=self.path)
+                shutil.make_archive(base_name=base_name,
+                                    format=self.format, root_dir=self.path)
                 filepath = base_name + ".%s" % self.format
                 with open(filepath, 'rb') as file:
                     yield file
