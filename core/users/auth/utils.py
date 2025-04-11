@@ -1,5 +1,3 @@
-import importlib
-
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.exceptions import TokenError
@@ -12,8 +10,6 @@ from loguru import logger
 
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from django.urls import reverse
-from django.urls.exceptions import NoReverseMatch
 
 from api.tasks import send_celery_mail
 
@@ -73,13 +69,6 @@ def get_token_info_or_return_failure(raw_token, token_expire_time: int, salt) ->
         return response_cookies({'error': 'Invalid token'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     return decoded_token
-
-
-def send_disposable_mail(topic, message, recipient_list: list) -> Response:
-    send_celery_mail.delay(subject=topic, message=message, from_email=settings.DEFAULT_FROM_EMAIL,
-                           recipient_list=recipient_list, auth_user=settings.EMAIL_HOST_USER, auth_password=settings.EMAIL_HOST_PASSWORD)
-
-    return response_cookies({'detail': f'We sent mail on your email to {topic.lower()}'}, status=status.HTTP_200_OK)
 
 
 def make_disposable_url(base_path: str, token_salt: str, payload: dict):
