@@ -3,8 +3,6 @@ import re
 
 from io import BytesIO
 
-from file_client import download_url
-
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -78,6 +76,7 @@ class ExampleCommandViewSet(ModelViewSet):
 
     @extend_schema(request=ExampleCommandPOSTSerializer)
     def create(self, request, *args, **kwargs):
+        download_url = settings.STORAGE_URL + '/download'
         params = request.data.get('params', {})
         user = request.user
         example = Example.objects.get(
@@ -124,16 +123,6 @@ class ExampleCommandViewSet(ModelViewSet):
 
             return Response({'detail': 'Example already executed, wait for results'}, status=status.HTTP_200_OK)
 
-        # content_disposition = storage_response.headers.get(
-        #     'Content-Disposition')
-        # re_pattern = r'key-s3-TSU_[0-9]{2,3}___.*\.zip_?"?$'
-        # match = re.search(re_pattern, content_disposition)
-
-        # if not match:
-        #     raise ValueError('Error filename')
-
-        # filename = match.group().replace('%', '=')
-        # key_s3 = filename.rstrip('.zip_"')
         ex_command, created = ExampleCommand.objects.get_or_create(
             key_s3=key_s3, example=example)
 

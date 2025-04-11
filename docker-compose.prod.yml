@@ -11,14 +11,6 @@ services:
     env_file:
       - .env
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
-      - SECRET_KEY=${SECRET_KEY}
-      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
-      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - IS_DEBUG=False
     command: >
       sh -c "python manage.py migrate &&
@@ -45,8 +37,6 @@ services:
 
   database:
     image: postgres:14.6-alpine
-    env_file:
-      - .env
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
@@ -83,12 +73,13 @@ services:
       - redis
       - database
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
+      - DB_HOST=${DB_HOST:-database}
+      - DB_NAME=${DB_NAME:-debug_dbname}
+      - DB_USER=${DB_USER:-debug_dbuser}
+      - DB_PASS=${DB_PASS:-debug_dbpassword}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-debug_redis_password}
+      - BACKEND_URL=${BACKEND_URL:-http://92.63.76.157}
       - SECRET_KEY=${SECRET_KEY}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
   flower:
     build:
@@ -97,10 +88,10 @@ services:
     command: -A core.celery_app flower --port=5555
     volumes:
       - ./core:/core
-    env_file:
-      - .env
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-debug_redis_password}
+      - BACKEND_URL=${BACKEND_URL:-http://92.63.76.157}
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       - redis
     ports:
@@ -114,9 +105,9 @@ services:
       - ./filebeat/config.yml:/usr/share/filebeat/filebeat.yml:ro
       - ./core/logs:/logs
     environment:
-      - ELASTICSEARCH_HOST=${ELK_IP}:9200
-      - LOGSTASH_HOST=${ELK_IP}:5044
-      - ELK_IP=${ELK_IP}
+      - ELASTICSEARCH_HOST=${ELK_IP:-127.0.0.1}:9200
+      - LOGSTASH_HOST=${ELK_IP:-127.0.0.1}:5044
+      - ELK_IP=${ELK_IP:-127.0.0.1}
     command: [ "filebeat", "-e", "-strict.perms=false" ]
     restart: always
 

@@ -32,6 +32,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+REGISTRATION_CONFIRM_SALT = os.getenv('REGISTRATION_CONFIRM_SALT')
+PASSWORD_RECOVERY_SALT = os.getenv('PASSWORD_RECOVERY_SALT')
 DEBUG = os.getenv('IS_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = ["localhost", '127.0.0.1', 'web-app', '92.63.76.159']
@@ -247,7 +249,6 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
 }
 
-
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
@@ -255,12 +256,12 @@ INTERNAL_IPS = [
 hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
 INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 
-STORAGE_URL = 'http://92.63.76.158'
-PATH_TO_LOCAL_STORAGE = 'files/'
-WEB_BACKEND_URL = 'https://92.63.76.159:444'
-BACKEND_URL = 'http://92.63.76.157'
+STORAGE_URL = os.getenv('STORAGE_URL')
+PATH_TO_LOCAL_STORAGE = os.getenv('PATH_TO_LOCAL_STORAGE')
+WEB_BACKEND_URL = os.getenv('WEB_BACKEND_URL')
+BACKEND_URL = os.getenv('BACKEND_URL')
 GEANT_BACKEND_RUN_EXAMPLE_URL = BACKEND_URL + '/examples/run/'
-FRONTEND_URL = 'https://92.63.76.159'
+FRONTEND_URL = os.getenv('FRONTEND_URL')
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.ru'

@@ -7,6 +7,7 @@ class JWTAuthenticationByCookie(BaseAuthentication):
 
     def authenticate(self, request):
         access = request.COOKIES.get('access', None)
+
         if not access:
             return None
 

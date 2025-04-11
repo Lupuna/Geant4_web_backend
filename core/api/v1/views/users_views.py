@@ -5,8 +5,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework import status
-from rest_framework.views import APIView
 
 from api.v1.serializers.users_serializers import (
     UserProfileSerializer,
@@ -16,13 +14,11 @@ from api.v1.serializers.users_serializers import (
 from api.v1.serializers.examples_serializers import ExampleForUserSerializer
 
 from users.models import User
-from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist, send_disposable_mail, make_disposable_url
+from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist
 
 from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
 
 from drf_spectacular.utils import extend_schema
-
-from django.conf import settings
 
 
 @extend_schema(
@@ -81,21 +77,6 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
             return response
 
         return response_cookies(serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-    @action(methods=['get', ], detail=False, url_path='email_verify', url_name='email-verify')
-    def email_verify(self, request, *args, **kwargs):
-        user = request.user
-
-        if not user.is_email_verified:
-            dicposable_url = make_disposable_url(
-                settings.FRONTEND_URL + '/auth/email_verify/', 'email-verify', {'email': user.email})
-            message = f'For email verify follow link\n{dicposable_url}'
-            response = send_disposable_mail(
-                'Email verify', message, [user.email])
-
-            return response
-
-        return response_cookies({'error': 'Your email already verified'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(

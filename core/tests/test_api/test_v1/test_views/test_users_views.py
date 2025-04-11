@@ -93,25 +93,6 @@ class UserProfileTestCase(AuthSettingsTest):
         self.assertEqual(response.data, {'non_field_errors': [
                          ErrorDetail(string='Given wrong password', code='invalid')]})
 
-    @patch('api.tasks.send_celery_mail.delay')
-    def test_email_verify(self, mock_mail):
-        self.login_user()
-        self.user.is_email_verified = True
-        self.user.save()
-        url = reverse('user-profile-email-verify')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(
-            response.data, {'error': 'Your email already verified'})
-
-        self.user.is_email_verified = False
-        self.user.save()
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.data, {'detail': 'We sent mail on your email to email verify'})
-        mock_mail.assert_called_once()
-
 
 class UserExampleViewTestCase(AuthSettingsTest):
     def test_get_examples(self):
