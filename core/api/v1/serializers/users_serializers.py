@@ -7,13 +7,25 @@ from users.models import User
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('email', 'username', 'first_name', 'last_name', )
+        fields = ('email', 'username', 'first_name', 'last_name', 'uuid')
+        read_only_fields = ('uuid',)
+
+
+class UserUuidSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('uuid',)
+        read_only_fields = ('uuid',)
+
+
+class UserProfileImageSerializer(serializers.Serializer):
+    image = serializers.ImageField(required=True)
 
 
 class UserProfileCommonUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', )
+        fields = ('first_name', 'last_name',)
         extra_kwargs = {
             'first_name': {'required': False},
             'last_name': {'required': False}

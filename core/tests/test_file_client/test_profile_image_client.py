@@ -1,8 +1,6 @@
 import os
 from unittest import mock
 from unittest.mock import Mock
-
-from PIL import Image
 from django.test import TestCase
 from django.conf import settings
 

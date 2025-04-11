@@ -5,6 +5,7 @@ from file_client.base_file_client import BaseRendererUploader
 
 class ProfileImageRendererClient(BaseRendererUploader):
 
+    @property
     def format(self):
         return 'png'
 

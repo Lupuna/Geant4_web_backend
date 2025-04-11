@@ -1,6 +1,8 @@
 import os
 
 from abc import ABC, abstractmethod
+from functools import wraps
+
 from django.conf import settings
 from loguru import logger
 
@@ -8,6 +10,7 @@ from file_client.S3_client import S3FileLoader
 
 
 def render_then_cleanup(method):
+    @wraps(method)
     def wrapper(self, *args, **kwargs):
         try:
             self.render()
@@ -37,6 +40,7 @@ class BaseRendererUploader(ABC):
 
     @render_then_cleanup
     def update(self):
+        logger.error(self.new_filename)
         return self.loader.update()
 
     def cleanup(self):
