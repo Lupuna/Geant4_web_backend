@@ -74,6 +74,9 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-debug_redis_password}
       - BACKEND_URL=${BACKEND_URL:-http://92.63.76.157}
       - SECRET_KEY=${SECRET_KEY}
+      - STORAGE_URL=${STORAGE_URL:-http://92.63.76.158}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
 
   flower:
     build:
@@ -86,6 +89,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-debug_redis_password}
       - BACKEND_URL=${BACKEND_URL:-http://92.63.76.157}
       - SECRET_KEY=${SECRET_KEY}
+      - STORAGE_URL=${STORAGE_URL:-http://92.63.76.158}
     depends_on:
       - redis
     ports:
