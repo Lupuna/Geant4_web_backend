@@ -17,7 +17,7 @@ from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSer
 from api.v1.serializers.users_serializers import UserEmailSerializer, PasswordUpdateSerializer
 from api.tasks import send_celery_mail
 
-from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies, get_token_info_or_return_failure, make_disposable_url, send_disposable_mail
+from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies, get_token_info_or_return_failure, make_disposable_url
 
 from drf_spectacular.utils import extend_schema
 
@@ -33,7 +33,7 @@ class RegistrationAPIView(APIView):
         if serializer.is_valid():
             username = serializer.validated_data['username']
             user_email = serializer.validated_data['email']
-            disposable_url = make_disposable_url(settings.FRONTEND_URL + '/auth/confirm/',
+            disposable_url = make_disposable_url(settings.FRONTEND_URL + '/auth/registration/confirm/',
                                                  settings.REGISTRATION_CONFIRM_SALT, {'username': username})
             message = f'For confirm registration follow the link\n{disposable_url}'
             try:
@@ -164,7 +164,7 @@ class PasswordRecoveryAPIView(APIView):
 
             if user.is_active:
                 dicposable_url = make_disposable_url(
-                    settings.FRONTEND_URL + '/auth/password_recovery/', settings.PASSWORD_RECOVERY_SALT, {'username': user.username})
+                    settings.FRONTEND_URL + '/auth/password_recovery/confirm/', settings.PASSWORD_RECOVERY_SALT, {'username': user.username})
                 message = f'For password recovery follow link\n{dicposable_url}'
                 send_celery_mail.delay(
                     'Password recovery', message, [user_email])
