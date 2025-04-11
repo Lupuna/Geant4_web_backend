@@ -7,8 +7,8 @@ from users.models import User
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('email', 'username', 'first_name', 'last_name', 'uuid')
-        read_only_fields = ('uuid',)
+        fields = ('email', 'username', 'first_name', 'last_name', 'is_employee')
+        read_only_fields = ('is_employee', )
 
 
 class UserUuidSerializer(serializers.ModelSerializer):

@@ -1,5 +1,12 @@
-from django.urls import reverse
+import io
+from io import BytesIO
 
+from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import reverse
+from rest_framework import status
+
+from file_client.exceptions import FileClientException
 from users.models import User
 
 from unittest.mock import patch
@@ -132,3 +139,85 @@ class UserExampleViewTestCase(AuthSettingsTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.data, [{'title_verbose': ex_data['title_verbose'], 'description': '', 'creation_date': str(us_ex_command.creation_date)[:-6].replace(' ', 'T') + 'Z', 'date_to_update': example.date_to_update, 'status': 0, 'params': {'v': '11'}}])
+
+
+class UserProfileImageViewSetTestCase(AuthSettingsTest):
+
+    def setUp(self):
+        self.url = reverse('user-profile-image')
+
+    def test_not_authenticated(self):
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch('api.v1.views.users_views.render_and_upload_task.delay')
+    @patch('api.v1.views.users_views.handle_file_upload')
+    def test_create_image_ok(self, mock_handle, mock_task):
+        self.login_user()
+        image_file = create_temp_image()
+        mock_handle.return_value = "/fake/path/test.png"
+
+        boundary = 'BoUnDaRyStRiNg123'
+        content_type = f'multipart/form-data; boundary={boundary}'
+        response = self.client.post(self.url, data={'image': image_file}, content_type=content_type)
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        mock_handle.assert_called_once()
+        mock_task.assert_called_once()
+
+    @patch('api.v1.views.users_views.render_and_update_task.delay')
+    @patch('api.v1.views.users_views.handle_file_upload')
+    def test_update_image_ok(self, mock_handle, mock_task):
+        self.login_user()
+        image_file = create_temp_image()
+        mock_handle.return_value = "/fake/path/test.png"
+
+        boundary = 'BoUnDaRyStRiNg123'
+        content_type = f'multipart/form-data; boundary={boundary}'
+        response = self.client.patch(self.url, data={'image': image_file}, content_type=content_type)
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        mock_handle.assert_called_once()
+        mock_task.assert_called_once()
+
+    @patch('file_client.profile_image_client.ProfileImageRendererClient.delete')
+    def test_delete_image_ok(self, mock_delete):
+        self.login_user()
+        response = self.client.delete(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {'detail': 'Image deleted'})
+        mock_delete.assert_called_once()
+
+    @patch('file_client.profile_image_client.ProfileImageRendererClient.download')
+    def test_download_image_ok(self, mock_download):
+        self.login_user()
+        mock_download.return_value = BytesIO(b"image data")
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.getvalue(), b"image data")
+
+    @patch('file_client.profile_image_client.ProfileImageRendererClient.download')
+    def test_download_image_not_found(self, mock_download):
+        self.login_user()
+        mock_download.side_effect = FileClientException(404, {"detail": "Downloaded file not found on disk."})
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data, {"detail": "Downloaded file not found on disk."})
+
+
+def create_temp_image() -> SimpleUploadedFile:
+    image = Image.new('RGB', (100, 100), color='red')
+
+    image_file = io.BytesIO()
+    image.save(image_file, format='PNG')
+    image_file.seek(0)
+    uploaded_image = SimpleUploadedFile("test_image.png", image_file.read(), content_type="image/png")
+    uploaded_image.seek(0)
+
+    return uploaded_image

@@ -4,6 +4,7 @@ import shutil
 import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass
+from io import BytesIO
 
 import requests
 
@@ -19,7 +20,7 @@ class Endpoint:
 
 
 class S3FileLoader:
-    def __init__(self, path: str):
+    def __init__(self, path: str | None):
         self.path = path
         self.format = "zip"
         self.filename = self.extract_name()
@@ -30,13 +31,19 @@ class S3FileLoader:
             return tail
         return ntpath.basename(head) + ".%s" % self.format
 
-    def sender(self, url, stream=False, data=None, json=None, file=False):
+    def sender(self, url, stream=False, temporary=False, data=None, json=None, file=False):
         if stream:
             response = requests.post(url=url, data=data, json=json)
             path = os.path.join(settings.PATH_TO_LOCAL_STORAGE, self.filename)
             if response.ok:
                 with open(path, "wb") as file:
                     file.write(response.content)
+            else:
+                return response.json()
+        elif temporary:
+            response = requests.post(url=url, data=data, json=json)
+            if response.ok:
+                return BytesIO(response.content)
             else:
                 return response.json()
         elif file:
@@ -69,3 +76,12 @@ class S3FileLoader:
 
     def update(self):
         return self.sender(url=Endpoint.update, file=True)
+
+    def download_stream(self, filename):
+        return self.sender(url=Endpoint.retrieve, stream=True, json={'filename': filename})
+
+    def download_temporary(self, filename):
+        return self.sender(url=Endpoint.retrieve, temporary=True, json={'filename': filename})
+
+    def delete(self, filename):
+        return self.sender(url=Endpoint.remove, json={'filename': filename})

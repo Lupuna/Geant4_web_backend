@@ -1,4 +1,7 @@
+import os
+
 import loguru
+from django.http import FileResponse
 from rest_framework.parsers import MultiPartParser
 from rest_framework.viewsets import GenericViewSet, ViewSet
 from rest_framework.generics import GenericAPIView
@@ -14,6 +17,8 @@ from api.v1.serializers.users_serializers import (
     UserProfileCommonUpdateSerializer, UserProfileImageSerializer,
 )
 from api.v1.serializers.examples_serializers import ExampleForUserSerializer
+from file_client.exceptions import FileClientException
+from file_client.profile_image_client import ProfileImageRendererClient
 from file_client.schema import image_schema
 from file_client.tasks import render_and_upload_task, render_and_update_task
 from file_client.utils import handle_file_upload
@@ -78,6 +83,8 @@ class UserProfileImageViewSet(ViewSet):
         return {
             'post': 'create',
             'patch': 'update',
+            'get': 'download',
+            'delete': 'destroy'
         }
 
     @extend_schema(
@@ -86,12 +93,11 @@ class UserProfileImageViewSet(ViewSet):
     def create(self, request):
         user = self.get_user()
         serializer = UserProfileImageSerializer(data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
+        if serializer.is_valid(raise_exception=True):
+            old_path = handle_file_upload(serializer.validated_data.get('image'))
+            render_and_upload_task.delay(old_path, str(user.uuid))
 
-        old_path = handle_file_upload(serializer.validated_data['image'])
-        render_and_upload_task.delay(old_path, str(user.uuid))
-
-        return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
+            return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
 
     @extend_schema(
         request=image_schema
@@ -99,13 +105,25 @@ class UserProfileImageViewSet(ViewSet):
     def update(self, request):
         user = self.get_user()
         serializer = UserProfileImageSerializer(data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
+        if serializer.is_valid(raise_exception=True):
+            old_path = handle_file_upload(serializer.validated_data.get('image'))
+            render_and_update_task.delay(old_path, str(user.uuid))
 
-        old_path = handle_file_upload(serializer.validated_data['image'])
-        loguru.logger.error(str(user.uuid))
-        render_and_update_task.delay(old_path, str(user.uuid))
+            return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
 
-        return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
+    def destroy(self, request):
+        user = self.get_user()
+        ProfileImageRendererClient(name=str(user.uuid)).delete()
+        return Response({"detail": "Image deleted"}, status=status.HTTP_200_OK)
+
+    def download(self, request):
+        user = self.get_user()
+        client = ProfileImageRendererClient(name=str(user.uuid))
+        try:
+            response = FileResponse(client.download(), as_attachment=True, filename=str(user.uuid)+f'.{client.format}')
+        except FileClientException as e:
+            return Response(e.error, status=status.HTTP_404_NOT_FOUND)
+        return response
 
 
 @extend_schema(
