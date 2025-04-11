@@ -93,18 +93,22 @@ class ExampleCommandViewSet(ModelViewSet):
 
     @extend_schema(request=ExampleCommandPOSTSerializer)
     def create(self, request, *args, **kwargs):
+        download_url = settings.STORAGE_URL + '/download'
         params = request.data.get('params', {})
         user = request.user
         example = Example.objects.get(id=self.kwargs.get('example_pk'))
         key_s3 = self._generate_key_s3(example.title_not_verbose, params)
         request.data['params'] = key_s3
         filename = key_s3 + '.zip'
+        file_data = {'filename': filename}
+        download_from_storage = download_url
+        storage_response = requests.post(
+            url=download_from_storage, json=file_data)
 
-        client = ExampleRendererClient(filename)
-        try:
-            response = client.download()
-        except FileClientException as e:
-            ex_commands = self.get_queryset().prefetch_related('example', 'users').filter(key_s3=key_s3)
+        if storage_response.status_code != 200:
+            ex_commands = self.get_queryset().prefetch_related(
+                'example', 'users').filter(key_s3=key_s3)
+
             if not ex_commands.exists():
                 response = self._run_example(request, example, params)
             else:
@@ -128,7 +132,8 @@ class ExampleCommandViewSet(ModelViewSet):
             'title': example.title_not_verbose,
             'commands': [{k: str(v)} for k, v in params.items()]
         }
-        response = requests.post(settings.GEANT_BACKEND_RUN_EXAMPLE_URL, json=data)
+        response = requests.post(
+            settings.GEANT_BACKEND_RUN_EXAMPLE_URL, json=data)
         if response.status_code == 200:
             return super().create(request)
 
@@ -149,7 +154,8 @@ class ExampleCommandViewSet(ModelViewSet):
 
     @staticmethod
     def _add_user_in_example_command(example, key_s3, user):
-        ex_command, created = ExampleCommand.objects.get_or_create(key_s3=key_s3, example=example)
+        ex_command, created = ExampleCommand.objects.get_or_create(
+            key_s3=key_s3, example=example)
         if user not in ex_command.users.all():
             ex_command.users.add(user)
 

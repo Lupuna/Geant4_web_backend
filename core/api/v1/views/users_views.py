@@ -24,14 +24,11 @@ from file_client.tasks import render_and_upload_task, render_and_update_task
 from file_client.utils import handle_file_upload
 
 from users.models import User
-from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist, send_disposable_mail, \
-    make_disposable_url
+from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist
 
 from geant_examples.models import UserExampleCommand
 
 from drf_spectacular.utils import extend_schema
-
-from django.conf import settings
 
 
 @extend_schema(
@@ -92,9 +89,11 @@ class UserProfileImageViewSet(ViewSet):
     )
     def create(self, request):
         user = self.get_user()
-        serializer = UserProfileImageSerializer(data=request.data, partial=True)
+        serializer = UserProfileImageSerializer(
+            data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
-            old_path = handle_file_upload(serializer.validated_data.get('image'))
+            old_path = handle_file_upload(
+                serializer.validated_data.get('image'))
             render_and_upload_task.delay(old_path, str(user.uuid))
 
             return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
@@ -104,9 +103,11 @@ class UserProfileImageViewSet(ViewSet):
     )
     def update(self, request):
         user = self.get_user()
-        serializer = UserProfileImageSerializer(data=request.data, partial=True)
+        serializer = UserProfileImageSerializer(
+            data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
-            old_path = handle_file_upload(serializer.validated_data.get('image'))
+            old_path = handle_file_upload(
+                serializer.validated_data.get('image'))
             render_and_update_task.delay(old_path, str(user.uuid))
 
             return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
@@ -120,7 +121,8 @@ class UserProfileImageViewSet(ViewSet):
         user = self.get_user()
         client = ProfileImageRendererClient(name=str(user.uuid))
         try:
-            response = FileResponse(client.download(), as_attachment=True, filename=str(user.uuid)+f'.{client.format}')
+            response = FileResponse(client.download(), as_attachment=True, filename=str(
+                user.uuid)+f'.{client.format}')
         except FileClientException as e:
             return Response(e.error, status=status.HTTP_404_NOT_FOUND)
         return response
@@ -149,21 +151,6 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
             return response
 
         return response_cookies(serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-    @action(methods=['get', ], detail=False, url_path='email_verify', url_name='email-verify')
-    def email_verify(self, request, *args, **kwargs):
-        user = request.user
-
-        if not user.is_email_verified:
-            dicposable_url = make_disposable_url(
-                settings.FRONTEND_URL + '/auth/email_verify/', 'email-verify', {'email': user.email})
-            message = f'For email verify follow link\n{dicposable_url}'
-            response = send_disposable_mail(
-                'Email verify', message, [user.email])
-
-            return response
-
-        return response_cookies({'error': 'Your email already verified'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(

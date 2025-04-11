@@ -12,7 +12,7 @@ from api.v1.views.auth_views import (
     LogoutAPIView,
     PasswordRecoveryAPIView,
     PasswordRecoveryConfirmAPIView,
-    EmailVerifyConfirmAPIView,
+    RegistrationConfirmAPIView,
     GetAuthInfoAPIView
 )
 from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView
@@ -41,16 +41,17 @@ urlpatterns = [
     path('', include(example_command_router.urls)),
     path('', include(group_router.urls)),
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
+    path('registration/confirm/<str:token>', RegistrationConfirmAPIView.as_view(),
+         name='confirm-registration'),
     path('login/', LoginAPIView.as_view(), name='login'),
     path('token/refresh/', GetAccessTokenView.as_view(), name='refresh'),
     path('logout/', LogoutAPIView.as_view(), name='logout'),
     path('password_recovery/', PasswordRecoveryAPIView.as_view(),
          name='password-recovery'),
-    path('password_recovery_confirm/<str:token>',
+    path('password_recovery/confirm/<str:token>',
          PasswordRecoveryConfirmAPIView.as_view(), name='confirm-password-recovery'),
-    path('email_verify_confirm/<str:token>', EmailVerifyConfirmAPIView.as_view(),
-         name='confirm-email-verify'),
-    path('profile/image/', UserProfileImageViewSet.as_view(actions=UserProfileImageViewSet.get_action_map()), name='user-profile-image'),
+    path('profile/image/', UserProfileImageViewSet.as_view(
+        actions=UserProfileImageViewSet.get_action_map()), name='user-profile-image'),
     path('profile/', UserProfileViewSet.as_view(
         actions=UserProfileViewSet.get_actions()), name='user-profile'),
     path('update_example_status/', ExampleCommandUpdateStatusAPIView.as_view(),

@@ -9,15 +9,21 @@ services:
     volumes:
       - ./core:/core
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
+      - DB_HOST=${DB_HOST:-database}
+      - DB_NAME=${DB_NAME:-debug_dbname}
+      - DB_USER=${DB_USER:-debug_dbuser}
+      - DB_PASS=${DB_PASS:-debug_dbpassword}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-debug_redis_password}
+      - PATH_TO_LOCAL_STORAGE=${PATH_TO_LOCAL_STORAGE:-files/}
+      - STORAGE_URL=${STORAGE_URL:-http://92.63.76.158}
+      - WEB_BACKEND_URL=${WEB_BACKEND_URL:-http://92.63.76.159:444}
+      - BACKEND_URL=${BACKEND_URL:-http://92.63.76.157}
+      - FRONTEND_URL=${FRONTEND_URL:-http://92.63.76.159}
+      - REGISTRATION_CONFIRM_SALT=${REGISTRATION_CONFIRM_SALT:-test_rc_salt}
+      - PASSWORD_RECOVERY_SALT=${PASSWORD_RECOVERY_SALT:-test_pr_salt}
       - SECRET_KEY=${SECRET_KEY}
       - EMAIL_HOST_USER=${EMAIL_HOST_USER}
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - BASE_S3_URL=${BASE_S3_URL}
       - IS_DEBUG=True
     command: >
       sh -c "python manage.py runserver 0.0.0.0:8000 && python manage.py search_index --rebuild -f"
@@ -29,18 +35,18 @@ services:
   database:
     image: postgres:14.6-alpine
     environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${POSTGRES_DB:-debug_dbname}
+      - POSTGRES_USER=${POSTGRES_USER:-debug_dbuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-debug_dbpassword}
     volumes:
       - db_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7.0.5-alpine
     hostname: redis
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-debug_redis_password}
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-debug_redis_password}
 
   elasticsearch:
     image: elasticsearch:8.16.2
@@ -60,15 +66,14 @@ services:
     command: -A celery_app.app worker --loglevel=info
     volumes:
       - ./core:/core
-    env_file:
-      - .env
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - BASE_S3_URL=${BASE_S3_URL}
+      - DB_HOST=${DB_HOST:-database}
+      - DB_NAME=${DB_NAME:-debug_dbname}
+      - DB_USER=${DB_USER:-debug_dbuser}
+      - DB_PASS=${DB_PASS:-debug_dbpassword}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-debug_redis_password}
+      - BACKEND_URL=${BACKEND_URL:-http://92.63.76.157}
+      - SECRET_KEY=${SECRET_KEY}
 
   flower:
     build:
@@ -77,10 +82,10 @@ services:
     command: -A core.celery_app flower
     volumes:
       - ./core:/core
-    env_file:
-      - .env
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-debug_redis_password}
+      - BACKEND_URL=${BACKEND_URL:-http://92.63.76.157}
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       - redis
     ports:
@@ -94,9 +99,9 @@ services:
       - ./filebeat/config.yml:/usr/share/filebeat/filebeat.yml:ro
       - ./core/logs:/logs
     environment:
-      - ELASTICSEARCH_HOST=${ELK_IP}:9200
-      - LOGSTASH_HOST=${ELK_IP}:5044
-      - ELK_IP=${ELK_IP}
+      - ELASTICSEARCH_HOST=${ELK_IP:-127.0.0.1}:9200
+      - LOGSTASH_HOST=${ELK_IP:-127.0.0.1}:5044
+      - ELK_IP=${ELK_IP:-127.0.0.1}
     command: [ "filebeat", "-e", "-strict.perms=false" ]
     restart: always
 
