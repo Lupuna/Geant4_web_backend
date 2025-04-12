@@ -1,7 +1,4 @@
 import requests
-import re
-
-from io import BytesIO
 
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
