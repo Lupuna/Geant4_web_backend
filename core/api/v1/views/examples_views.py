@@ -93,22 +93,19 @@ class ExampleCommandViewSet(ModelViewSet):
 
     @extend_schema(request=ExampleCommandPOSTSerializer)
     def create(self, request, *args, **kwargs):
-        download_url = settings.STORAGE_URL + '/download'
         params = request.data.get('params', {})
         user = request.user
         example = Example.objects.get(id=self.kwargs.get('example_pk'))
         key_s3 = self._generate_key_s3(example.title_not_verbose, params)
         request.data['params'] = key_s3
         filename = key_s3 + '.zip'
-        file_data = {'filename': filename}
-        download_from_storage = download_url
-        storage_response = requests.post(
-            url=download_from_storage, json=file_data)
 
-        if storage_response.status_code != 200:
+        client = ExampleRendererClient(filename)
+        try:
+            response = client.download()
+        except FileClientException as e:
             ex_commands = self.get_queryset().prefetch_related(
                 'example', 'users').filter(key_s3=key_s3)
-
             if not ex_commands.exists():
                 response = self._run_example(request, example, params)
             else:
