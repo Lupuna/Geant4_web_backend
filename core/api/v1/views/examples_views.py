@@ -18,7 +18,8 @@ from api.v1.serializers.examples_serializers import (
     ExamplePATCHSerializer,
     ExampleCommandGETSerializer,
     ExampleCommandPOSTSerializer,
-    ExampleCommandUpdateStatusSerializer
+    ExampleCommandUpdateStatusSerializer,
+    DetailExampleSerializer
 )
 
 from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
@@ -43,6 +44,8 @@ class ExampleViewSet(ModelViewSet):
     def get_serializer(self, *args, **kwargs):
         match self.request.method:
             case 'GET':
+                if self.detail:
+                    return DetailExampleSerializer(*args, **kwargs)
                 return ExampleGETSerializer(*args, **kwargs)
             case 'POST':
                 return ExamplePOSTSerializer(*args, **kwargs)

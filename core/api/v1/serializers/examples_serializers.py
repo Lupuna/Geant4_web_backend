@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
+from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand, Command, CommandValue
 from geant_examples.validators import title_not_verbose_view
 
 from users.models import User
@@ -9,16 +9,52 @@ from users.models import User
 from api.v1.serializers.users_serializers import UserQuickInfoSerializer
 from api.v1.serializers.validators import m2m_validator
 
-
 class TagSerializer(serializers.Serializer):
     title = serializers.CharField()
-
 
 class ExampleCommandGETSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     users = UserQuickInfoSerializer(many=True)
     key_s3 = serializers.CharField()
 
+class CommandValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommandValue
+        fields = (
+            "value",
+        )
+
+class CommandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Command
+        fields = (
+            "title",
+            "default",
+            "order_index",
+        )
+
+class DetailCommandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Command
+        fields = (
+            "title",
+            "default",
+            "order_index",
+            "min",
+            "max",
+            "values",
+        )
+
+class DetailExampleSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title_verbose = serializers.CharField()
+    title_not_verbose = serializers.CharField()
+    description = serializers.CharField()
+    date_to_update = serializers.DateField()
+    tags = TagSerializer(many=True)
+    category = serializers.CharField()
+    example_commands = ExampleCommandGETSerializer(many=True)
+    commands = DetailCommandSerializer(many=True)
 
 class ExampleCommandPOSTSerializer(serializers.ModelSerializer):
     params = serializers.CharField(source='key_s3')
@@ -53,7 +89,6 @@ class ExampleCommandPOSTSerializer(serializers.ModelSerializer):
 
         return ex_command
 
-
 class ExampleGETSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title_verbose = serializers.CharField()
@@ -63,7 +98,6 @@ class ExampleGETSerializer(serializers.Serializer):
     tags = TagSerializer(many=True)
     category = serializers.CharField()
     example_commands = ExampleCommandGETSerializer(many=True)
-
 
 class ExamplePOSTSerializer(serializers.ModelSerializer):
     title_verbose = serializers.CharField(required=True)
@@ -95,7 +129,6 @@ class ExamplePOSTSerializer(serializers.ModelSerializer):
 
         return example
 
-
 class ExamplePATCHSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
 
@@ -125,7 +158,6 @@ class ExamplePATCHSerializer(serializers.ModelSerializer):
             return m2m_validator(value, Tag, 'title')
 
         return value
-
 
 class ExampleForUserSerializer(serializers.Serializer):
     title_verbose = serializers.SerializerMethodField(
@@ -157,7 +189,6 @@ class ExampleForUserSerializer(serializers.Serializer):
         aliases, values = raw_params[::2], raw_params[1::2]
 
         return dict(zip(aliases, values))
-
 
 class ExampleCommandUpdateStatusSerializer(serializers.Serializer):
     key_s3 = serializers.CharField()

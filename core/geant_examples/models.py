@@ -3,8 +3,7 @@ from django.utils.translation import gettext_lazy as _
 
 from users.models import User
 
-from geant_examples.validators import title_not_verbose_view
-
+from geant_examples.validators import title_not_verbose_view, validate_index_order
 
 class Example(models.Model):
     class CategoryChoices(models.TextChoices):
@@ -32,6 +31,49 @@ class Example(models.Model):
 
     def __str__(self):
         return self.title_not_verbose
+
+class Command(models.Model):
+    title = models.CharField(max_length=255)
+    default = models.CharField(max_length=255)
+    order_index = models.IntegerField(validators=[validate_index_order])
+    example = models.ForeignKey(
+        Example,
+        on_delete=models.CASCADE,
+        related_name='commands'
+    )
+    min = models.IntegerField(null=True, blank=True)
+    max = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("Command")
+        verbose_name_plural = _("Commands")
+        ordering = (
+            "order_index",
+        )
+        constraints = [
+            models.UniqueConstraint(
+                fields=["example", "order_index"],
+                name="unique_constraint_index"
+            )
+        ]
+
+    def __str__(self):
+        return self.title
+
+class CommandValue(models.Model):
+    command = models.ForeignKey(
+        Command,
+        on_delete=models.CASCADE,
+        related_name="values"
+    )
+    value = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name = _("Value for command")
+        verbose_name_plural = _("Values for command")
+
+    def __str__(self):
+        return f"{self.value} for {self.command.title} command"
 
 
 class ExampleCommand(models.Model):
