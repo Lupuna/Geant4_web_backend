@@ -1,15 +1,12 @@
 import requests
 
-from io import BytesIO
-
-from file_client import download_url
-
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework import status
-from elasticsearch_dsl import Q
+
+from .mixins import ElasticMixin
 
 from api.v1.serializers.examples_serializers import (
     ExamplePOSTSerializer,
@@ -21,6 +18,10 @@ from api.v1.serializers.examples_serializers import (
     ExampleCommandUpdateStatusSerializer,
     DetailExampleSerializer
 )
+from api.tasks import send_celery_mail
+
+from file_client.example_csv_client import ExampleRendererClient
+from file_client.exceptions import FileClientException
 
 from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
 from geant_examples.documents import ExampleDocument
@@ -36,10 +37,10 @@ from cacheops import invalidate_model
 @extend_schema(
     tags=['Example ViewSet']
 )
-class ExampleViewSet(ModelViewSet):
-    permission_classes = (IsAuthenticated, )
-    queryset = Example.objects.all()
+class ExampleViewSet(ModelViewSet, ElasticMixin):
+    permission_classes = (IsAuthenticated,)
     http_method_names = ['get', 'post', 'patch', 'delete']
+    elastic_document = ExampleDocument
 
     def get_serializer(self, *args, **kwargs):
         match self.request.method:
@@ -52,25 +53,19 @@ class ExampleViewSet(ModelViewSet):
             case 'PATCH':
                 return ExamplePATCHSerializer(*args, **kwargs)
 
-    def list(self, request):
-        params = request.query_params
-        if params:
-            query = params.get("query", "")
-            q = Q(
-                "multi_match", query=query, fields=settings.ELASTICSEARCH_ANALYZER_FIELDS,
-                fuzziness="auto"
-            )
-            result = ExampleDocument.search().query(q).to_queryset()
-            return Response(ExampleGETSerializer(result, many=True).data)
-        else:
-            return super().list(request)
+    def get_queryset(self):
+        search = self.elastic_document.search()
+        after_search = self.elastic_search(self.request, search)
+        after_filter = self.elastic_filter(self.request, after_search)
+
+        return after_filter.to_queryset()
 
 
 @extend_schema(
     tags=['ExampleCommand endpoint']
 )
 class ExampleCommandViewSet(ModelViewSet):
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
     http_method_names = ['get', 'post', 'delete', ]
 
     def get_serializer(self, *args, **kwargs):
@@ -97,65 +92,66 @@ class ExampleCommandViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         params = request.data.get('params', {})
         user = request.user
+        example = Example.objects.get(id=self.kwargs.get('example_pk'))
+        key_s3 = self._generate_key_s3(example.title_not_verbose, params)
+        request.data['params'] = key_s3
+        filename = key_s3 + '.zip'
 
-        if params:
-            example = Example.objects.get(
-                id=self.kwargs.get('example_pk'))
-            title_not_verbose = example.title_not_verbose
-            str_params_vals = {str(key).replace(' ', '---'): str(val).replace(' ', '---')
-                               for key, val in params.items()}
-            key_s3 = f'key-s3-{example.title_not_verbose}___' + '___'.join('='.join(key_val)
-                                                                           for key_val in str_params_vals.items())
-            request.data['params'] = key_s3
+        client = ExampleRendererClient(filename)
+        try:
+            response = client.download()
+        except FileClientException as e:
+            ex_commands = self.get_queryset().prefetch_related(
+                'example', 'users').filter(key_s3=key_s3)
+            if not ex_commands.exists():
+                response = self._run_example(request, example, params)
+            else:
+                response = self._example_executed(ex_commands, user)
 
-            file_data = {'filename': key_s3 + '.zip'}
-            download_from_storage = download_url
-            storage_response = requests.post(
-                url=download_from_storage, json=file_data)
+            return response
 
-            if storage_response.status_code != 200:
-                ex_commands = self.get_queryset().prefetch_related(
-                    'example', 'users').filter(key_s3=key_s3)
+        self._add_user_in_example_command(example, key_s3, user)
+        return FileResponse(response, as_attachment=True, filename=filename)
 
-                if not ex_commands.exists():
-                    data = {
-                        'title': title_not_verbose,
-                        'commands': [
-                            {param: str(val)} for param, val in params.items()
-                        ]
-                    }
-                    url = settings.GEANT_BACKEND_RUN_EXAMPLE_URL
-                    geant_response = requests.post(
-                        url=url, json=data)
+    @staticmethod
+    def _generate_key_s3(title, params):
+        str_params = {
+            str(k).replace(' ', '---'): str(v).replace(' ', '---')
+            for k, v in params.items()
+        }
+        return f'key-s3-{title}___' + '___'.join(f'{k}={v}' for k, v in str_params.items())
 
-                    if geant_response.status_code == 200:
-                        response = super().create(request, *args, **kwargs)
+    def _run_example(self, request, example, params):
+        data = {
+            'title': example.title_not_verbose,
+            'commands': [{k: str(v)} for k, v in params.items()]
+        }
+        response = requests.post(
+            settings.GEANT_BACKEND_RUN_EXAMPLE_URL, json=data)
+        if response.status_code == 200:
+            return super().create(request)
 
-                        return response
+        return Response(
+            data=response.json(),
+            status=response.status_code,
+            headers=response.headers
+        )
 
-                    return Response(data=geant_response.json(), status=geant_response.status_code, headers=geant_response.headers)
+    def _example_executed(self, ex_commands, user):
+        ex_command = ex_commands.first()
+        if user not in ex_command.users.all():
+            ex_command.users.add(user)
+        return Response(
+            {'detail': 'Example already executed, wait for results'},
+            status=status.HTTP_200_OK
+        )
 
-                ex_command = ex_commands.first()
-
-                if not (user in ex_command.users.all()):
-                    ex_command.users.add(user)
-
-                return Response({'detail': 'Example already executed, wait for results'}, status=status.HTTP_200_OK)
-
-            content_disposition = storage_response.headers.get(
-                'Content-Disposition')
-            filename = content_disposition.split(
-                'filename=')[-1].strip('"')
-            key_s3 = filename.split('.')[0]
-            ex_command, created = ExampleCommand.objects.get_or_create(
-                key_s3=key_s3, example=example)
-
-            if not (user in ex_command.users.all()):
-                ex_command.users.add(user)
-
-            return FileResponse(BytesIO(storage_response.content), as_attachment=True, filename=filename)
-
-        return Response({'error': 'You cannot start executing example without define parameters'}, status=status.HTTP_400_BAD_REQUEST)
+    @staticmethod
+    def _add_user_in_example_command(example, key_s3, user):
+        ex_command, created = ExampleCommand.objects.get_or_create(
+            key_s3=key_s3, example=example)
+        if user not in ex_command.users.all():
+            ex_command.users.add(user)
 
 
 @extend_schema(
@@ -175,9 +171,20 @@ class ExampleCommandUpdateStatusAPIView(APIView):
                 new_status = UserExampleCommand.StatusChoice.executed
 
             users_example_commands = UserExampleCommand.objects.filter(
-                example_command__key_s3=key_s3)
+                example_command__key_s3=key_s3).prefetch_related('user', 'example_command')
+            ex_command = users_example_commands.first().example_command
+            user_emails = ex_command.users.values_list('email', flat=True)
+            old_status = users_example_commands.first().get_status_display()
+            title_verbose = users_example_commands.first().example_command.example.title_verbose
             users_example_commands.update(status=new_status)
             invalidate_model(UserExampleCommand)
+            message = f'The simulation of the example "{title_verbose}" with the key {key_s3} changed the status from "{old_status}" to "{new_status.label}"'
+            topic = 'Simulation status'
+            send_celery_mail.delay(
+                topic,
+                message,
+                list(user_emails)
+            )
 
             return Response(status=status.HTTP_204_NO_CONTENT)
 

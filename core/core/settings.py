@@ -32,6 +32,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+REGISTRATION_CONFIRM_SALT = os.getenv('REGISTRATION_CONFIRM_SALT')
+PASSWORD_RECOVERY_SALT = os.getenv('PASSWORD_RECOVERY_SALT')
+EMAIL_UPDATE_SALT = os.getenv('EMAIL_UPDATE_SALT')
 DEBUG = os.getenv('IS_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = ["localhost", '127.0.0.1', 'web-app', '92.63.76.159']
@@ -52,14 +55,13 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'debug_toolbar',
     'drf_spectacular',
+    'django_celery_beat',
     'django_elasticsearch_dsl',
 
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
-    'geant_tests_storage.apps.GeantTestsStorageConfig',
     'geant_examples.apps.GeantExamplesConfig',
     'cacheops',
-    'utils'
 ]
 
 MIDDLEWARE = [
@@ -248,8 +250,6 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
 }
 
-
-
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
@@ -257,11 +257,12 @@ INTERNAL_IPS = [
 hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
 INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 
-STORAGE_URL = 'http://92.63.76.158'
-PATH_TO_LOCAL_STORAGE = 'files/'
-
-WEB_BACKEND_URL = 'https://92.63.76.159:444'
-GEANT_BACKEND_RUN_EXAMPLE_URL = 'http://92.63.76.157/examples/run'
+STORAGE_URL = os.getenv('STORAGE_URL')
+PATH_TO_LOCAL_STORAGE = os.getenv('PATH_TO_LOCAL_STORAGE')
+WEB_BACKEND_URL = os.getenv('WEB_BACKEND_URL')
+BACKEND_URL = os.getenv('BACKEND_URL')
+GEANT_BACKEND_RUN_EXAMPLE_URL = BACKEND_URL + '/examples/run/'
+FRONTEND_URL = os.getenv('FRONTEND_URL')
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.ru'
@@ -271,36 +272,6 @@ EMAIL_USE_TLS = False
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-MAIL_TASK_PATH = 'api.tasks.send_celery_mail'
-
-BACKEND_URL = os.getenv("BACKEND_URL")
-BACKEND_DEFAULT_COMMANDS = [
-      {
-        "title": "physlist",
-        "order_index": 1,
-        "default": "FTFP_BERT"
-      },
-      {
-        "title": "target element",
-        "order_index": 2,
-        "default": "H"
-      },
-      {
-        "title": "number of bins",
-        "order_index": 3,
-        "default": "70"
-      },
-      {
-        "title": "min energy in MeV",
-        "order_index": 4,
-        "default": "0.1"
-      },
-      {
-        "title": "max energy in MeV",
-        "order_index": 5,
-        "default": "10000"
-      }
-    ]
 
 if DEBUG:
     ELASTICSEARCH_DSL_AUTOSYNC = False
@@ -317,7 +288,7 @@ ELASTICSEARCH_ANALYZER_SETTINGS = {
         },
         "edge_ngram_filter": {
             "type": "edge_ngram",
-            "min_gram": 2,
+            "min_gram": 4,
             "max_gram": 10
         }
     },
@@ -361,3 +332,16 @@ ELASTICSEARCH_DSL = {
     },
 }
 
+ELASTIC_PARAMS_CONF = {
+    'documents': {
+        'ExampleDocument': {
+            'params': {
+                'filter': [
+                    'tags',
+                    'category',
+                ],
+                'search': 'query'
+            },
+        }
+    }
+}

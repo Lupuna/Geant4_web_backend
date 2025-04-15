@@ -1,35 +1,48 @@
-from rest_framework.viewsets import GenericViewSet
+from django.http import FileResponse
+from django.conf import settings
+from django.db.utils import IntegrityError
+
+from rest_framework.parsers import MultiPartParser
+from rest_framework.viewsets import GenericViewSet, ViewSet
+from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework import status
-from rest_framework.views import APIView
+
+from .mixins import ElasticMixin
 
 from api.v1.serializers.users_serializers import (
     UserProfileSerializer,
     LoginUpdateSerializer,
     UserProfileCommonUpdateSerializer,
+    UserProfileImageSerializer,
+    PasswordProfileUpdateSerializer
 )
 from api.v1.serializers.examples_serializers import ExampleForUserSerializer
 
-from users.models import User
-from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist, send_disposable_mail
+from file_client.exceptions import FileClientException
+from file_client.profile_image_client import ProfileImageRendererClient
+from file_client.schema import image_schema
+from file_client.tasks import render_and_upload_task, render_and_update_task
+from file_client.utils import handle_file_upload
 
-from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
+from users.models import User
+from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist, get_token_info_or_return_failure
+
+from geant_examples.models import UserExampleCommand
+from geant_examples.documents import ExampleDocument
 
 from drf_spectacular.utils import extend_schema
-
-from django.conf import settings
 
 
 @extend_schema(
     tags=['UserProfile']
 )
 class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
     queryset = User.objects.all()
 
     def get_serializer(self, *args, **kwargs):
@@ -53,7 +66,8 @@ class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
         super().destroy(request, *args, **kwargs)
         cookies_to_delete = ('access', 'refresh')
         response = response_cookies(
-            {'detail': 'Profile was deleted successfully'}, status.HTTP_200_OK, cookies_data=cookies_to_delete, delete=True)
+            {'detail': 'Profile was deleted successfully'}, status.HTTP_200_OK, cookies_data=cookies_to_delete,
+            delete=True)
 
         return response
 
@@ -61,8 +75,92 @@ class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 @extend_schema(
     tags=['UserProfile']
 )
-class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
+class ConfirmEmailUpdateAPIView(APIView):
     permission_classes = (IsAuthenticated, )
+
+    def get(self, request, token, *args, **kwargs):
+        token_info = get_token_info_or_return_failure(
+            token, 60 * 60, settings.EMAIL_UPDATE_SALT)
+        new_email = token_info.get('new_email')
+        user = request.user
+        user.email = new_email
+
+        try:
+            user.save()
+        except IntegrityError:
+            return response_cookies({'error': 'This email already in use'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return response_cookies({'detail': 'Email updated successfully'}, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=['UserProfile']
+)
+class UserProfileImageViewSet(ViewSet):
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (MultiPartParser,)
+
+    def get_user(self):
+        return self.request.user
+
+    @classmethod
+    def get_action_map(cls):
+        return {
+            'post': 'create',
+            'patch': 'update',
+            'get': 'download',
+            'delete': 'destroy'
+        }
+
+    @extend_schema(
+        request=image_schema
+    )
+    def create(self, request):
+        user = self.get_user()
+        serializer = UserProfileImageSerializer(
+            data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            old_path = handle_file_upload(
+                serializer.validated_data.get('image'))
+            render_and_upload_task.delay(old_path, str(user.uuid))
+
+            return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
+
+    @extend_schema(
+        request=image_schema
+    )
+    def update(self, request):
+        user = self.get_user()
+        serializer = UserProfileImageSerializer(
+            data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            old_path = handle_file_upload(
+                serializer.validated_data.get('image'))
+            render_and_update_task.delay(old_path, str(user.uuid))
+
+            return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
+
+    def destroy(self, request):
+        user = self.get_user()
+        ProfileImageRendererClient(name=str(user.uuid)).delete()
+        return Response({"detail": "Image deleted"}, status=status.HTTP_200_OK)
+
+    def download(self, request):
+        user = self.get_user()
+        client = ProfileImageRendererClient(name=str(user.uuid))
+        try:
+            response = FileResponse(client.download(), as_attachment=True, filename=str(
+                user.uuid)+f'.{client.format}')
+        except FileClientException as e:
+            return Response(e.error, status=status.HTTP_404_NOT_FOUND)
+        return response
+
+
+@extend_schema(
+    tags=['UserProfile']
+)
+class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
+    permission_classes = (IsAuthenticated,)
     queryset = None
 
     @extend_schema(request=LoginUpdateSerializer)
@@ -82,42 +180,50 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
 
         return response_cookies(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['get', ], detail=False, url_path='email_verify', url_name='email-verify')
-    def email_verify(self, request, *args, **kwargs):
+    @extend_schema(request=PasswordProfileUpdateSerializer)
+    @action(methods=['post', ], detail=False, url_path='update_password', url_name='update-password')
+    def update_password(self, request, *args, **kwargs):
         user = request.user
+        serializer = PasswordProfileUpdateSerializer(
+            instance=user, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-        if not user.is_email_verified:
-            response = send_disposable_mail(
-                user.email, 'email verify', settings.MAIL_TASK_PATH)
-
-            return response
-
-        return response_cookies({'error': 'Your email already verified'}, status=status.HTTP_400_BAD_REQUEST)
+        return response_cookies({'detail': 'Password updated successfully'}, status=status.HTTP_200_OK)
 
 
 @extend_schema(
     tags=['UserProfile']
 )
-class UserExampleView(GenericAPIView):
+class UserExampleView(GenericAPIView, ElasticMixin):
     queryset = UserExampleCommand.objects.prefetch_related(
         'example_command__example')
     serializer_class = ExampleForUserSerializer
+    elastic_document = ExampleDocument
+
+    def get_queryset(self):
+        search = self.elastic_document.search()
+        after_search = self.elastic_search(self.request, search)
+        after_filter = self.elastic_filter(self.request, after_search)
+        ex_queryset = after_filter.to_queryset()
+        ordering = self.request.query_params.get('ord', None)
+        order_param = None
+
+        if ordering == 'asc':
+            order_param = 'creation_date'
+        elif ordering == 'desc':
+            order_param = '-creation_date'
+
+        user_ex_commands = super().get_queryset().filter(
+            user=self.request.user, example_command__example__in=ex_queryset)
+
+        if order_param:
+            return user_ex_commands.order_by(order_param)
+
+        return user_ex_commands
 
     def get(self, request, *args, **kwargs):
-        user = request.user
-
-        _filters = {
-            "user" : user
-        }
-
-        params = request.query_params
-        if params:
-            _filters["example_command__example__tags__title__in"] = params.getlist("tags", [])
-
-        user_ex_commands = self.queryset.filter(
-            **_filters
-        )
-        serializer = self.serializer_class(
-            instance=user_ex_commands, many=True)
+        serializer = self.get_serializer(
+            instance=self.get_queryset(), many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)

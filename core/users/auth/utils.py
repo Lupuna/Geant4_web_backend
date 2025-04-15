@@ -1,5 +1,3 @@
-import importlib
-
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.exceptions import TokenError
@@ -12,8 +10,6 @@ from loguru import logger
 
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from django.urls import reverse
-from django.urls.exceptions import NoReverseMatch
 
 
 User = get_user_model()
@@ -51,7 +47,7 @@ def response_cookies(response_data, status, cookies_data=None, delete=False):
         if not delete:
             for key in cookies_data:
                 response.set_cookie(
-                    key=key, value=cookies_data[key], httponly=True, secure=False, samesite='None')
+                    key=key, value=cookies_data[key], httponly=True, secure=True, samesite='None')
         else:
             for key in cookies_data:
                 response.delete_cookie(key=key)
@@ -73,27 +69,11 @@ def get_token_info_or_return_failure(raw_token, token_expire_time: int, salt) ->
     return decoded_token
 
 
-def send_disposable_mail(recipient_email, reason, task_path) -> Response:
-    base_path_name = reason.replace(' ', '-')
-    disposable_link_view_path_name = 'confirm-' + base_path_name
+def make_disposable_url(base_path: str, token_salt: str, payload: dict):
     token_serializer = URLSafeTimedSerializer(
         secret_key=settings.SECRET_KEY)
     token = token_serializer.dumps(
-        {'email': recipient_email}, salt=base_path_name)
+        payload, salt=token_salt)
+    disposable_url = base_path + token
 
-    try:
-        disposable_url = settings.WEB_BACKEND_URL + \
-            reverse(disposable_link_view_path_name,
-                    kwargs={'token': token})
-    except NoReverseMatch:
-        return response_cookies({'error': f'View or corresponding path for {reason} does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-
-    decomposed_path_to_task = task_path.split('.')
-    mail_task_name = decomposed_path_to_task[-1]
-    module = '.'.join(decomposed_path_to_task[:-1])
-    mail_task = getattr(importlib.import_module(module), mail_task_name)
-
-    mail_task.delay(subject=reason.capitalize(), message=f'For {reason} follow this link\n{disposable_url}', from_email=settings.DEFAULT_FROM_EMAIL, recipient_list=[
-                    recipient_email], auth_user=settings.EMAIL_HOST_USER, auth_password=settings.EMAIL_HOST_PASSWORD)
-
-    return response_cookies({'detail': f'We sent mail on your email to {reason}'}, status=status.HTTP_200_OK)
+    return disposable_url

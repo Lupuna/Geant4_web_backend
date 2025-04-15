@@ -2,22 +2,63 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from users.models import User
+from users.auth.utils import make_disposable_url
+
+from api.tasks import send_celery_mail
+
+from django.conf import settings
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('email', 'username', 'first_name', 'last_name', )
+        fields = ('email', 'username', 'first_name',
+                  'last_name', 'is_employee')
+        read_only_fields = ('is_employee', )
+
+
+class UserUuidSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('uuid',)
+        read_only_fields = ('uuid',)
+
+
+class UserProfileImageSerializer(serializers.Serializer):
+    image = serializers.ImageField(required=True)
 
 
 class UserProfileCommonUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', )
+        fields = ('first_name', 'last_name', 'email')
         extra_kwargs = {
             'first_name': {'required': False},
-            'last_name': {'required': False}
+            'last_name': {'required': False},
+            'email': {'required': False, 'validators': []}
         }
+
+    def validate_email(self, value):
+        if value == self.instance.email:
+            raise ValidationError('You already use this email')
+
+        return value
+
+    def update(self, instance, validated_data):
+        email = validated_data.pop('email', None)
+
+        if email:
+            url = make_disposable_url(settings.FRONTEND_URL + '/profile/update_email/',
+                                      settings.EMAIL_UPDATE_SALT, {'new_email': email})
+            message = f'Follow this link to confirm update your email on Geant4 service\n{url}'
+            topic = 'Update email'
+            send_celery_mail.delay(
+                topic,
+                message,
+                [email]
+            )
+
+        return super().update(instance, validated_data)
 
 
 class UserQuickInfoSerializer(serializers.Serializer):
@@ -82,3 +123,19 @@ class UserEmailSerializer(serializers.Serializer):
             raise ValidationError('User with this email does not exist')
 
         return value
+
+
+class PasswordProfileUpdateSerializer(serializers.Serializer):
+    new_password = serializers.CharField()
+    old_password = serializers.CharField()
+
+    def validate(self, attrs):
+        old = attrs.pop('old_password')
+
+        if not self.instance.check_password(old):
+            raise ValidationError('Wrong current password')
+
+        return attrs
+
+    def update(self, instance, validated_data):
+        return PasswordUpdateSerializer().update(instance, validated_data)

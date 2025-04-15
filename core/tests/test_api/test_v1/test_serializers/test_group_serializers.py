@@ -3,22 +3,23 @@ from users.models import User
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
-from geant_tests_storage.models import Version
-
 from django.test import TestCase
 
 from api.v1.serializers.groups_serializers import GroupPATCHSerializer, GroupPOSTSerializer
 
 from rest_framework.exceptions import ErrorDetail
 
+from geant_examples.models import Example
+
 
 class GroupPATCHSerializerTestCase(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='test_uname')
+        self.example = Example.objects.create(
+            title_verbose='test_verb', title_not_verbose='TSU_00')
+        self.contype = ContentType.objects.get_for_model(Example)
         self.first_group = Group.objects.create(name='fgr')
         self.second_group = Group.objects.create(name='sgr')
-        self.version = Version.objects.create(title='test_ver')
-        self.contype = ContentType.objects.get_for_model(Version)
         self.perm1 = Permission.objects.create(
             codename='add_smth', content_type=self.contype)
         self.perm2 = Permission.objects.create(
@@ -134,9 +135,10 @@ class GroupPATCHSerializerTestCase(TestCase):
 class GroupPOSTSerializerTestCase(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='test_uname')
-        self.version = Version.objects.create(title='test_ver')
+        self.example = Example.objects.create(
+            title_verbose='test_verb', title_not_verbose='TSU_00')
+        self.contype = ContentType.objects.get_for_model(Example)
         self.first_group = Group.objects.create(name='fgr')
-        self.contype = ContentType.objects.get_for_model(Version)
         self.perm1 = Permission.objects.create(
             codename='add_smth', content_type=self.contype)
         self.perm2 = Permission.objects.create(

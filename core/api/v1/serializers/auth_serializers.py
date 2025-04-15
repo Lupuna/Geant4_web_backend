@@ -13,8 +13,8 @@ class RegistrationSerializer(serializers.ModelSerializer):
         fields = ('email', 'username', 'first_name',
                   'last_name', 'password', 'password2')
         extra_kwargs = {
-            'email': {'required': True},
-            'username': {'required': True},
+            'email': {'required': True, 'validators': []},
+            'username': {'required': True, 'validators': []},
             'first_name': {'required': True},
             'last_name': {'required': True}
         }
@@ -22,20 +22,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
     def validate(self, data):
         password = data.get('password', None)
         password2 = data.get('password2', None)
-        username = data.get('username', None)
-        email = data.get('email', None)
 
         if not check_passwords_match(password, password2):
             raise serializers.ValidationError('Passwords do not match')
         data.pop('password2')
-
-        if User.objects.filter(username=username).exists():
-            raise serializers.ValidationError(
-                'User with this username already exists')
-
-        if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError(
-                'User with this email already exists')
 
         return data
 

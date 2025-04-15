@@ -168,6 +168,7 @@ class ExampleForUserSerializer(serializers.Serializer):
     date_to_update = serializers.SerializerMethodField(
         method_name='get_date_to_update')
     status = serializers.IntegerField()
+    tags = serializers.SerializerMethodField(method_name='get_tags')
     params = serializers.SerializerMethodField()
 
     def get_title_verbose(self, obj):
@@ -181,14 +182,17 @@ class ExampleForUserSerializer(serializers.Serializer):
 
     def get_params(self, obj):
         key = obj.example_command.key_s3
-        raw_params = key.split('_', 1)[1].split('_')
+        raw_params = key.split('___', 1)[1].split('___')
 
-        if len(raw_params) % 2 != 0:
-            raise ValidationError('KeyS3 error')
+        if not any(raw_params):
+            return {}
 
-        aliases, values = raw_params[::2], raw_params[1::2]
+        params = dict([param.split('=') for param in raw_params])
 
-        return dict(zip(aliases, values))
+        return params
+
+    def get_tags(self, obj):
+        return TagSerializer(obj.example_command.example.tags.all(), many=True).data
 
 class ExampleCommandUpdateStatusSerializer(serializers.Serializer):
     key_s3 = serializers.CharField()
