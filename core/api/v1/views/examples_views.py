@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework import status
-from elasticsearch_dsl import Q
+
+from .mixins import ElasticMixin
 
 from api.v1.serializers.examples_serializers import (
     ExamplePOSTSerializer,
@@ -16,6 +17,8 @@ from api.v1.serializers.examples_serializers import (
     ExampleCommandPOSTSerializer,
     ExampleCommandUpdateStatusSerializer
 )
+from api.tasks import send_celery_mail
+
 from file_client.example_csv_client import ExampleRendererClient
 from file_client.exceptions import FileClientException
 
@@ -33,10 +36,10 @@ from cacheops import invalidate_model
 @extend_schema(
     tags=['Example ViewSet']
 )
-class ExampleViewSet(ModelViewSet):
+class ExampleViewSet(ModelViewSet, ElasticMixin):
     permission_classes = (IsAuthenticated,)
-    queryset = Example.objects.all()
     http_method_names = ['get', 'post', 'patch', 'delete']
+    elastic_document = ExampleDocument
 
     def get_serializer(self, *args, **kwargs):
         match self.request.method:
@@ -47,18 +50,12 @@ class ExampleViewSet(ModelViewSet):
             case 'PATCH':
                 return ExamplePATCHSerializer(*args, **kwargs)
 
-    def list(self, request):
-        params = request.query_params
-        if params:
-            query = params.get("query", "")
-            q = Q(
-                "multi_match", query=query, fields=settings.ELASTICSEARCH_ANALYZER_FIELDS,
-                fuzziness="auto"
-            )
-            result = ExampleDocument.search().query(q).to_queryset()
-            return Response(ExampleGETSerializer(result, many=True).data)
-        else:
-            return super().list(request)
+    def get_queryset(self):
+        search = self.elastic_document.search()
+        after_search = self.elastic_search(self.request, search)
+        after_filter = self.elastic_filter(self.request, after_search)
+
+        return after_filter.to_queryset()
 
 
 @extend_schema(
@@ -171,9 +168,20 @@ class ExampleCommandUpdateStatusAPIView(APIView):
                 new_status = UserExampleCommand.StatusChoice.executed
 
             users_example_commands = UserExampleCommand.objects.filter(
-                example_command__key_s3=key_s3)
+                example_command__key_s3=key_s3).prefetch_related('user', 'example_command')
+            ex_command = users_example_commands.first().example_command
+            user_emails = ex_command.users.values_list('email', flat=True)
+            old_status = users_example_commands.first().get_status_display()
+            title_verbose = users_example_commands.first().example_command.example.title_verbose
             users_example_commands.update(status=new_status)
             invalidate_model(UserExampleCommand)
+            message = f'The simulation of the example "{title_verbose}" with the key {key_s3} changed the status from "{old_status}" to "{new_status.label}"'
+            topic = 'Simulation status'
+            send_celery_mail.delay(
+                topic,
+                message,
+                list(user_emails)
+            )
 
             return Response(status=status.HTTP_204_NO_CONTENT)
 

@@ -1,8 +1,4 @@
-import datetime
-
 from django.test import TestCase
-from django.db.models import Prefetch
-from django.forms.models import model_to_dict
 
 from api.v1.serializers.examples_serializers import (
     ExampleForUserSerializer,
@@ -34,8 +30,9 @@ class ExampleForUserSerializerTestCase(TestCase):
         user_ex_command = UserExampleCommand.objects.filter(
             user=self.user).prefetch_related('example_command__example').first()
         serializer = ExampleForUserSerializer(instance=user_ex_command)
+        print(serializer.data)
         self.assertEqual(serializer.data, {'title_verbose': 'test_ex', 'description': '', 'creation_date': str(user_ex_command.creation_date)[:-6].replace(' ', 'T') + 'Z',
-                         'date_to_update': self.example.date_to_update, 'status': 0, 'params': {'v': '11'}})
+                         'date_to_update': self.example.date_to_update, 'status': 0, 'tags': [], 'params': {'v': '11'}})
 
 
 class ExamplePOSTSerializerTestCase(TestCase):
@@ -49,7 +46,7 @@ class ExamplePOSTSerializerTestCase(TestCase):
                     'title': self.tag.title
                 }
             ],
-            "category": "default"
+            "category": "Optics"
         }
 
     def test_create(self):
@@ -87,7 +84,7 @@ class ExamplePATCHSerializerTestCase(TestCase):
         self.data = {
             "title_verbose": "test_verbose",
             'title_not_verbose': 'TSU_00',
-            "category": "default"
+            "category": "Optics"
         }
 
     def test_update(self):

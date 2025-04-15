@@ -3,8 +3,13 @@ from django.urls import path, include
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from api.v1.views.users_views import UserProfileViewSet, UserProfileUpdateImportantInfoViewSet, UserExampleView, \
-    UserProfileImageViewSet
+from api.v1.views.users_views import (
+    UserProfileViewSet,
+    UserProfileUpdateImportantInfoViewSet,
+    UserExampleView,
+    UserProfileImageViewSet,
+    ConfirmEmailUpdateAPIView
+)
 from api.v1.views.auth_views import (
     RegistrationAPIView,
     LoginAPIView,
@@ -54,6 +59,8 @@ urlpatterns = [
         actions=UserProfileImageViewSet.get_action_map()), name='user-profile-image'),
     path('profile/', UserProfileViewSet.as_view(
         actions=UserProfileViewSet.get_actions()), name='user-profile'),
+    path('profile/update_email/<str:token>',
+         ConfirmEmailUpdateAPIView.as_view(), name='confirm-email-update'),
     path('update_example_status/', ExampleCommandUpdateStatusAPIView.as_view(),
          name='update-example-status'),
     path('profile/my_examples/', UserExampleView.as_view(), name='user-examples'),
