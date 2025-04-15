@@ -136,6 +136,7 @@ class ExampleForUserSerializer(serializers.Serializer):
     date_to_update = serializers.SerializerMethodField(
         method_name='get_date_to_update')
     status = serializers.IntegerField()
+    tags = serializers.SerializerMethodField(method_name='get_tags')
     params = serializers.SerializerMethodField()
 
     def get_title_verbose(self, obj):
@@ -157,6 +158,9 @@ class ExampleForUserSerializer(serializers.Serializer):
         params = dict([param.split('=') for param in raw_params])
 
         return params
+
+    def get_tags(self, obj):
+        return TagSerializer(obj.example_command.example.tags.all(), many=True).data
 
 
 class ExampleCommandUpdateStatusSerializer(serializers.Serializer):
