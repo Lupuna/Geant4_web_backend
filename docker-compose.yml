@@ -77,6 +77,7 @@ services:
       - STORAGE_URL=${STORAGE_URL:-http://92.63.76.158}
       - EMAIL_HOST_USER=${EMAIL_HOST_USER}
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - PATH_TO_LOCAL_STORAGE=${PATH_TO_LOCAL_STORAGE:-files/}
 
   flower:
     build:
