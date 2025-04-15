@@ -8,7 +8,12 @@ from geant_examples.validators import title_not_verbose_view
 
 class Example(models.Model):
     class CategoryChoices(models.TextChoices):
-        default = 'default', _('Default category')
+        electromagnetism = 'Electromagnetism', _('Electromagnetism')
+        hadron_physics = 'Hadron physics', _('Hadron physics')
+        medicine = 'Medicine', _('Medicine')
+        optics = 'Optics', _('Optics')
+        fields = 'Fields', _('Fields')
+        other = 'Other', _('Other')
 
     title_verbose = models.CharField(
         max_length=255, unique=True, blank=False, null=False)
@@ -22,7 +27,7 @@ class Example(models.Model):
     category = models.CharField(
         max_length=255,
         choices=CategoryChoices.choices,
-        default=CategoryChoices.default,
+        default=CategoryChoices.other,
         help_text=_('Category of example')
     )
 

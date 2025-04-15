@@ -11,8 +11,6 @@ from loguru import logger
 from django.contrib.auth import get_user_model
 from django.conf import settings
 
-from api.tasks import send_celery_mail
-
 
 User = get_user_model()
 

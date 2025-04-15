@@ -4,6 +4,7 @@ from django.conf import settings
 
 from .models import Example
 
+
 @registry.register_document
 class ExampleDocument(Document):
     class Index:
@@ -36,6 +37,11 @@ class ExampleDocument(Document):
             ),
         }
     )
+    tags = fields.KeywordField(multi=True)
+    category = fields.KeywordField()
 
     class Django:
         model = Example
+
+    def prepare_tags(self, instance):
+        return [tag.title for tag in instance.tags.all()]
