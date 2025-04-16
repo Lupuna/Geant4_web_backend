@@ -12,11 +12,12 @@ from api.v1.serializers.examples_serializers import (
 from users.models import User
 
 from geant_examples.models import *
+from tests.base import Base
 
 from rest_framework.exceptions import ErrorDetail
 
 
-class ExampleForUserSerializerTestCase(TestCase):
+class ExampleForUserSerializerTestCase(Base):
     def setUp(self):
         self.user = User.objects.create(
             username='test_username', email='test@gmail.com')
@@ -35,7 +36,7 @@ class ExampleForUserSerializerTestCase(TestCase):
                          'date_to_update': self.example.date_to_update, 'status': 0, 'tags': [], 'params': {'v': '11'}})
 
 
-class ExamplePOSTSerializerTestCase(TestCase):
+class ExamplePOSTSerializerTestCase(Base):
     def setUp(self):
         self.tag = Tag.objects.create(title='test_tag')
         self.data = {
@@ -78,7 +79,7 @@ class ExamplePOSTSerializerTestCase(TestCase):
             string='Theese titles: (any) - do not exist', code='invalid')]})
 
 
-class ExamplePATCHSerializerTestCase(TestCase):
+class ExamplePATCHSerializerTestCase(Base):
     def setUp(self):
         self.tag = Tag.objects.create(title='test_tag')
         self.data = {
@@ -109,7 +110,7 @@ class ExamplePATCHSerializerTestCase(TestCase):
             tags=self.tag).exists())
 
 
-class ExampleCommandPOSTSerializerTestCase(TestCase):
+class ExampleCommandPOSTSerializerTestCase(Base):
     def setUp(self):
         self.example = Example.objects.create(title_verbose='test_verbose')
         self.user = User.objects.create(

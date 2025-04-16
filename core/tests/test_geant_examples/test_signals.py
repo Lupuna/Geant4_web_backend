@@ -1,34 +1,102 @@
-from unittest.mock import patch
-from unittest import TestCase
+from django.test import TestCase
+from django.db.models.signals import post_save, post_delete
+from unittest.mock import patch, MagicMock
 
-from django.conf import settings
-from geant_examples.models import Example
+from geant_examples.models import Example, Command
+from geant_examples.signals import (
+    delete_example,
+    delete_command,
+    save_command
+)
 
-
-class SendRequestOnCreateSignalTests(TestCase):
+class ExampleSignalTestCase(TestCase):
     def setUp(self):
-        settings.BACKEND_URL = 'http://somedomain.ru/'
+        super().setUp()
 
-    @patch('requests.post')
-    def test_signal_sends_request_on_create(self, mock_post):
-        mock_response = mock_post.return_value
-        mock_response.status_code = 201
-
-        instance = Example.objects.create(title_not_verbose="TSU_XX_00", title_verbose="test1")
-        mock_post.assert_called_once_with(
-            settings.BACKEND_URL,
-            json={'title': 'TSU_XX_00'},
-            headers={'Content-Type': 'application/json'}
+        self.data = {
+            "title_not_verbose": "TSU_XX_00",
+            "title_verbose": "test_verbose_title"
+        }
+        post_delete.connect(
+            receiver=delete_example,
+            sender=Example
         )
 
+    def tearDown(self):
+        post_delete.disconnect(
+            receiver=delete_example,
+            sender=Example
+        )
 
-    @patch('requests.post')
-    def test_signal_does_nothing_on_update(self, mock_post):
-        instance = Example.objects.create(title_not_verbose="TSU_XX_00", title_verbose="test2")
+        super().tearDown()
 
-        mock_post.reset_mock()
+    @patch("geant_examples.signals.DatabaseSynchronizer")
+    def test_post_delete(self, mock_sync):
+        mock_sync_obj = MagicMock()
+        mock_sync.return_value = mock_sync_obj
 
-        instance.title_not_verbose = "TSU_XX_01"
-        instance.save()
+        example = Example.objects.create(**self.data)
+        example.delete()
 
-        mock_post.assert_not_called()
+        mock_sync.assert_called_once_with(example=example)
+        mock_sync_obj.drop_example.assert_called_once()
+
+class CommandSignalTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.example = Example.objects.create(
+            title_not_verbose="TSU_XX_00",
+            title_verbose="test_verbose_title"
+        )
+        self.data = {
+            "title": "test_title",
+            "order_index": 1,
+            "default": "test_default",
+            "example": self.example
+        }
+
+        post_delete.connect(
+            receiver=delete_command,
+            sender=Command
+        )
+        post_save.connect(
+            receiver=save_command,
+            sender=Command
+        )
+
+    def tearDown(self):
+        post_delete.disconnect(
+            receiver=delete_command,
+            sender=Command
+        )
+        post_save.disconnect(
+            receiver=save_command,
+            sender=Command
+        )
+
+        super().tearDown()
+
+    @patch("geant_examples.signals.DatabaseSynchronizer")
+    def test_post_delete(self, mock_sync):
+        mock_sync_obj = MagicMock()
+        mock_sync.return_value = mock_sync_obj
+
+        command = Command.objects.create(**self.data)
+
+        mock_sync.reset_mock()
+
+        command.delete()
+
+        mock_sync.assert_called_once_with(command=command)
+        mock_sync_obj.run.assert_called_once()
+
+    @patch("geant_examples.signals.DatabaseSynchronizer")
+    def test_post_save(self, mock_sync):
+        mock_sync_obj = MagicMock()
+        mock_sync.return_value = mock_sync_obj
+
+        command = Command.objects.create(**self.data)
+
+        mock_sync.assert_called_once_with(command=command)
+        mock_sync_obj.run.assert_called_once()
