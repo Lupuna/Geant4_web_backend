@@ -51,11 +51,11 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
                 return ExamplePATCHSerializer(*args, **kwargs)
 
     def get_queryset(self):
-        search = self.elastic_document.search()
-        after_search = self.elastic_search(self.request, search)
-        after_filter = self.elastic_filter(self.request, after_search)
+        elastic_document_class = self.get_elastic_document_class()
+        search = elastic_document_class.search()
+        result_search = self.elastic_full_query_handling(self.request, search)
 
-        return after_filter.to_queryset()
+        return result_search.to_queryset()
 
 
 @extend_schema(

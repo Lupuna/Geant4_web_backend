@@ -12,4 +12,9 @@ class ProfileImageRendererClient(BaseRendererUploader):
         super().render()
 
         with Image.open(self.path) as img:
-            img.save(self.new_path, self.format)
+            img.save(
+                self.new_path,
+                'webp',
+                optimize=True,
+                quality=10
+            )

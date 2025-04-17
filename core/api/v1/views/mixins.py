@@ -1,17 +1,27 @@
 from elasticsearch_dsl import Q
 
+from django_elasticsearch_dsl import Document
+
 from django.conf import settings
 
 
 class ElasticMixin:
-    def get_elastic_document_conf(self):
-        if not hasattr(self, 'elastic_document') or self.elastic_document == None:
+    def get_elastic_document_class(self) -> Document:
+        if not hasattr(self, 'elastic_document') or self.elastic_document is None:
             raise AttributeError(
                 'If you want to use ElasticSearch you need to set elastic document on "elastic_document" attribute')
 
-        document = self.elastic_document
+        return self.elastic_document
 
-        return settings.ELASTIC_PARAMS_CONF['documents'][document.__name__]
+    def get_elastic_document_conf(self) -> dict:
+        document = self.get_elastic_document_class()
+
+        try:
+            document_conf = settings.ELASTIC_PARAMS_CONF['documents'][document.__name__]
+        except KeyError:
+            raise KeyError('Need to setup elastic document in settings')
+
+        return document_conf
 
     def elastic_filter(self, request, search):
         document_params_conf = self.get_elastic_document_conf()
@@ -40,5 +50,22 @@ class ElasticMixin:
                 fuzziness="auto"
             )
             search = search.query(q)
+
+        return search
+
+    def elastic_pagination(self, request, search):
+        document_params_conf = self.get_elastic_document_conf()
+        page, page_size = document_params_conf['params']['pagination']
+        start = (page - 1) * page_size
+        search = search.extra(from_=start, size=page_size)
+
+        return search
+
+    def elastic_full_query_handling(self, request, search):
+        document_params_conf = self.get_elastic_document_conf()
+
+        for action in document_params_conf['params']:
+            search = getattr(self, f'elastic_{action}', search)(
+                request, search)
 
         return search
