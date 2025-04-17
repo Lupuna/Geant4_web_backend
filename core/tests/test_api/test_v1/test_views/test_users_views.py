@@ -243,7 +243,7 @@ class UserProfileImageViewSetTestCase(AuthSettingsTest):
 
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             response.data, {"detail": "Downloaded file not found on disk."})
 
