@@ -340,7 +340,8 @@ ELASTIC_PARAMS_CONF = {
                     'tags',
                     'category',
                 ],
-                'search': 'query'
+                'search': 'query',
+                'pagination': [1, 2]
             },
         }
     }
