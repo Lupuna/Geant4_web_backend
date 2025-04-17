@@ -13,10 +13,11 @@ from file_client.profile_image_client import ProfileImageRendererClient
 
 class ProfileImageRendererClientTestCase(TestCase):
     def setUp(self):
-        self.correct_name = 'fnuf.png'
+        self.correct_name = 'fnuf.webp'
         self.name = "fnuf.fnuf"
         self.path = os.path.join(settings.PATH_TO_LOCAL_STORAGE, 'gig.fnuf')
-        self.client = ProfileImageRendererClient(name=self.name, path=self.path)
+        self.client = ProfileImageRendererClient(
+            name=self.name, path=self.path)
         self.client.loader = Mock(spec=S3FileLoader)
         self.client.loader.update = Mock()
         self.client.loader.upload = Mock()
@@ -26,7 +27,8 @@ class ProfileImageRendererClientTestCase(TestCase):
 
     def test_init_sets_correct_filename_and_path(self):
         expected_filename = f"{os.path.splitext(self.name)[0]}.{self.client.format}"
-        expected_path = os.path.join(settings.PATH_TO_LOCAL_STORAGE, expected_filename)
+        expected_path = os.path.join(
+            settings.PATH_TO_LOCAL_STORAGE, expected_filename)
 
         self.assertEqual(self.client.filename, expected_filename)
         self.assertEqual(self.client.new_path, expected_path)
@@ -49,7 +51,8 @@ class ProfileImageRendererClientTestCase(TestCase):
 
         result = self.client.download_stream()
         self.assertEqual(result, self.path)
-        self.client.loader.download_stream.assert_called_once_with(self.correct_name)
+        self.client.loader.download_stream.assert_called_once_with(
+            self.correct_name)
 
         self.client.is_read_only = False
 
@@ -70,7 +73,8 @@ class ProfileImageRendererClientTestCase(TestCase):
         result = self.client.download()
         self.assertIsInstance(result, BytesIO)
         self.assertEqual(result.getvalue(), b"test content")
-        self.client.loader.download_temporary.assert_called_once_with(self.correct_name)
+        self.client.loader.download_temporary.assert_called_once_with(
+            self.correct_name)
 
         self.client.is_read_only = False
 
