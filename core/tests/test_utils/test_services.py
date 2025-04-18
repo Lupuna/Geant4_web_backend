@@ -4,7 +4,7 @@ from django.conf import settings
 from unittest.mock import patch, MagicMock
 
 from geant_examples.models import Example, Command
-from utils import DatabaseSynchronizer
+from utils.services import retry, DatabaseSynchronizer
 from tests.base import Base
 
 class DatabaseSynchronizerTestCase(Base):
@@ -25,6 +25,17 @@ class DatabaseSynchronizerTestCase(Base):
             order_index=2,
             default="default2"
         )
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.patcher = patch("time.sleep", lambda *args, **kwargs: None)
+        cls.patcher.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.patcher.stop()
+        super().tearDownClass()
 
     def test_init_with_example(self):
         sync = DatabaseSynchronizer(example=self.example)
@@ -92,7 +103,7 @@ class DatabaseSynchronizerTestCase(Base):
         with self.assertRaises(requests.exceptions.RequestException):
             sync.get_example_from_backend()
 
-    @patch('utils.DatabaseSynchronizer.get_example_from_backend')
+    @patch('utils.services.DatabaseSynchronizer.get_example_from_backend')
     @patch('requests.delete')
     def test_drop_example_success(self, mock_delete, mock_get_example):
         mock_get_example.return_value = 123
@@ -107,7 +118,7 @@ class DatabaseSynchronizerTestCase(Base):
             settings.GEANT_BACKEND_DELETE_EXAMPLE_URL.format(id=123)
         )
 
-    @patch('utils.DatabaseSynchronizer.get_example_from_backend')
+    @patch('utils.services.DatabaseSynchronizer.get_example_from_backend')
     @patch('requests.delete')
     def test_drop_example_not_found(self, mock_delete, mock_get_example):
         mock_get_example.return_value = -1
@@ -117,7 +128,7 @@ class DatabaseSynchronizerTestCase(Base):
 
         mock_delete.assert_not_called()
 
-    @patch('utils.DatabaseSynchronizer.get_example_from_backend')
+    @patch('utils.services.DatabaseSynchronizer.get_example_from_backend')
     @patch('requests.delete')
     def test_drop_example_error(self, mock_delete, mock_get_example):
         mock_get_example.return_value = 123
@@ -167,9 +178,9 @@ class DatabaseSynchronizerTestCase(Base):
         with self.assertRaises(requests.exceptions.RequestException):
             sync.create_example()
 
-    @patch('utils.DatabaseSynchronizer.drop_example')
-    @patch('utils.DatabaseSynchronizer.create_example')
-    @patch('utils.DatabaseSynchronizer.get_example_from_backend')
+    @patch('utils.services.DatabaseSynchronizer.drop_example')
+    @patch('utils.services.DatabaseSynchronizer.create_example')
+    @patch('utils.services.DatabaseSynchronizer.get_example_from_backend')
     def test_run_example_exists(self, mock_get, mock_create, mock_drop):
         mock_get.return_value = 123
 
@@ -179,8 +190,8 @@ class DatabaseSynchronizerTestCase(Base):
         mock_drop.assert_called_once_with(123)
         mock_create.assert_called_once()
 
-    @patch('utils.DatabaseSynchronizer.create_example')
-    @patch('utils.DatabaseSynchronizer.get_example_from_backend')
+    @patch('utils.services.DatabaseSynchronizer.create_example')
+    @patch('utils.services.DatabaseSynchronizer.get_example_from_backend')
     def test_run_example_not_exists(self, mock_get, mock_create):
         mock_get.return_value = -1
 
@@ -188,3 +199,54 @@ class DatabaseSynchronizerTestCase(Base):
         sync.run()
 
         mock_create.assert_called_once()
+
+class DecoratorsTestCase(Base):
+
+    @patch("time.sleep")
+    def test_with_fails(self, mock_sleep):
+        mock = MagicMock()
+        mock.side_effect = [Exception("fail 1"), Exception("fail 2")]
+        n = 2
+
+        @retry(n)
+        def f():
+            return mock()
+
+        with self.assertRaises(Exception, msg="fail 2"):
+            f()
+
+        self.assertEqual(mock.call_count, n)
+
+    @patch("time.sleep")
+    def test_without_fails(self, mock_sleep):
+        mock = MagicMock()
+        mock.side_effect = [52]
+
+        @retry(2)
+        def f():
+            return mock()
+
+        res = f()
+
+        mock.assert_called_once()
+        self.assertEqual(
+            res, 52
+        )
+
+    @patch("time.sleep")
+    def test_with_fails_or_success(self, mock_sleep):
+        mock = MagicMock()
+        mock.side_effect = [Exception("fail 1"), 52, Exception("fail 2")]
+
+        @retry(3)
+        def f():
+            return mock()
+
+        res = f()
+
+        self.assertEqual(mock.call_count, 2)
+        self.assertEqual(res, 52)
+
+
+
+

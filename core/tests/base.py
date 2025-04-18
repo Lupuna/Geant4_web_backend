@@ -18,7 +18,6 @@ class Base(TestCase):
         logger.remove()
 
         settings.ELASTICSEARCH_DSL_AUTOSYNC = False
-
         post_save.disconnect(
             receiver=save_command,
             sender=Command
@@ -46,4 +45,6 @@ class Base(TestCase):
             receiver=delete_example,
             sender=Example
         )
+        settings.ELASTICSEARCH_DSL_AUTOSYNC = True
+
         super().tearDownClass()
