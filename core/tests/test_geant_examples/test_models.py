@@ -1,9 +1,10 @@
-from geant_examples.models import Example, UserExampleCommand, Tag, ExampleCommand, Command, CommandValue
-from users.models import User
-from django.utils.translation import gettext_lazy as _
 from django.db.utils import IntegrityError
+from django.utils.translation import gettext_lazy as _
 
+from geant_examples.models import Example, UserExampleCommand, Tag, ExampleCommand, Command, CommandValue
 from tests.base import Base
+from users.models import User
+
 
 class ExampleTestCase(Base):
 
@@ -95,6 +96,7 @@ class ExampleCommandTestCase(Base):
         self.assertEqual(
             self.example_command._meta.verbose_name_plural, _("ExampleCommands"))
 
+
 class CommandTestCase(Base):
     def setUp(self):
         self.example = Example.objects.create(
@@ -128,6 +130,7 @@ class CommandTestCase(Base):
                 order_index=self.command.order_index
             )
 
+
 class CommandValueTestCase(Base):
     def setUp(self):
         self.example = Example.objects.create(
@@ -153,5 +156,3 @@ class CommandValueTestCase(Base):
     def test_meta_options(self):
         self.assertEqual(self.cmd_value._meta.verbose_name, _("Value for command"))
         self.assertEqual(self.cmd_value._meta.verbose_name_plural, _("Values for command"))
-
-

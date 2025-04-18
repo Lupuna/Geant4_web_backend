@@ -1,18 +1,21 @@
-from django.test import TestCase
 from django.conf import settings
 from django.db.models.signals import post_save, post_delete
+from django.test import TestCase
+from loguru import logger
 
+from geant_examples.models import Command, Example
 from geant_examples.signals import (
     delete_example,
     delete_command,
     save_command
 )
-from geant_examples.models import Command, Example
+
 
 class Base(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        logger.remove()
 
         settings.ELASTICSEARCH_DSL_AUTOSYNC = False
 

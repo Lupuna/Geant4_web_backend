@@ -31,7 +31,6 @@ class ExampleForUserSerializerTestCase(Base):
         user_ex_command = UserExampleCommand.objects.filter(
             user=self.user).prefetch_related('example_command__example').first()
         serializer = ExampleForUserSerializer(instance=user_ex_command)
-        print(serializer.data)
         self.assertEqual(serializer.data, {'title_verbose': 'test_ex', 'description': '', 'creation_date': str(user_ex_command.creation_date)[:-6].replace(' ', 'T') + 'Z',
                          'date_to_update': self.example.date_to_update, 'status': 0, 'tags': [], 'params': {'v': '11'}})
 
