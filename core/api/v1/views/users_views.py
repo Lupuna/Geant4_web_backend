@@ -152,7 +152,7 @@ class UserProfileImageViewSet(ViewSet):
             response = FileResponse(client.download(), as_attachment=True, filename=str(
                 user.uuid)+f'.{client.format}')
         except FileClientException as e:
-            return Response(e.error, status=status.HTTP_200_OK)
+            return Response(e.error, status=status.HTTP_404_NOT_FOUND)
         return response
 
 
