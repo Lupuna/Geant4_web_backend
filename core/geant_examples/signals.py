@@ -2,7 +2,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from geant_examples.models import Example, Command
-from utils import DatabaseSynchronizer
+from utils.services import DatabaseSynchronizer
 
 @receiver(post_save, sender=Command)
 def save_command(sender, instance, **kwargs):

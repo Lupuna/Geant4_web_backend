@@ -79,6 +79,30 @@ services:
       - EMAIL_HOST_USER=${EMAIL_HOST_USER}
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
 
+  celery_beat:
+    build:
+      context: .
+    entrypoint: celery
+    volumes:
+      - ./core:/core
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST:-database}
+      - DB_NAME=${DB_NAME:-debug_dbname}
+      - DB_USER=${DB_USER:-debug_dbuser}
+      - DB_PASS=${DB_PASS:-debug_dbpassword}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-debug_redis_password}
+      - BACKEND_URL=${BACKEND_URL:-http://92.63.76.157}
+      - SECRET_KEY=${SECRET_KEY}
+      - STORAGE_URL=${STORAGE_URL:-http://92.63.76.158}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+    command: -A core.celery_app beat --loglevel=info
+    depends_on:
+      - redis
+      - database
+
   flower:
     build:
       context: .
