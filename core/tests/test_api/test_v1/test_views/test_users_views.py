@@ -73,7 +73,6 @@ class UserProfileTestCase(AuthSettingsTest):
     def test_change_username(self):
         data = {
             'new_username': 'afs',
-            'password': 'test_pas1'
         }
         self.login_user()
 
@@ -90,7 +89,6 @@ class UserProfileTestCase(AuthSettingsTest):
         self.login_user()
         data = {
             'new_username': self.user.username,
-            'password': 'test_pas1'
         }
 
         response = self.client.post(
@@ -99,20 +97,6 @@ class UserProfileTestCase(AuthSettingsTest):
         self.assertNotEqual(response.status_code, 200)
         self.assertEqual(response.data, {'non_field_errors': [ErrorDetail(
             string='User with this username already exists', code='invalid')]})
-
-    def test_change_username_wrong_pas(self):
-        self.login_user()
-        data = {
-            'new_username': 'asad',
-            'password': 'test_as1'
-        }
-
-        response = self.client.post(
-            reverse('user-profile-update-username'), data=data)
-
-        self.assertNotEqual(response.status_code, 200)
-        self.assertEqual(response.data, {'non_field_errors': [
-                         ErrorDetail(string='Given wrong password', code='invalid')]})
 
 
 class ConfirmEmailUpdateAPIViewTestCase(AuthSettingsTest):

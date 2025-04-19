@@ -21,24 +21,18 @@ class LoginUpdateSerializerTestCase(UsersSerializersSetUpClass):
     def test_validate(self):
         data = {
             'new_username': 'pasos',
-            'password': 'test_pas1'
         }
 
         serializer = LoginUpdateSerializer(instance=self.user, data=data)
         self.assertTrue(serializer.is_valid())
 
-        data.update({'new_username': self.user.username})
+        data.update({'new_username': 'pasos'})
         serializer = LoginUpdateSerializer(instance=self.user, data=data)
-        self.assertFalse(serializer.is_valid())
-
-        data.update({'new_username': 'pasos', 'password': 'ds'})
-        serializer = LoginUpdateSerializer(instance=self.user, data=data)
-        self.assertFalse(serializer.is_valid())
+        self.assertTrue(serializer.is_valid())
 
     def test_update(self):
         data = {
             'new_username': 'pasos',
-            'password': 'test_pas1'
         }
         serializer = LoginUpdateSerializer(instance=self.user, data=data)
 

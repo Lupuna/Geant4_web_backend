@@ -65,16 +65,8 @@ class UserQuickInfoSerializer(serializers.Serializer):
 
 class LoginUpdateSerializer(serializers.Serializer):
     new_username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True)
 
     def validate(self, attrs):
-        user = self.instance
-
-        if not user.check_password(attrs.get('password')):
-            raise ValidationError('Given wrong password')
-
-        attrs.pop('password')
-
         new_username = attrs.get('new_username')
 
         if User.objects.filter(username=new_username).exists():
