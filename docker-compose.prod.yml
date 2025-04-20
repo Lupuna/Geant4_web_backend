@@ -13,7 +13,7 @@ services:
     environment:
       - IS_DEBUG=False
     command: >
-      sh -c "python manage.py migrate &&
+      bash -c "python manage.py migrate &&
              gunicorn --bind 0.0.0.0:8001 core.wsgi:application &&
              python manage.py search_index --rebuild -f"
     expose:
