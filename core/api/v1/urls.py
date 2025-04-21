@@ -3,6 +3,7 @@ from django.urls import path, include
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
+from api.v1.views.geant_documentation_views import ArticleViewSet
 from api.v1.views.users_views import (
     UserProfileViewSet,
     UserProfileUpdateImportantInfoViewSet,
@@ -35,6 +36,9 @@ group_router.register(
 example_router = SimpleRouter()
 example_router.register(r'examples', ExampleViewSet, basename='examples')
 
+# documentation_router = SimpleRouter()
+# documentation_router.register(r'articles', ArticleViewSet, basename='articles')
+
 example_command_router = NestedSimpleRouter(
     parent_router=example_router, parent_prefix=r'examples', lookup='example')
 example_command_router.register(
@@ -44,6 +48,7 @@ urlpatterns = [
     path('', include(example_router.urls)),
     path('', include(user_update_router.urls)),
     path('', include(example_command_router.urls)),
+    # path('', include(documentation_router.urls)),
     path('', include(group_router.urls)),
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
     path('registration/confirm/<str:token>', RegistrationConfirmAPIView.as_view(),

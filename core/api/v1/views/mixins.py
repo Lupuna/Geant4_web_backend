@@ -55,7 +55,10 @@ class ElasticMixin:
 
     def elastic_pagination(self, request, search):
         document_params_conf = self.get_elastic_document_conf()
-        page, page_size = document_params_conf['params']['pagination']
+        page_param_name, page_size_param_name = document_params_conf['params']['pagination']
+        page = int(request.query_params.get(page_param_name, 1))
+        page_size = int(request.query_params.get(page_size_param_name, 10))
+
         start = (page - 1) * page_size
         search = search.extra(from_=start, size=page_size)
 

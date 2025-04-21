@@ -41,7 +41,7 @@ class ElementSignalTestCase(TestCase):
             element_order=1,
             type=Element.TypeChoice.IMAGE
         )
-        File.objects.all().delete()  # reset
+        File.objects.all().delete()
         element.text = "Some image description"
         element.save()
         self.assertEqual(File.objects.count(), 0)
