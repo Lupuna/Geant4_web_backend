@@ -1,9 +1,9 @@
 from django.apps import AppConfig
 
 
-class GeantExamplesConfig(AppConfig):
+class GeantDocumentationConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'geant_examples'
+    name = 'geant_documentation'
 
     def ready(self):
-        pass
+        from . import signals

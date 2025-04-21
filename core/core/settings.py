@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
     'geant_examples.apps.GeantExamplesConfig',
+    'geant_documentation.apps.GeantDocumentationConfig',
     'cacheops',
 ]
 
