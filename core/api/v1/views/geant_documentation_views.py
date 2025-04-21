@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
@@ -5,6 +6,8 @@ from rest_framework.viewsets import ModelViewSet
 from api.v1.serializers.geant_documentation_serializers import ArticleListSerializer, ArticleSerializer
 from api.v1.views.mixins import ElasticMixin
 from core.permissions import IsStaffPermission
+from rest_framework.exceptions import ValidationError as DRFValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
 from geant_documentation.documents import ArticleDocument
 from geant_documentation.models import Article
 
@@ -37,10 +40,18 @@ class ArticleViewSet(ElasticMixin, ModelViewSet):
     #         permission_classes = [IsAuthenticated, IsStaffPermission]
     #     return [permission() for permission in permission_classes]
 
-    # def perform_create(self, serializer):
-    #     try:
-    #         super().perform_create(serializer)
-    #     except DjangoValidationError as e:
-    #         raise DRFValidationError({'error': e.messages})
-    #     except IntegrityError as e:
-    #         raise DRFValidationError({'error': 'duplicate paragraph_order for this article'})
+    def perform_create(self, serializer):
+        try:
+            super().perform_create(serializer)
+        except DjangoValidationError as e:
+            raise DRFValidationError({'error': e.messages})
+        except IntegrityError as e:
+            raise DRFValidationError({'error': f'{e}'})
+
+    def perform_update(self, serializer):
+        try:
+            super().perform_update(serializer)
+        except DjangoValidationError as e:
+            raise DRFValidationError({'error': e.messages})
+        except IntegrityError as e:
+            raise DRFValidationError({'error': str(e)})

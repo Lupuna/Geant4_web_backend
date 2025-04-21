@@ -1,5 +1,6 @@
 from drf_writable_nested import WritableNestedModelSerializer
 from rest_framework import serializers
+from django.db import transaction
 
 from geant_documentation.models import Article, Category, Chapter, Element, File, Subscription
 
@@ -7,7 +8,7 @@ from geant_documentation.models import Article, Category, Chapter, Element, File
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = File
-        fields = '__all__'
+        fields = ('id', 'uuid', 'comment', 'format')
         read_only_fields = ('id', 'uuid')
 
 
@@ -16,7 +17,20 @@ class ElementSerializer(WritableNestedModelSerializer):
 
     class Meta:
         model = Element
-        fields = '__all__'
+        fields = ('id', 'text', 'element_order', 'type', 'files')
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            instance = super().create(validated_data)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            instance.files.all().delete()
+            instance = super().update(instance, validated_data)
+
+        return instance
 
 
 class SubscriptionSerializer(WritableNestedModelSerializer):
@@ -24,7 +38,20 @@ class SubscriptionSerializer(WritableNestedModelSerializer):
 
     class Meta:
         model = Subscription
-        fields = '__all__'
+        fields = ('title', 'subscription_order', 'elements')
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            instance = super().create(validated_data)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            instance.elements.all().delete()
+            instance = super().update(instance, validated_data)
+
+        return instance
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -55,10 +82,23 @@ class ArticleListSerializer(serializers.ModelSerializer):
 
 
 class ArticleSerializer(WritableNestedModelSerializer):
-    chapter = ChapterSerializer()
-    category = CategorySerializer()
+    chapter = serializers.PrimaryKeyRelatedField(queryset=Chapter.objects.all(), required=False, allow_null=True)
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=False, allow_null=True)
     subscriptions = SubscriptionSerializer(many=True)
 
     class Meta:
         model = Article
         fields = '__all__'
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            instance = super().create(validated_data)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            instance.subscriptions.all().delete()
+            instance = super().update(instance, validated_data)
+
+        return instance
