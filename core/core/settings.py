@@ -346,6 +346,7 @@ ELASTIC_PARAMS_CONF = {
                 'filter': [
                     'chapter',
                     'category',
+                    'chosen',
                 ],
                 'search': 'query',
                 'pagination': ['page', 'page_size']
