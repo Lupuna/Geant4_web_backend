@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
+from geant_examples.models import Example, Tag, ExampleCommand
 from geant_examples.validators import title_not_verbose_view
 
 from users.models import User
@@ -12,6 +12,12 @@ from api.v1.serializers.validators import m2m_validator
 
 class TagSerializer(serializers.Serializer):
     title = serializers.CharField()
+
+
+class TagAPISerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = '__all__'
 
 
 class ExampleCommandGETSerializer(serializers.Serializer):
@@ -83,6 +89,9 @@ class ExamplePOSTSerializer(serializers.ModelSerializer):
 
     def validate_title_not_verbose(self, value):
         title_not_verbose_view(value)
+
+        if self.Meta.model.objects.filter(title_not_verbose=value).exists():
+            raise ValidationError('This title_not_verbose already in use')
 
         return value
 
