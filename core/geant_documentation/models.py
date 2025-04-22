@@ -60,7 +60,6 @@ class Element(models.Model):
         TEXT = 'text', 'text'
         GRAPHIC = 'csv', 'graphic'
         IMAGE = 'webp', 'image'
-        CODE = 'code', 'code'
         FORMULA = 'formula', 'formula'
         SUBSUBSCRIPTION = 'subsubscription', 'subsubscription'
 
