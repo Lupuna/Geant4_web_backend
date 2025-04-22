@@ -1,8 +1,14 @@
+from django.db import IntegrityError
 from elasticsearch_dsl import Q
 
 from django_elasticsearch_dsl import Document
 
 from django.conf import settings
+from rest_framework.exceptions import ValidationError as DRFValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework.exceptions import ValidationError
+
+from file_client.utils import handle_file_upload
 
 
 class ElasticMixin:
@@ -72,3 +78,62 @@ class ElasticMixin:
                 request, search)
 
         return search
+
+
+class ValidationHandlingMixin:
+    def perform_create(self, serializer, **kwargs):
+        try:
+            instance = serializer.save(**kwargs) if kwargs else serializer.save()
+        except DjangoValidationError as e:
+            raise DRFValidationError({'error': e.messages})
+        except IntegrityError as e:
+            raise DRFValidationError({'error': str(e)})
+
+        return instance
+
+    def perform_update(self, serializer, **kwargs):
+        try:
+            instance = serializer.save(**kwargs) if kwargs else serializer.save()
+        except DjangoValidationError as e:
+            raise DRFValidationError({'error': e.messages})
+        except IntegrityError as e:
+            raise DRFValidationError({'error': str(e)})
+
+        return instance
+
+
+# class FileUploadMixin:
+#
+#     def files_upload(self, instance):
+#         uploaded_files = self.request.FILES.getlist('files')
+#         if not uploaded_files:
+#             return
+#
+#         related_files = self.get_files_queryset(instance)
+#
+#         if len(uploaded_files) != related_files.count():
+#             raise ValidationError(
+#                 f"Mismatch in uploaded files ({len(uploaded_files)}) and related files ({related_files.count()}) for Article {instance.id}"
+#             )
+#
+#         handlers = self.get_files_handlers()
+#
+#         for uploaded_file, file_instance in zip(uploaded_files, related_files):
+#             file_path = handle_file_upload(uploaded_file)
+#             handler = handlers.get(file_instance.type)
+#             if not handler:
+#                 raise ValidationError(f"No handler for file type '{file_instance.type}' (UUID: {file_instance.uuid})")
+#
+#             handler(file_path, file_instance.uuid)
+#
+#     def get_files_handlers(self):
+#         return {}
+#
+#     def get_files_queryset(self, instance):
+#         ...
+# def get_files_handlers(self):
+#     handlers = {
+#         'webp': lambda path, uuid: render_and_upload_documentation_image_task.delay(path, str(uuid)),
+#         'csv': lambda path, uuid: render_and_upload_documentation_image_task.delay(path, str(uuid)),
+#     }
+#     return handlers

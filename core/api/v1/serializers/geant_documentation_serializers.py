@@ -38,7 +38,7 @@ class SubscriptionSerializer(WritableNestedModelSerializer):
 
     class Meta:
         model = Subscription
-        fields = ('title', 'subscription_order', 'elements')
+        fields = ('id', 'title', 'subscription_order', 'elements')
 
     def create(self, validated_data):
         with transaction.atomic():

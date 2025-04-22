@@ -26,7 +26,7 @@ from api.v1.serializers.examples_serializers import ExampleForUserSerializer
 from file_client.exceptions import FileClientException
 from file_client.profile_image_client import ProfileImageRendererClient
 from file_client.schema import image_schema
-from file_client.tasks import render_and_upload_task, render_and_update_task
+from file_client.tasks import render_and_upload_profile_image_task, render_and_update_profile_image_task
 from file_client.utils import handle_file_upload
 
 from users.models import User
@@ -122,7 +122,7 @@ class UserProfileImageViewSet(ViewSet):
         if serializer.is_valid(raise_exception=True):
             old_path = handle_file_upload(
                 serializer.validated_data.get('image'))
-            render_and_upload_task.delay(old_path, str(user.uuid))
+            render_and_upload_profile_image_task.delay(old_path, str(user.uuid))
 
             return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
 
@@ -136,7 +136,7 @@ class UserProfileImageViewSet(ViewSet):
         if serializer.is_valid(raise_exception=True):
             old_path = handle_file_upload(
                 serializer.validated_data.get('image'))
-            render_and_update_task.delay(old_path, str(user.uuid))
+            render_and_upload_profile_image_task.delay(old_path, str(user.uuid))
 
             return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
 
