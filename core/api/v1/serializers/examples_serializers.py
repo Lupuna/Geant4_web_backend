@@ -95,6 +95,12 @@ class ExamplePOSTSerializer(serializers.ModelSerializer):
 
         return value
 
+    def validate_title_verbose(self, value):
+        if self.Meta.model.objects.filter(title_verbose=value).exists():
+            raise ValidationError('This title_verbose already in use')
+
+        return value
+
     def create(self, validated_data):
         tags = validated_data.pop('tags', [])
         example = super().create(validated_data)
