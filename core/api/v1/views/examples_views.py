@@ -1,34 +1,30 @@
 import requests
-
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
+from cacheops import invalidate_model
+from django.conf import settings
+from django.http import FileResponse
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 
-from .mixins import ElasticMixin
-
+from api.tasks import send_celery_mail
 from api.v1.serializers.examples_serializers import (
     ExamplePOSTSerializer,
     ExampleGETSerializer,
-    TagSerializer,
     ExamplePATCHSerializer,
     ExampleCommandGETSerializer,
     ExampleCommandPOSTSerializer,
     ExampleCommandUpdateStatusSerializer
 )
-from api.tasks import send_celery_mail
-
 from file_client.example_csv_client import ExampleRendererClient
 from file_client.exceptions import FileClientException
-
-from geant_examples.models import Example, Tag, UserExampleCommand, ExampleCommand
 from geant_examples.documents import ExampleDocument
+from geant_examples.models import Example, UserExampleCommand, ExampleCommand
+from .mixins import ElasticMixin
 
-from drf_spectacular.utils import extend_schema
 
-from django.conf import settings
-from django.http import FileResponse
 from django.db.models.query import QuerySet
 
 from cacheops import invalidate_model

@@ -1,25 +1,22 @@
 import datetime
 
-from rest_framework.views import APIView
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework.exceptions import ValidationError
+from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
-from django.contrib.auth import authenticate
-from django.conf import settings
-from django.utils import timezone
-
-from users.models import User
-
+from api.tasks import send_celery_mail
 from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSerializer
 from api.v1.serializers.users_serializers import UserEmailSerializer, PasswordUpdateSerializer
-from api.tasks import send_celery_mail
-
-from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies, get_token_info_or_return_failure, make_disposable_url
-
-from drf_spectacular.utils import extend_schema
+from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies, \
+    get_token_info_or_return_failure, make_disposable_url
+from users.models import User
 
 
 @extend_schema(
@@ -43,13 +40,15 @@ class RegistrationAPIView(APIView):
                 send_celery_mail.delay(
                     'Confirm registration', message, [user_email])
 
-                return response_cookies({'detail': 'Follow the link in mail to accept your registartion'}, status.HTTP_201_CREATED)
+                return response_cookies({'detail': 'Follow the link in mail to accept your registartion'},
+                                        status.HTTP_201_CREATED)
 
             if not user.is_active:
                 send_celery_mail.delay(
                     'Confirm registration', message, [user_email])
 
-                return response_cookies({'detail': 'Follow the link in mail to accept your registartion'}, status.HTTP_200_OK)
+                return response_cookies({'detail': 'Follow the link in mail to accept your registartion'},
+                                        status.HTTP_200_OK)
 
             return response_cookies({'error': 'User already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -127,9 +126,11 @@ class LogoutAPIView(APIView):
         try:
             put_token_on_blacklist(refresh_token=raw_refresh)
         except ValidationError:
-            return response_cookies({'error': 'Invalid refresh token'}, status.HTTP_400_BAD_REQUEST, cookies_data=cookie_to_remove, delete=True)
+            return response_cookies({'error': 'Invalid refresh token'}, status.HTTP_400_BAD_REQUEST,
+                                    cookies_data=cookie_to_remove, delete=True)
 
-        return response_cookies({'detail': 'Logged out'}, status.HTTP_200_OK, cookies_data=cookie_to_remove, delete=True)
+        return response_cookies({'detail': 'Logged out'}, status.HTTP_200_OK, cookies_data=cookie_to_remove,
+                                delete=True)
 
 
 @extend_schema(
@@ -164,14 +165,17 @@ class PasswordRecoveryAPIView(APIView):
 
             if user.is_active:
                 dicposable_url = make_disposable_url(
-                    settings.FRONTEND_URL + '/auth/password_recovery/confirm/', settings.PASSWORD_RECOVERY_SALT, {'username': user.username})
+                    settings.FRONTEND_URL + '/auth/password_recovery/confirm/', settings.PASSWORD_RECOVERY_SALT,
+                    {'username': user.username})
                 message = f'For password recovery follow link\n{dicposable_url}'
                 send_celery_mail.delay(
                     'Password recovery', message, [user_email])
 
-                return response_cookies({'detail': 'We sent mail on your email to recovery password'}, status=status.HTTP_200_OK)
+                return response_cookies({'detail': 'We sent mail on your email to recovery password'},
+                                        status=status.HTTP_200_OK)
 
-            return response_cookies({'error': 'User with this email is not active'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            return response_cookies({'error': 'User with this email is not active'},
+                                    status=status.HTTP_406_NOT_ACCEPTABLE)
 
         return response_cookies({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -194,7 +198,8 @@ class PasswordRecoveryConfirmAPIView(APIView):
             if serializer.is_valid():
                 serializer.save()
 
-                return response_cookies({'detail': 'Password recovered successfully'}, status=status.HTTP_200_OK, cookies_data=['access', 'refresh'], delete=True)
+                return response_cookies({'detail': 'Password recovered successfully'}, status=status.HTTP_200_OK,
+                                        cookies_data=['access', 'refresh'], delete=True)
 
             return response_cookies({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -212,7 +217,7 @@ class GetAuthInfoAPIView(APIView):
         access = request.COOKIES.get('access', None)
 
         if refresh and access:
-            for token in (access, refresh, ):
+            for token in (access, refresh,):
                 try:
                     JWTAuthentication().get_validated_token(token)
                 except InvalidToken:

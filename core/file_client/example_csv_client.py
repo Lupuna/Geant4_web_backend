@@ -11,5 +11,3 @@ class ExampleRendererClient(BaseRendererUploader):
 
     def render(self):
         raise NotImplementedError('Method not allowed')
-
-

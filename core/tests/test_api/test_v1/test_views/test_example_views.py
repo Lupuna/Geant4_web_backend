@@ -1,14 +1,12 @@
+from unittest.mock import patch, MagicMock
 
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.request import Request
-from api.v1.views.examples_views import ExampleCommandViewSet
 from rest_framework.test import APIRequestFactory, force_authenticate
+
+from api.v1.views.examples_views import ExampleCommandViewSet
 from geant_examples.models import Example, ExampleCommand, UserExampleCommand
-
 from tests.test_api.test_v1.test_views.auth_test_base import AuthSettingsTest
-
-from unittest.mock import patch, MagicMock
 
 
 class ExampleCommandViewSetTestCase(AuthSettingsTest):
