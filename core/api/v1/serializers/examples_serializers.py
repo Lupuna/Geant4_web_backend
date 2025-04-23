@@ -12,6 +12,13 @@ from api.v1.serializers.validators import m2m_validator
 class TagSerializer(serializers.Serializer):
     title = serializers.CharField()
 
+
+class TagAPISerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = '__all__'
+
+
 class ExampleCommandGETSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     users = UserQuickInfoSerializer(many=True)
@@ -117,6 +124,15 @@ class ExamplePOSTSerializer(serializers.ModelSerializer):
 
     def validate_title_not_verbose(self, value):
         title_not_verbose_view(value)
+
+        if self.Meta.model.objects.filter(title_not_verbose=value).exists():
+            raise ValidationError('This title_not_verbose already in use')
+
+        return value
+
+    def validate_title_verbose(self, value):
+        if self.Meta.model.objects.filter(title_verbose=value).exists():
+            raise ValidationError('This title_verbose already in use')
 
         return value
 

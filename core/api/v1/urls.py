@@ -20,9 +20,18 @@ from api.v1.views.auth_views import (
     RegistrationConfirmAPIView,
     GetAuthInfoAPIView
 )
-from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView
+from api.v1.views.examples_views import (
+    ExampleViewSet,
+    ExampleCommandViewSet,
+    ExampleCommandUpdateStatusAPIView,
+    CategoryAPIView
+)
+from api.v1.views.tags_views import TagViewSet
 from api.v1.views.groups_views import GroupAPIViewSet
 
+
+tag_router = SimpleRouter()
+tag_router.register('tags', TagViewSet, basename='tags')
 
 user_update_router = SimpleRouter()
 user_update_router.register(
@@ -45,6 +54,7 @@ urlpatterns = [
     path('', include(user_update_router.urls)),
     path('', include(example_command_router.urls)),
     path('', include(group_router.urls)),
+    path('', include(tag_router.urls)),
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
     path('registration/confirm/<str:token>', RegistrationConfirmAPIView.as_view(),
          name='confirm-registration'),
@@ -64,5 +74,7 @@ urlpatterns = [
     path('update_example_status/', ExampleCommandUpdateStatusAPIView.as_view(),
          name='update-example-status'),
     path('profile/my_examples/', UserExampleView.as_view(), name='user-examples'),
-    path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized')
+    path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized'),
+    path('example/categories/', CategoryAPIView.as_view(),
+         name='example-categories')
 ]

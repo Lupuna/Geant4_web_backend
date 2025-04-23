@@ -13,8 +13,8 @@ services:
     environment:
       - IS_DEBUG=False
     command: >
-      sh -c "python manage.py migrate &&
-             gunicorn --bind 0.0.0.0:8001 core.wsgi:application &&
+      sh -c "python manage.py migrate;
+             gunicorn --bind 0.0.0.0:8001 core.wsgi:application;
              python manage.py search_index --rebuild -f"
     expose:
       - "8001"
@@ -83,6 +83,7 @@ services:
       - STORAGE_URL=${STORAGE_URL}
       - EMAIL_HOST_USER=${EMAIL_HOST_USER}
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - PATH_TO_LOCAL_STORAGE=${PATH_TO_LOCAL_STORAGE:-files/}
 
   celery_beat:
     build:

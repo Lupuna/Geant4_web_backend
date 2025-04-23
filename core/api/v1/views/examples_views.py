@@ -30,6 +30,7 @@ from drf_spectacular.utils import extend_schema
 
 from django.conf import settings
 from django.http import FileResponse
+from django.db.models.query import QuerySet
 
 from cacheops import invalidate_model
 
@@ -54,11 +55,11 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
                 return ExamplePATCHSerializer(*args, **kwargs)
 
     def get_queryset(self):
-        search = self.elastic_document.search()
-        after_search = self.elastic_search(self.request, search)
-        after_filter = self.elastic_filter(self.request, after_search)
+        elastic_document_class = self.get_elastic_document_class()
+        search = elastic_document_class.search()
+        result_search = self.elastic_full_query_handling(self.request, search)
 
-        return after_filter.to_queryset()
+        return result_search.to_queryset()
 
 
 @extend_schema(
@@ -83,10 +84,10 @@ class ExampleCommandViewSet(ModelViewSet):
 
         return context
 
-    def get_queryset(self):
+    def get_queryset(self, *prefetch_lookups) -> QuerySet:
         example = int(self.kwargs.get('example_pk'))
 
-        return ExampleCommand.objects.filter(example=example)
+        return ExampleCommand.objects.filter(example=example).prefetch_related(*prefetch_lookups)
 
     @extend_schema(request=ExampleCommandPOSTSerializer)
     def create(self, request, *args, **kwargs):
@@ -101,7 +102,7 @@ class ExampleCommandViewSet(ModelViewSet):
         try:
             response = client.download()
         except FileClientException as e:
-            ex_commands = self.get_queryset().prefetch_related(
+            ex_commands = self.get_queryset(
                 'example', 'users').filter(key_s3=key_s3)
             if not ex_commands.exists():
                 response = self._run_example(request, example, params)
@@ -150,8 +151,13 @@ class ExampleCommandViewSet(ModelViewSet):
     def _add_user_in_example_command(example, key_s3, user):
         ex_command, created = ExampleCommand.objects.get_or_create(
             key_s3=key_s3, example=example)
+
         if user not in ex_command.users.all():
             ex_command.users.add(user)
+
+        us_ex_command = ex_command.users.through.objects.get(user=user)
+        us_ex_command.status = UserExampleCommand.StatusChoice.executed
+        us_ex_command.save()
 
 
 @extend_schema(
@@ -189,3 +195,15 @@ class ExampleCommandUpdateStatusAPIView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    tags=['Categories']
+)
+class CategoryAPIView(APIView):
+    permission_classes = [IsAuthenticated, ]
+
+    def get(self, request, *args, **kwargs):
+        data = {label: val for label, val in Example.CategoryChoices.choices}
+
+        return Response(data, status=status.HTTP_200_OK)

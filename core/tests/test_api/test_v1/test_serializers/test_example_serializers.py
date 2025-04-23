@@ -4,7 +4,6 @@ from api.v1.serializers.examples_serializers import (
     ExampleForUserSerializer,
     ExamplePATCHSerializer,
     ExamplePOSTSerializer,
-    UserExampleCommand,
     ExampleCommandGETSerializer,
     ExampleCommandPOSTSerializer
 )

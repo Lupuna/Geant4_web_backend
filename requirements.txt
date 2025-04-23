@@ -69,7 +69,7 @@ platformdirs==4.3.6
 prometheus_client==0.21.1
 prompt_toolkit==3.0.50
 propcache==0.3.1
-psycopg2==2.9.10
+psycopg2-binary==2.9.10
 pycparser==2.22
 PyJWT==2.10.1
 python-crontab==3.2.0
