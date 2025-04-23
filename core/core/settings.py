@@ -14,14 +14,14 @@ import socket
 import sys
 from datetime import timedelta
 from pathlib import Path
+
 from dotenv import load_dotenv
 from loguru import logger
-from core.loguru_handler import InterceptHandler
 
+from core.loguru_handler import InterceptHandler
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -38,7 +38,6 @@ EMAIL_UPDATE_SALT = os.getenv('EMAIL_UPDATE_SALT')
 DEBUG = os.getenv('IS_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = ["localhost", '127.0.0.1', 'web-app', '92.63.76.159']
-
 
 # Application definition
 
@@ -61,6 +60,7 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
     'geant_examples.apps.GeantExamplesConfig',
+    'geant_documentation.apps.GeantDocumentationConfig',
     'cacheops',
 ]
 
@@ -111,7 +111,6 @@ DATABASES = {
     }
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -130,7 +129,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -141,7 +139,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -341,8 +338,19 @@ ELASTIC_PARAMS_CONF = {
                     'category',
                 ],
                 'search': 'query',
-                'pagination': [1, 2]
+                'pagination': ['page', 'page_size']
             },
+        },
+        'ArticleDocument': {
+            'params': {
+                'filter': [
+                    'chapter',
+                    'category',
+                    'chosen',
+                ],
+                'search': 'query',
+                'pagination': ['page', 'page_size']
+            }
         }
     }
 }

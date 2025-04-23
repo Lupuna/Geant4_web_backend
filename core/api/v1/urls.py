@@ -1,15 +1,7 @@
 from django.urls import path, include
-
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from api.v1.views.users_views import (
-    UserProfileViewSet,
-    UserProfileUpdateImportantInfoViewSet,
-    UserExampleView,
-    UserProfileImageViewSet,
-    ConfirmEmailUpdateAPIView
-)
 from api.v1.views.auth_views import (
     RegistrationAPIView,
     LoginAPIView,
@@ -20,6 +12,8 @@ from api.v1.views.auth_views import (
     RegistrationConfirmAPIView,
     GetAuthInfoAPIView
 )
+from api.v1.views.geant_documentation_views import ArticleViewSet, ChapterViewSet, CategoryViewSet, SubscriptionViewSet, \
+    ElementViewSet
 from api.v1.views.examples_views import (
     ExampleViewSet,
     ExampleCommandViewSet,
@@ -28,7 +22,13 @@ from api.v1.views.examples_views import (
 )
 from api.v1.views.tags_views import TagViewSet
 from api.v1.views.groups_views import GroupAPIViewSet
-
+from api.v1.views.users_views import (
+    UserProfileViewSet,
+    UserProfileUpdateImportantInfoViewSet,
+    UserExampleView,
+    UserProfileImageViewSet,
+    ConfirmEmailUpdateAPIView
+)
 
 tag_router = SimpleRouter()
 tag_router.register('tags', TagViewSet, basename='tags')
@@ -44,6 +44,23 @@ group_router.register(
 example_router = SimpleRouter()
 example_router.register(r'examples', ExampleViewSet, basename='examples')
 
+documentation_router = SimpleRouter()
+documentation_router.register(r'articles', ArticleViewSet, basename='articles')
+documentation_router.register(r'chapters', ChapterViewSet, basename='chapters')
+documentation_router.register(r'categories', CategoryViewSet, basename='categories')
+
+documentation_subscription_router = NestedSimpleRouter(
+    parent_router=documentation_router, parent_prefix=r'articles', lookup='article')
+documentation_subscription_router.register(
+    r'subscriptions', SubscriptionViewSet, basename='article-subscriptions'
+)
+
+documentation_subscription_element_router = NestedSimpleRouter(
+    parent_router=documentation_subscription_router, parent_prefix=r'subscriptions', lookup='subscription')
+documentation_subscription_element_router.register(
+    r'elements', ElementViewSet, basename='article-subscription-elements'
+)
+
 example_command_router = NestedSimpleRouter(
     parent_router=example_router, parent_prefix=r'examples', lookup='example')
 example_command_router.register(
@@ -53,7 +70,10 @@ urlpatterns = [
     path('', include(example_router.urls)),
     path('', include(user_update_router.urls)),
     path('', include(example_command_router.urls)),
+    path('', include(documentation_router.urls)),
     path('', include(group_router.urls)),
+    path('', include(documentation_subscription_element_router.urls)),
+    path('', include(documentation_subscription_router.urls)),
     path('', include(tag_router.urls)),
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
     path('registration/confirm/<str:token>', RegistrationConfirmAPIView.as_view(),

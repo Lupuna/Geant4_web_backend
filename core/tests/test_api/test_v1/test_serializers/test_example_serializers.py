@@ -8,8 +8,6 @@ from api.v1.serializers.examples_serializers import (
     ExampleCommandPOSTSerializer
 )
 
-from users.models import User
-
 from geant_examples.models import *
 
 from rest_framework.exceptions import ErrorDetail

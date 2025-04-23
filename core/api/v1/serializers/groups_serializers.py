@@ -1,13 +1,10 @@
-from .users_serializers import UserQuickInfoSerializer
-
+from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from api.v1.serializers.validators import m2m_validator
-
-from django.contrib.auth.models import Group, Permission
-
 from users.models import User
+from .users_serializers import UserQuickInfoSerializer
 
 
 class PermissionQuickInfoSerializer(serializers.Serializer):
