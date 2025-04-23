@@ -77,7 +77,6 @@ class Element(models.Model):
         return {
             cls.TypeChoice.TEXT: {'text': True},
             cls.TypeChoice.FORMULA: {'text': True},
-            cls.TypeChoice.CODE: {'text': True},
             cls.TypeChoice.SUBSUBSCRIPTION: {'text': True},
             cls.TypeChoice.IMAGE: {'text': False},
             cls.TypeChoice.GRAPHIC: {'text': False},
@@ -105,7 +104,6 @@ class File(models.Model):
 
     uuid = models.UUIDField(default=uuid4)
     format = models.CharField(choices=FormatChoice.choices, default=FormatChoice.WEBP, max_length=4)
-    comment = models.TextField(null=True, blank=True)
     element = models.ForeignKey(Element, on_delete=models.CASCADE, related_name='files')
 
     def __str__(self):

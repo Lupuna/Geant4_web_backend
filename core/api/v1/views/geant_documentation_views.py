@@ -52,14 +52,12 @@ class ElementViewSet(ValidationHandlingMixin, ModelViewSet):
 
     def perform_create(self, serializer, **kwargs):
         url_variables = {
-            'article_id': self.kwargs['article_pk'],
             'subscription_id': self.kwargs['subscription_pk'],
         }
         super().perform_create(serializer, **url_variables)
 
     def perform_update(self, serializer, **kwargs):
         url_variables = {
-            'article_id': self.kwargs['article_pk'],
             'subscription_id': self.kwargs['subscription_pk']
         }
         super().perform_update(serializer, **url_variables)

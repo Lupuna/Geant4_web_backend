@@ -1,7 +1,7 @@
-from users.models import User
-from users.auth.validators import check_passwords_match
-
 from rest_framework import serializers
+
+from users.auth.validators import check_passwords_match
+from users.models import User
 
 
 class RegistrationSerializer(serializers.ModelSerializer):

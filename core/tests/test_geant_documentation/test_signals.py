@@ -1,47 +1,40 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 
-from geant_documentation.models import Chapter, Category, Article, Subscription, Element, File
+from geant_documentation.models import File, Article, Subscription, Element
 
 
-class ElementSignalTestCase(TestCase):
+class FileSignalTestCase(TestCase):
     def setUp(self):
-        self.chapter = Chapter.objects.create(title="Signals")
-        self.category = Category.objects.create(title="Programming")
         self.article = Article.objects.create(
-            title="Signal Basics",
-            description="How Django signals work",
-            chapter=self.chapter,
-            category=self.category
+            title='test_title',
+            description='test_description',
         )
         self.subscription = Subscription.objects.create(
-            title="Signal Lesson",
+            title='test_title',
             subscription_order=1,
             article=self.article
         )
-
-    def test_file_created_for_valid_type(self):
-        element = Element.objects.create(
-            subscription=self.subscription,
+        self.element = Element.objects.create(
+            text="Old",
             element_order=1,
-            type=Element.TypeChoice.GRAPHIC
+            type="image",
+            subscription=self.subscription
         )
-        self.assertTrue(File.objects.filter(element=element, format=element.type).exists())
 
-    def test_file_not_created_for_non_file_type(self):
-        element = Element.objects.create(
-            subscription=self.subscription,
-            element_order=1,
-            type=Element.TypeChoice.TEXT
-        )
-        self.assertFalse(File.objects.filter(element=element).exists())
+    def test_destroy_file_webp_triggers_correct_task(self):
+        file = File.objects.create(format='webp', element=self.element)
+        file_uuid = str(file.uuid)
 
-    def test_file_not_created_on_update(self):
-        element = Element.objects.create(
-            subscription=self.subscription,
-            element_order=1,
-            type=Element.TypeChoice.IMAGE
-        )
-        File.objects.all().delete()
-        element.text = "Some image description"
-        element.save()
-        self.assertEqual(File.objects.count(), 0)
+        with patch('geant_documentation.signals.destroy_documentation_image_task.delay') as mock_task:
+            file.delete()
+            mock_task.assert_called_once_with(name=file_uuid)
+
+    def test_destroy_file_csv_triggers_correct_task(self):
+        file = File.objects.create(format='csv', element=self.element)
+        file_uuid = str(file.uuid)
+
+        with patch('geant_documentation.signals.destroy_documentation_graphic_task.delay') as mock_task:
+            file.delete()
+            mock_task.assert_called_once_with(name=file_uuid)

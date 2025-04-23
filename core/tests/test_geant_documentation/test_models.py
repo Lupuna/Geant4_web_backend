@@ -137,16 +137,6 @@ class ElementTestCase(TestCase):
             element.clean()
         self.assertIn('Text must be set when type is "text".', str(context.exception))
 
-    def test_text_required_for_code_type(self):
-        element = Element(
-            element_order=1,
-            type=Element.TypeChoice.CODE,
-            subscription=self.subscription
-        )
-        with self.assertRaises(ValidationError) as context:
-            element.clean()
-        self.assertIn('Text must be set when type is "code".', str(context.exception))
-
     def test_text_not_allowed_for_image_type(self):
         element = Element(
             element_order=1,

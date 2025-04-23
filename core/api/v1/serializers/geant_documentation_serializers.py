@@ -1,6 +1,6 @@
+from django.db import transaction
 from drf_writable_nested import WritableNestedModelSerializer
 from rest_framework import serializers
-from django.db import transaction
 
 from geant_documentation.models import Article, Category, Chapter, Element, File, Subscription
 
@@ -8,7 +8,7 @@ from geant_documentation.models import Article, Category, Chapter, Element, File
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = File
-        fields = ('id', 'uuid', 'comment', 'format')
+        fields = ('id', 'uuid', 'format')
         read_only_fields = ('id', 'uuid')
 
 

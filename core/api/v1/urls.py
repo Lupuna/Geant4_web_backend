@@ -1,17 +1,7 @@
 from django.urls import path, include
-
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from api.v1.views.geant_documentation_views import ArticleViewSet, ChapterViewSet, CategoryViewSet, SubscriptionViewSet, \
-    ElementViewSet
-from api.v1.views.users_views import (
-    UserProfileViewSet,
-    UserProfileUpdateImportantInfoViewSet,
-    UserExampleView,
-    UserProfileImageViewSet,
-    ConfirmEmailUpdateAPIView
-)
 from api.v1.views.auth_views import (
     RegistrationAPIView,
     LoginAPIView,
@@ -23,8 +13,16 @@ from api.v1.views.auth_views import (
     GetAuthInfoAPIView
 )
 from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView
+from api.v1.views.geant_documentation_views import ArticleViewSet, ChapterViewSet, CategoryViewSet, SubscriptionViewSet, \
+    ElementViewSet
 from api.v1.views.groups_views import GroupAPIViewSet
-
+from api.v1.views.users_views import (
+    UserProfileViewSet,
+    UserProfileUpdateImportantInfoViewSet,
+    UserExampleView,
+    UserProfileImageViewSet,
+    ConfirmEmailUpdateAPIView
+)
 
 user_update_router = SimpleRouter()
 user_update_router.register(

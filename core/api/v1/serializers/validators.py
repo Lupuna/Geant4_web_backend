@@ -1,5 +1,4 @@
 from rest_framework.exceptions import ValidationError
-from loguru import logger
 
 
 def m2m_validator(objects_data, model, identificator):

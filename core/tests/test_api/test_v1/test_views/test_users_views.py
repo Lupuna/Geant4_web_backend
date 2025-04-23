@@ -168,7 +168,7 @@ class UserProfileImageViewSetTestCase(AuthSettingsTest):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    @patch('api.v1.views.users_views.render_and_upload_task.delay')
+    @patch('api.v1.views.users_views.render_and_upload_profile_image_task.delay')
     @patch('api.v1.views.users_views.handle_file_upload')
     def test_create_image_ok(self, mock_handle, mock_task):
         self.login_user()
@@ -184,7 +184,7 @@ class UserProfileImageViewSetTestCase(AuthSettingsTest):
         mock_handle.assert_called_once()
         mock_task.assert_called_once()
 
-    @patch('api.v1.views.users_views.render_and_update_task.delay')
+    @patch('api.v1.views.users_views.render_and_update_profile_image_task.delay')
     @patch('api.v1.views.users_views.handle_file_upload')
     def test_update_image_ok(self, mock_handle, mock_task):
         self.login_user()
