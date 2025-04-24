@@ -2,7 +2,8 @@ import requests
 
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework import status
 
@@ -42,6 +43,21 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
     permission_classes = (IsAuthenticated,)
     http_method_names = ['get', 'post', 'patch', 'delete']
     elastic_document = ExampleDocument
+
+    @extend_schema(exclude=True)
+    @action(detail=False, methods=['patch'], url_path="change-synchronized", permission_classes=[])
+    def change_synchronized_status(self, request, pk=None):
+        title_not_verbose = request.query_params.get("title_not_verbose", None)
+        try:
+            example = Example.objects.get(title_not_verbose=title_not_verbose)
+            example.synchronized = False
+            example.save()
+        except Exception as e:
+            return Response({"message": f"error. {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"message": "success."}, status=status.HTTP_200_OK)
+
+
 
     def get_serializer(self, *args, **kwargs):
         match self.request.method:

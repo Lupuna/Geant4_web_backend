@@ -7,7 +7,8 @@ from geant_examples.models import Command, Example
 from geant_examples.signals import (
     delete_example,
     delete_command,
-    save_command
+    save_command,
+    save_example
 )
 
 
@@ -21,6 +22,10 @@ class Base(TestCase):
         post_save.disconnect(
             receiver=save_command,
             sender=Command
+        )
+        post_save.disconnect(
+            receiver=save_example,
+            sender=Example
         )
         post_delete.disconnect(
             receiver=delete_command,
@@ -36,6 +41,10 @@ class Base(TestCase):
         post_save.connect(
             receiver=save_command,
             sender=Command
+        )
+        post_save.connect(
+            receiver=save_example,
+            sender=Example
         )
         post_delete.connect(
             receiver=delete_command,

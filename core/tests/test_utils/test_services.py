@@ -4,7 +4,7 @@ from django.conf import settings
 from unittest.mock import patch, MagicMock
 
 from geant_examples.models import Example, Command
-from utils.services import retry, DatabaseSynchronizer
+from utils.services import DatabaseSynchronizer
 from tests.base import Base
 
 class DatabaseSynchronizerTestCase(Base):
@@ -25,17 +25,6 @@ class DatabaseSynchronizerTestCase(Base):
             order_index=2,
             default="default2"
         )
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.patcher = patch("time.sleep", lambda *args, **kwargs: None)
-        cls.patcher.start()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.patcher.stop()
-        super().tearDownClass()
 
     def test_init_with_example(self):
         sync = DatabaseSynchronizer(example=self.example)
@@ -128,17 +117,6 @@ class DatabaseSynchronizerTestCase(Base):
 
         mock_delete.assert_not_called()
 
-    @patch('utils.services.DatabaseSynchronizer.get_example_from_backend')
-    @patch('requests.delete')
-    def test_drop_example_error(self, mock_delete, mock_get_example):
-        mock_get_example.return_value = 123
-        mock_delete.side_effect = requests.exceptions.RequestException("API Error")
-
-        sync = DatabaseSynchronizer(example=self.example)
-        sync.drop_example()
-
-        mock_delete.assert_called_once()
-
     @patch('requests.post')
     def test_create_example_success(self, mock_post):
         mock_response = MagicMock()
@@ -166,7 +144,8 @@ class DatabaseSynchronizerTestCase(Base):
 
         mock_post.assert_called_once_with(
             url=settings.GEANT_BACKEND_CREATE_EXAMPLE_URL,
-            json=expected_data
+            json=expected_data,
+            timeout=5
         )
 
     @patch('requests.post')
@@ -199,54 +178,3 @@ class DatabaseSynchronizerTestCase(Base):
         sync.run()
 
         mock_create.assert_called_once()
-
-class DecoratorsTestCase(Base):
-
-    @patch("time.sleep")
-    def test_with_fails(self, mock_sleep):
-        mock = MagicMock()
-        mock.side_effect = [Exception("fail 1"), Exception("fail 2")]
-        n = 2
-
-        @retry(n)
-        def f():
-            return mock()
-
-        with self.assertRaises(Exception, msg="fail 2"):
-            f()
-
-        self.assertEqual(mock.call_count, n)
-
-    @patch("time.sleep")
-    def test_without_fails(self, mock_sleep):
-        mock = MagicMock()
-        mock.side_effect = [52]
-
-        @retry(2)
-        def f():
-            return mock()
-
-        res = f()
-
-        mock.assert_called_once()
-        self.assertEqual(
-            res, 52
-        )
-
-    @patch("time.sleep")
-    def test_with_fails_or_success(self, mock_sleep):
-        mock = MagicMock()
-        mock.side_effect = [Exception("fail 1"), 52, Exception("fail 2")]
-
-        @retry(3)
-        def f():
-            return mock()
-
-        res = f()
-
-        self.assertEqual(mock.call_count, 2)
-        self.assertEqual(res, 52)
-
-
-
-

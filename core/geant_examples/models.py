@@ -29,6 +29,7 @@ class Example(models.Model):
         default=CategoryChoices.other,
         help_text=_('Category of example')
     )
+    synchronized = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = _("Example")
@@ -101,7 +102,6 @@ class ExampleCommand(models.Model):
 
     def __str__(self):
         return self.key_s3
-
 
 class UserExampleCommand(models.Model):
     class StatusChoice(models.IntegerChoices):

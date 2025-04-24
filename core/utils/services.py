@@ -1,34 +1,8 @@
 import requests
-import time
 
 from django.conf import settings
 from loguru import logger
-from functools import wraps
-
-def retry(n=5):
-    def _retry(func):
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            exc = None
-
-            for i in range(n):
-                logger.info(f"{func.__name__}. {i + 1} attempt.")
-                try:
-                    result = func(*args, **kwargs)
-                except Exception as e:
-                    exc = e
-                    logger.error(e)
-                else:
-                    return result
-
-                time.sleep(5)
-
-            raise exc
-
-        return wrapper
-
-    return _retry
+from tenacity import wait_fixed, retry, stop_after_attempt
 
 class DatabaseSynchronizer:
     def __init__(self, example=None, command=None):
@@ -52,22 +26,18 @@ class DatabaseSynchronizer:
             for command in self.commands
         ]
 
-    @retry()
     def get_example_from_backend(self):
-        try:
-            response = requests.get(
-                url=settings.GEANT_BACKEND_GET_EXAMPLE_URL.format(title=self.example.title_not_verbose)
-            )
-        except Exception as e:
-            logger.error(e)
-            raise e
-        else:
-            data = response.json()
-            if data.get("detail") == "Example not found":
-                return -1
-            return data["id"]
+        response = requests.get(
+            url=settings.GEANT_BACKEND_GET_EXAMPLE_URL.format(title=self.example.title_not_verbose)
+        )
+        response.raise_for_status()
 
-    @retry()
+        data = response.json()
+        if data.get("detail") == "Example not found":
+            return -1
+        return data["id"]
+
+    @retry(wait=wait_fixed(3), stop=stop_after_attempt(5), reraise=True)
     def drop_example(self, backend_example_id=None):
         backend_example_id = backend_example_id or self.get_example_from_backend()
         if backend_example_id == -1:
@@ -75,24 +45,22 @@ class DatabaseSynchronizer:
             return
 
         url = settings.GEANT_BACKEND_DELETE_EXAMPLE_URL.format(id=backend_example_id)
-        try:
-            requests.delete(url)
-        except Exception as e:
-            logger.error(e)
-        else:
-            logger.info("success delete %s example from Backend." % self.example.title_not_verbose)
+        response = requests.delete(url)
+        response.raise_for_status()
+        logger.info("success delete %s example from Backend." % self.example.title_not_verbose)
 
-    @retry()
+    @retry(wait=wait_fixed(3), stop=stop_after_attempt(5), reraise=True)
     def create_example(self):
         json = self.prepare_data()
         try:
             response = requests.post(
                 url=settings.GEANT_BACKEND_CREATE_EXAMPLE_URL,
-                json=json
+                json=json,
+                timeout=5
             )
-        except Exception as e:
+            response.raise_for_status()
+        except requests.Timeout as e:
             logger.error(e)
-            raise e
         else:
             logger.info("success create example %s on Backend service." % self.example.title_not_verbose)
 
