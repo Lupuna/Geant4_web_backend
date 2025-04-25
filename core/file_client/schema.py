@@ -10,3 +10,14 @@ image_schema = {
         'required': ['image']
     }
 }
+
+
+file_schema = {
+    'multipart/form-data': {
+        'type': 'object',
+        'properties': {
+            'file': build_basic_type(OpenApiTypes.BINARY)
+        },
+        'required': ['file']
+    }
+}
