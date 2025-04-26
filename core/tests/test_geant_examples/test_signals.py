@@ -29,7 +29,6 @@ class ExampleSignalTestCase(TestCase):
 
         super().tearDown()
         
-        settings.BACKEND_URL = 'http://somedomain.ru/'
 
     @patch("geant_examples.signals.DatabaseSynchronizer")
     def test_post_delete(self, mock_sync):
