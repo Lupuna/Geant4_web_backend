@@ -9,12 +9,13 @@ from api.v1.serializers.geant_documentation_serializers import (
     ArticleSerializer
 )
 from geant_documentation.models import File, Element, Category, Chapter, Article, Subscription
+from tests.base import Base
 
 
 # TODO не забыть добавить в сенин Base класс сигналы всякие интересные
 
 
-class FileSerializerTestCase(TestCase):
+class FileSerializerTestCase(Base):
     def setUp(self):
         self.article = Article.objects.create(
             title='test_title',
@@ -40,7 +41,7 @@ class FileSerializerTestCase(TestCase):
         self.assertTrue(serializer.data['uuid'], uuid4)
 
 
-class ElementSerializerTestCase(TestCase):
+class ElementSerializerTestCase(Base):
     def setUp(self):
         self.article = Article.objects.create(
             title='test_title',
@@ -69,7 +70,7 @@ class ElementSerializerTestCase(TestCase):
         self.assertEqual(element.text, "Some text")
 
 
-class SubscriptionSerializerTestCase(TestCase):
+class SubscriptionSerializerTestCase(Base):
     def setUp(self):
         self.article = Article.objects.create(
             title='test_title',
@@ -102,7 +103,7 @@ class SubscriptionSerializerTestCase(TestCase):
         self.assertEqual(sub.title, "Basic Plan")
 
 
-class ArticleSerializerTestCase(TestCase):
+class ArticleSerializerTestCase(Base):
     def setUp(self):
         self.category = Category.objects.create(title="Physics")
         self.chapter = Chapter.objects.create(title="Quantum Mechanics")

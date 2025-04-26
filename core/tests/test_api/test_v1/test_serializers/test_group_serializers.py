@@ -10,9 +10,10 @@ from api.v1.serializers.groups_serializers import GroupPATCHSerializer, GroupPOS
 from rest_framework.exceptions import ErrorDetail
 
 from geant_examples.models import Example
+from tests.base import Base
 
 
-class GroupPATCHSerializerTestCase(TestCase):
+class GroupPATCHSerializerTestCase(Base):
     def setUp(self):
         self.user = User.objects.create(username='test_uname')
         self.example = Example.objects.create(
@@ -132,7 +133,7 @@ class GroupPATCHSerializerTestCase(TestCase):
             username=self.user.username))
 
 
-class GroupPOSTSerializerTestCase(TestCase):
+class GroupPOSTSerializerTestCase(Base):
     def setUp(self):
         self.user = User.objects.create(username='test_uname')
         self.example = Example.objects.create(
