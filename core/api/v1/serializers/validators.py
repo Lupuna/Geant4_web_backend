@@ -15,7 +15,7 @@ def m2m_validator(objects_data, model, identificator) -> QuerySet:
             missing_values = set(values) - existing_values
 
             raise ValidationError(
-                f'Theese {identificator}s: ({', '.join(missing_values)}) - do not exist')
+                f'Theese {identificator}s: ({", ".join(missing_values)}) - do not exist')
     else:
         raise ValidationError(f'{identificator}s must be unique')
 

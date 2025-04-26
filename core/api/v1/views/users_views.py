@@ -218,3 +218,4 @@ class UserExampleView(GenericAPIView, ElasticMixin, QueryParamsMixin):
             instance=self.get_queryset(), many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+

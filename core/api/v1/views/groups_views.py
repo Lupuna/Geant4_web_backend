@@ -1,26 +1,22 @@
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import action
+from django.contrib.auth.models import Group
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import ModelViewSet
 
 from api.v1.serializers.groups_serializers import GroupPATCHSerializer, GroupPOSTSerializer
-
-from users.auth.utils import response_cookies
-
-from drf_spectacular.utils import extend_schema
-
 from core.permissions import IsStaffPermission
-
-from django.contrib.auth.models import Group
+from users.auth.utils import response_cookies
 
 
 @extend_schema(
     tags=['Group ViewSet'],
 )
 class GroupAPIViewSet(ModelViewSet):
-    permission_classes = (IsAuthenticated, IsStaffPermission, )
+    permission_classes = (IsAuthenticated, IsStaffPermission,)
     queryset = Group.objects.all().prefetch_related('user_set', 'permissions')
-    http_method_names = ('get', 'post', 'delete', 'patch', )
+    http_method_names = ('get', 'post', 'delete', 'patch',)
 
     def get_serializer(self, *args, **kwargs):
         if self.request.method == 'PATCH':

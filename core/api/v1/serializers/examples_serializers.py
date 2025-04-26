@@ -28,7 +28,7 @@ class ExampleCommandPOSTSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExampleCommand
-        fields = ('params', )
+        fields = ('params',)
 
     def validate(self, attrs):
         example_pk = self.context.get('example_pk')
@@ -74,7 +74,7 @@ class ExamplePOSTSerializer(serializers.ModelSerializer):
     class Meta:
         model = Example
         fields = ('title_verbose', 'title_not_verbose',
-                  'description', 'tags', 'category', )
+                  'description', 'tags', 'category',)
 
     def validate_tags(self, value: list[dict]):
         if value:
@@ -98,7 +98,7 @@ class ExamplePATCHSerializer(serializers.ModelSerializer):
     class Meta:
         model = Example
         fields = ('title_verbose', 'title_not_verbose',
-                  'description', 'date_to_update', 'tags', 'category', )
+                  'description', 'date_to_update', 'tags', 'category',)
         extra_kwargs = {
             'description': {'required': False},
             'tags': {'required': False},
