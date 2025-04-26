@@ -168,7 +168,7 @@ class UserProfileImageViewSetTestCase(AuthSettingsTest):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    @patch('api.v1.views.users_views.render_and_upload_task.delay')
+    @patch('api.v1.views.users_views.render_and_upload_profile_image_task.delay')
     @patch('api.v1.views.users_views.handle_file_upload')
     def test_create_image_ok(self, mock_handle, mock_task):
         self.login_user()
@@ -184,7 +184,7 @@ class UserProfileImageViewSetTestCase(AuthSettingsTest):
         mock_handle.assert_called_once()
         mock_task.assert_called_once()
 
-    @patch('api.v1.views.users_views.render_and_update_task.delay')
+    @patch('api.v1.views.users_views.render_and_update_profile_image_task.delay')
     @patch('api.v1.views.users_views.handle_file_upload')
     def test_update_image_ok(self, mock_handle, mock_task):
         self.login_user()
@@ -200,7 +200,7 @@ class UserProfileImageViewSetTestCase(AuthSettingsTest):
         mock_handle.assert_called_once()
         mock_task.assert_called_once()
 
-    @patch('file_client.profile_image_client.ProfileImageRendererClient.delete')
+    @patch('file_client.files_clients.ProfileImageRendererClient.delete')
     def test_delete_image_ok(self, mock_delete):
         self.login_user()
         response = self.client.delete(self.url)
@@ -209,7 +209,7 @@ class UserProfileImageViewSetTestCase(AuthSettingsTest):
         self.assertEqual(response.data, {'detail': 'Image deleted'})
         mock_delete.assert_called_once()
 
-    @patch('file_client.profile_image_client.ProfileImageRendererClient.download')
+    @patch('file_client.files_clients.ProfileImageRendererClient.download')
     def test_download_image_ok(self, mock_download):
         self.login_user()
         mock_download.return_value = BytesIO(b"image data")
@@ -219,7 +219,7 @@ class UserProfileImageViewSetTestCase(AuthSettingsTest):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.getvalue(), b"image data")
 
-    @patch('file_client.profile_image_client.ProfileImageRendererClient.download')
+    @patch('file_client.files_clients.ProfileImageRendererClient.download')
     def test_download_image_not_found(self, mock_download):
         self.login_user()
         mock_download.side_effect = FileClientException(
