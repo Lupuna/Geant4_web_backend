@@ -1,6 +1,10 @@
+from django.http import FileResponse
 from drf_spectacular.utils import extend_schema
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.viewsets import ModelViewSet
+from rest_framework import status
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet, ViewSet
 
 from api.v1.serializers.geant_documentation_serializers import (
     ArticleListSerializer,
@@ -8,10 +12,20 @@ from api.v1.serializers.geant_documentation_serializers import (
     SubscriptionSerializer,
     ElementSerializer,
     ChapterSerializer,
-    CategorySerializer
+    CategorySerializer, RealFileSerializer
 )
 from api.v1.views.mixins import ElasticMixin, ValidationHandlingMixin
 from core.permissions import IsStaffPermission
+from file_client.exceptions import FileClientException
+from file_client.files_clients import ReadOnlyClient
+from file_client.schema import file_schema
+from file_client.tasks import (
+    render_and_upload_documentation_image_task,
+    render_and_update_documentation_graphic_task,
+    render_and_upload_documentation_graphic_task,
+    render_and_update_documentation_image_task
+)
+from file_client.utils import handle_file_upload
 from geant_documentation.documents import ArticleDocument
 from geant_documentation.models import Article, Subscription, Chapter, Category, Element
 
@@ -22,6 +36,7 @@ from geant_documentation.models import Article, Subscription, Chapter, Category,
 class ChapterViewSet(ModelViewSet):
     serializer_class = ChapterSerializer
     queryset = Chapter.objects.all()
+    permission_classes = (IsAuthenticated,)
 
 
 @extend_schema(
@@ -30,6 +45,80 @@ class ChapterViewSet(ModelViewSet):
 class CategoryViewSet(ModelViewSet):
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
+    permission_classes = (IsAuthenticated,)
+
+
+@extend_schema(
+    tags=['Documentation Files']
+)
+class FileViewSet(ViewSet):
+    parser_classes = (MultiPartParser,)
+
+    @classmethod
+    def get_action_map(cls):
+        return {
+            'post': 'create',
+            'patch': 'update',
+            'get': 'retrieve',
+            'delete': 'destroy'
+        }
+
+    @extend_schema(
+        request=file_schema
+    )
+    def create(self, request, *args, **kwargs):
+        serializer = RealFileSerializer(data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            old_path = handle_file_upload(
+                serializer.validated_data.get('file'))
+
+            uuid = str(kwargs['uuid'])
+            match kwargs['file_format']:
+                case 'webp':
+                    render_and_upload_documentation_image_task.delay(old_path, uuid)
+                case 'csv':
+                    render_and_upload_documentation_graphic_task.delay(old_path, uuid)
+
+            return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
+
+    @extend_schema(
+        request=file_schema
+    )
+    def update(self, request, *args, **kwargs):
+        serializer = RealFileSerializer(data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            old_path = handle_file_upload(
+                serializer.validated_data.get('file'))
+
+            uuid = str(kwargs['uuid'])
+            match kwargs['file_format']:
+                case 'webp':
+                    render_and_update_documentation_image_task.delay(old_path, uuid)
+                case 'csv':
+                    render_and_update_documentation_graphic_task.delay(old_path, uuid)
+
+            return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
+
+    def destroy(self, request, *args, **kwargs):
+        uuid = str(kwargs['uuid'])
+        ReadOnlyClient(name=uuid, file_format=kwargs['file_format']).delete()
+        return Response({"detail": "Image deleted"}, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, *args, **kwargs):
+        uuid = str(kwargs['uuid'])
+        client = ReadOnlyClient(uuid, file_format=kwargs['file_format'])
+        try:
+            response = FileResponse(client.download(), as_attachment=True, filename=uuid + f'.{client.format}')
+        except FileClientException as e:
+            return Response(e.error, status=status.HTTP_404_NOT_FOUND)
+        return response
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [IsAuthenticated, IsStaffPermission]
+        return [permission() for permission in permission_classes]
 
 
 @extend_schema(
@@ -45,7 +134,7 @@ class ElementViewSet(ValidationHandlingMixin, ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            permission_classes = [AllowAny]
+            permission_classes = [IsAuthenticated]
         else:
             permission_classes = [IsAuthenticated, IsStaffPermission]
         return [permission() for permission in permission_classes]
@@ -76,7 +165,7 @@ class SubscriptionViewSet(ValidationHandlingMixin, ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            permission_classes = [AllowAny]
+            permission_classes = [IsAuthenticated]
         else:
             permission_classes = [IsAuthenticated, IsStaffPermission]
         return [permission() for permission in permission_classes]
@@ -121,7 +210,7 @@ class ArticleViewSet(ElasticMixin, ValidationHandlingMixin, ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            permission_classes = [AllowAny]
+            permission_classes = [IsAuthenticated]
         else:
             permission_classes = [IsAuthenticated, IsStaffPermission]
         return [permission() for permission in permission_classes]

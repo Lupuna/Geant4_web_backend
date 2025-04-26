@@ -1,21 +1,42 @@
-from unittest.mock import patch
-from unittest import TestCase
+from django.test import TestCase
+from django.db.models.signals import post_save, post_delete
+from unittest.mock import patch, MagicMock
 
-from django.conf import settings
-from geant_examples.models import Example
+from geant_examples.models import Example, Command
+from geant_examples.signals import (
+    delete_example,
+    save_example
+)
 
-
-class SendRequestOnCreateSignalTests(TestCase):
+class ExampleSignalTestCase(TestCase):
     def setUp(self):
-        settings.BACKEND_URL = 'http://somedomain.ru/'
+        super().setUp()
 
-    @patch('requests.post')
-    def test_signal_does_nothing_on_update(self, mock_post):
-        instance = Example.objects.create(title_not_verbose="TSU_XX_00", title_verbose="test2")
+        self.data = {
+            "title_not_verbose": "TSU_XX_00",
+            "title_verbose": "test_verbose_title"
+        }
+        post_delete.connect(
+            receiver=delete_example,
+            sender=Example
+        )
 
-        mock_post.reset_mock()
+    def tearDown(self):
+        post_delete.disconnect(
+            receiver=delete_example,
+            sender=Example
+        )
 
-        instance.title_not_verbose = "TSU_XX_01"
-        instance.save()
+        super().tearDown()
+        
 
-        mock_post.assert_not_called()
+    @patch("geant_examples.signals.DatabaseSynchronizer")
+    def test_post_delete(self, mock_sync):
+        mock_sync_obj = MagicMock()
+        mock_sync.return_value = mock_sync_obj
+
+        example = Example.objects.create(**self.data)
+        example.delete()
+
+        mock_sync.assert_called_once_with(example=example)
+        mock_sync_obj.drop_example.assert_called_once()

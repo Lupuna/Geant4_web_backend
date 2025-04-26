@@ -190,3 +190,16 @@ class FileTestCase(TestCase):
     def test_str(self):
         correct_meaning = f'{self.file.uuid}.{self.file.format}'
         self.assertEqual(correct_meaning, str(self.file))
+
+    def test_element_file_limit(self):
+        for _ in range(7):
+            File.objects.create(
+                format=File.FormatChoice.WEBP,
+                element=self.element
+            )
+        with self.assertRaises(ValidationError) as ctx:
+            File.objects.create(
+                format=File.FormatChoice.WEBP,
+                element=self.element
+            )
+        self.assertIn('Max files for element is 8', str(ctx.exception))

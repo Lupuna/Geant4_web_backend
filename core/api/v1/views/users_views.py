@@ -21,7 +21,7 @@ from api.v1.serializers.users_serializers import (
     PasswordProfileUpdateSerializer
 )
 from file_client.exceptions import FileClientException
-from file_client.profile_image_client import ProfileImageRendererClient
+from file_client.files_clients import ProfileImageRendererClient
 from file_client.schema import image_schema
 from file_client.tasks import render_and_upload_profile_image_task, render_and_update_profile_image_task
 from file_client.utils import handle_file_upload
@@ -107,7 +107,7 @@ class UserProfileImageViewSet(ViewSet):
         return {
             'post': 'create',
             'patch': 'update',
-            'get': 'download',
+            'get': 'retrieve',
             'delete': 'destroy'
         }
 
@@ -144,7 +144,7 @@ class UserProfileImageViewSet(ViewSet):
         ProfileImageRendererClient(name=str(user.uuid)).delete()
         return Response({"detail": "Image deleted"}, status=status.HTTP_200_OK)
 
-    def download(self, request):
+    def retrieve(self, request):
         user = self.get_user()
         client = ProfileImageRendererClient(name=str(user.uuid))
         try:
