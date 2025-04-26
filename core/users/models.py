@@ -4,11 +4,13 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.utils.translation import gettext_lazy as _
-from django.db import models, transaction
+from django.db import models
+
 from uuid import uuid4
 
 from core.validators import no_at_validator
-from users.managers import UserManager
+
+from .managers import UserManager
 
 from autoslug import AutoSlugField
 

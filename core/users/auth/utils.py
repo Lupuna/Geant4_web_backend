@@ -1,7 +1,6 @@
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework import status
 from rest_framework.response import Response
 
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -55,17 +54,16 @@ def response_cookies(response_data, status, cookies_data=None, delete=False):
     return response
 
 
-def get_token_info_or_return_failure(raw_token, token_expire_time: int, salt) -> (dict | Response):
+def get_token_info_or_return_failure(raw_token, token_expire_time: int, salt) -> dict:
     try:
         decoded_token_serializer = URLSafeTimedSerializer(
             secret_key=settings.SECRET_KEY)
         decoded_token = decoded_token_serializer.loads(
             raw_token, salt=salt, max_age=token_expire_time)
-    except SignatureExpired:
-        return response_cookies({'error': 'Token expired'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-    except BadSignature:
-        return response_cookies({'error': 'Invalid token'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-
+    except SignatureExpired as expr_err:
+        raise ValidationError(str(expr_err))
+    except BadSignature as bad_sign_err:
+        raise ValidationError(str(bad_sign_err))
     return decoded_token
 
 

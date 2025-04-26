@@ -3,8 +3,11 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from api.tasks import send_celery_mail
+
 from users.auth.utils import make_disposable_url
 from users.models import User
+
+from .utils import raise_validation_error_instead_integrity
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -66,20 +69,10 @@ class UserQuickInfoSerializer(serializers.Serializer):
 class LoginUpdateSerializer(serializers.Serializer):
     new_username = serializers.CharField(required=True)
 
-    def validate(self, attrs):
-        new_username = attrs.get('new_username')
-
-        if User.objects.filter(username=new_username).exists():
-            raise ValidationError('User with this username already exists')
-
-        attrs = {'username': new_username}
-
-        return attrs
-
+    @raise_validation_error_instead_integrity
     def update(self, instance, validated_data):
-        instance.username = validated_data['username']
+        instance.username = validated_data['new_username']
         instance.save()
-
         return instance
 
 

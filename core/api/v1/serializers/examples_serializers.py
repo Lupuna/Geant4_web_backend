@@ -2,9 +2,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from geant_examples.models import Example, Tag, ExampleCommand
-from geant_examples.validators import title_not_verbose_view
-
-from users.models import User
 
 from api.v1.serializers.users_serializers import UserQuickInfoSerializer
 from api.v1.serializers.validators import m2m_validator
@@ -72,8 +69,6 @@ class ExampleGETSerializer(serializers.Serializer):
 
 
 class ExamplePOSTSerializer(serializers.ModelSerializer):
-    title_verbose = serializers.CharField(required=True)
-    title_not_verbose = serializers.CharField(required=True)
     tags = TagSerializer(many=True, required=False)
 
     class Meta:
@@ -81,23 +76,9 @@ class ExamplePOSTSerializer(serializers.ModelSerializer):
         fields = ('title_verbose', 'title_not_verbose',
                   'description', 'tags', 'category', )
 
-    def validate_tags(self, value):
+    def validate_tags(self, value: list[dict]):
         if value:
             return m2m_validator(value, Tag, 'title')
-
-        return value
-
-    def validate_title_not_verbose(self, value):
-        title_not_verbose_view(value)
-
-        if self.Meta.model.objects.filter(title_not_verbose=value).exists():
-            raise ValidationError('This title_not_verbose already in use')
-
-        return value
-
-    def validate_title_verbose(self, value):
-        if self.Meta.model.objects.filter(title_verbose=value).exists():
-            raise ValidationError('This title_verbose already in use')
 
         return value
 
@@ -136,10 +117,7 @@ class ExamplePATCHSerializer(serializers.ModelSerializer):
         return updated_instance
 
     def validate_tags(self, value):
-        if value:
-            return m2m_validator(value, Tag, 'title')
-
-        return value
+        return ExamplePOSTSerializer().validate_tags(value)
 
 
 class ExampleForUserSerializer(serializers.Serializer):

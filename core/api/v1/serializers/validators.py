@@ -1,8 +1,9 @@
 from rest_framework.exceptions import ValidationError
-from loguru import logger
+
+from django.db.models.query import QuerySet
 
 
-def m2m_validator(objects_data, model, identificator):
+def m2m_validator(objects_data, model, identificator) -> QuerySet:
     values = [data[identificator] for data in objects_data]
 
     if len(values) == len(set(values)):

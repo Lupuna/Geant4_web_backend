@@ -11,8 +11,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 
-from .mixins import ElasticMixin
+from .mixins import ElasticMixin, QueryParamsMixin, CookiesMixin
 
 from api.v1.serializers.users_serializers import (
     UserProfileSerializer,
@@ -41,7 +42,7 @@ from drf_spectacular.utils import extend_schema
 @extend_schema(
     tags=['UserProfile']
 )
-class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
+class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet, CookiesMixin):
     permission_classes = (IsAuthenticated,)
     queryset = User.objects.all()
 
@@ -64,11 +65,9 @@ class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 
     def destroy(self, request, *args, **kwargs):
         super().destroy(request, *args, **kwargs)
-        cookies_to_delete = ('access', 'refresh')
-        response = response_cookies(
-            {'detail': 'Profile was deleted successfully'}, status.HTTP_200_OK, cookies_data=cookies_to_delete,
-            delete=True)
-
+        self.check_request_cookies()
+        response = self.get_response_del_cookies(
+            {'detail': 'Profile was deleted successfully'}, status.HTTP_200_OK)
         return response
 
 
@@ -78,19 +77,22 @@ class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 class ConfirmEmailUpdateAPIView(APIView):
     permission_classes = (IsAuthenticated, )
 
+    def try_update_email(self, user, new_email):
+        try:
+            user.email = new_email
+            user.save()
+        except IntegrityError:
+            raise ValidationError('This email alreadfy in use')
+
     def get(self, request, token, *args, **kwargs):
         token_info = get_token_info_or_return_failure(
             token, 60 * 60, settings.EMAIL_UPDATE_SALT)
         new_email = token_info.get('new_email')
         user = request.user
-        user.email = new_email
-
-        try:
-            user.save()
-        except IntegrityError:
-            return response_cookies({'error': 'This email already in use'}, status=status.HTTP_400_BAD_REQUEST)
-
-        return response_cookies({'detail': 'Email updated successfully'}, status=status.HTTP_200_OK)
+        response = response_cookies(
+            {'detail': 'Email updated successfully'}, status=status.HTTP_200_OK)
+        self.try_update_email(user, new_email)
+        return response
 
 
 @extend_schema(
@@ -99,6 +101,7 @@ class ConfirmEmailUpdateAPIView(APIView):
 class UserProfileImageViewSet(ViewSet):
     permission_classes = (IsAuthenticated,)
     parser_classes = (MultiPartParser,)
+    image_client_class = ProfileImageRendererClient
 
     def get_user(self):
         return self.request.user
@@ -119,12 +122,12 @@ class UserProfileImageViewSet(ViewSet):
         user = self.get_user()
         serializer = UserProfileImageSerializer(
             data=request.data, partial=True)
-        if serializer.is_valid(raise_exception=True):
-            old_path = handle_file_upload(
-                serializer.validated_data.get('image'))
-            render_and_upload_task.delay(old_path, str(user.uuid))
+        serializer.is_valid(raise_exception=True)
+        old_path = handle_file_upload(
+            serializer.validated_data.get('image'))
+        render_and_upload_task.delay(old_path, str(user.uuid))
 
-            return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
+        return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
 
     @extend_schema(
         request=image_schema
@@ -133,26 +136,26 @@ class UserProfileImageViewSet(ViewSet):
         user = self.get_user()
         serializer = UserProfileImageSerializer(
             data=request.data, partial=True)
-        if serializer.is_valid(raise_exception=True):
-            old_path = handle_file_upload(
-                serializer.validated_data.get('image'))
-            render_and_update_task.delay(old_path, str(user.uuid))
+        serializer.is_valid(raise_exception=True)
+        old_path = handle_file_upload(
+            serializer.validated_data.get('image'))
+        render_and_update_task.delay(old_path, str(user.uuid))
 
-            return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
+        return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
 
     def destroy(self, request):
         user = self.get_user()
-        ProfileImageRendererClient(name=str(user.uuid)).delete()
+        self.image_client_class(name=str(user.uuid)).delete()
         return Response({"detail": "Image deleted"}, status=status.HTTP_200_OK)
 
     def download(self, request):
         user = self.get_user()
-        client = ProfileImageRendererClient(name=str(user.uuid))
+        client = self.image_client_class(name=str(user.uuid))
         try:
             response = FileResponse(client.download(), as_attachment=True, filename=str(
                 user.uuid)+f'.{client.format}')
         except FileClientException as e:
-            return Response(e.error, status=status.HTTP_404_NOT_FOUND)
+            response = Response(e.error, status=status.HTTP_404_NOT_FOUND)
         return response
 
 
@@ -169,16 +172,12 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
         put_token_on_blacklist(request.COOKIES.get('refresh'))
         user = request.user
         serializer = LoginUpdateSerializer(instance=user, data=request.data)
-
-        if serializer.is_valid():
-            user_new_username = serializer.save()
-            tokens = get_tokens_for_user(user_new_username)
-            response = response_cookies(
-                {'detail': 'Username updated successfully'}, status.HTTP_200_OK, tokens)
-
-            return response
-
-        return response_cookies(serializer.errors, status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        user_new_username = serializer.save()
+        tokens = get_tokens_for_user(user_new_username)
+        response = response_cookies(
+            {'detail': 'Username updated successfully'}, status.HTTP_200_OK, tokens)
+        return response
 
     @extend_schema(request=PasswordProfileUpdateSerializer)
     @action(methods=['post', ], detail=False, url_path='update_password', url_name='update-password')
@@ -195,31 +194,23 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
 @extend_schema(
     tags=['UserProfile']
 )
-class UserExampleView(GenericAPIView, ElasticMixin):
+class UserExampleView(GenericAPIView, ElasticMixin, QueryParamsMixin):
     queryset = UserExampleCommand.objects.prefetch_related(
         'example_command__example')
     serializer_class = ExampleForUserSerializer
     elastic_document = ExampleDocument
+    order_by = 'creation_date'
 
     def get_queryset(self):
-        search = self.elastic_document.search()
+        document_class = self.get_elastic_document_class()
+        search = document_class.search()
+        self.setup_elastic_document_conf()
         after_search = self.elastic_search(self.request, search)
         after_filter = self.elastic_filter(self.request, after_search)
         ex_queryset = after_filter.to_queryset()
-        ordering = self.request.query_params.get('ord', None)
-        order_param = None
-
-        if ordering == 'asc':
-            order_param = 'creation_date'
-        elif ordering == 'desc':
-            order_param = '-creation_date'
-
         user_ex_commands = super().get_queryset().filter(
             user=self.request.user, example_command__example__in=ex_queryset)
-
-        if order_param:
-            return user_ex_commands.order_by(order_param)
-
+        user_ex_commands = self.sort_by_ord(user_ex_commands)
         return user_ex_commands
 
     def get(self, request, *args, **kwargs):

@@ -27,7 +27,8 @@ services:
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
       - IS_DEBUG=True
     command: >
-      sh -c "python manage.py runserver 0.0.0.0:8000;
+      sh -c "python manage.py runserver 0.0.0.0:8000 &&
+             sleep 10 &&
              python manage.py search_index --rebuild -f"
     depends_on:
       - database
