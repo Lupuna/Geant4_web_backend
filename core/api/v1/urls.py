@@ -12,15 +12,9 @@ from api.v1.views.auth_views import (
     RegistrationConfirmAPIView,
     GetAuthInfoAPIView
 )
+from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView
 from api.v1.views.geant_documentation_views import ArticleViewSet, ChapterViewSet, CategoryViewSet, SubscriptionViewSet, \
-    ElementViewSet
-from api.v1.views.examples_views import (
-    ExampleViewSet,
-    ExampleCommandViewSet,
-    ExampleCommandUpdateStatusAPIView,
-    CategoryAPIView
-)
-from api.v1.views.tags_views import TagViewSet
+    ElementViewSet, FileViewSet
 from api.v1.views.groups_views import GroupAPIViewSet
 from api.v1.views.users_views import (
     UserProfileViewSet,
@@ -29,9 +23,6 @@ from api.v1.views.users_views import (
     UserProfileImageViewSet,
     ConfirmEmailUpdateAPIView
 )
-
-tag_router = SimpleRouter()
-tag_router.register('tags', TagViewSet, basename='tags')
 
 user_update_router = SimpleRouter()
 user_update_router.register(
@@ -70,11 +61,15 @@ urlpatterns = [
     path('', include(example_router.urls)),
     path('', include(user_update_router.urls)),
     path('', include(example_command_router.urls)),
-    path('', include(documentation_router.urls)),
     path('', include(group_router.urls)),
-    path('', include(documentation_subscription_element_router.urls)),
-    path('', include(documentation_subscription_router.urls)),
-    path('', include(tag_router.urls)),
+    path('documentations/', include(documentation_router.urls)),
+    path('documentations/', include(documentation_subscription_element_router.urls)),
+    path('documentations/', include(documentation_subscription_router.urls)),
+    path(
+        'documentations/<uuid:uuid>/<str:file_format>/',
+        FileViewSet.as_view(actions=FileViewSet.get_action_map()),
+        name='file-manage'
+    ),
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
     path('registration/confirm/<str:token>', RegistrationConfirmAPIView.as_view(),
          name='confirm-registration'),
@@ -85,16 +80,26 @@ urlpatterns = [
          name='password-recovery'),
     path('password_recovery/confirm/<str:token>',
          PasswordRecoveryConfirmAPIView.as_view(), name='confirm-password-recovery'),
-    path('profile/image/', UserProfileImageViewSet.as_view(
-        actions=UserProfileImageViewSet.get_action_map()), name='user-profile-image'),
-    path('profile/', UserProfileViewSet.as_view(
-        actions=UserProfileViewSet.get_actions()), name='user-profile'),
-    path('profile/update_email/<str:token>',
-         ConfirmEmailUpdateAPIView.as_view(), name='confirm-email-update'),
-    path('update_example_status/', ExampleCommandUpdateStatusAPIView.as_view(),
-         name='update-example-status'),
+    path(
+        'profile/image/',
+        UserProfileImageViewSet.as_view(actions=UserProfileImageViewSet.get_action_map()),
+        name='user-profile-image'
+    ),
+    path(
+        'profile/',
+        UserProfileViewSet.as_view(actions=UserProfileViewSet.get_actions()),
+        name='user-profile'
+    ),
+    path(
+        'profile/update_email/<str:token>',
+        ConfirmEmailUpdateAPIView.as_view(),
+        name='confirm-email-update'
+    ),
+    path(
+        'update_example_status/',
+        ExampleCommandUpdateStatusAPIView.as_view(),
+        name='update-example-status'
+    ),
     path('profile/my_examples/', UserExampleView.as_view(), name='user-examples'),
-    path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized'),
-    path('example/categories/', CategoryAPIView.as_view(),
-         name='example-categories')
+    path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized')
 ]

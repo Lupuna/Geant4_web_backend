@@ -108,3 +108,10 @@ class File(models.Model):
 
     def __str__(self):
         return f'{self.uuid}.{self.format}'
+
+    def save(self, *args, **kwargs):
+        count = File.objects.filter(element=self.element).count()
+        if count >= 8:
+            raise ValidationError('Max files for element is 8')
+
+        return super().save(*args, **kwargs)

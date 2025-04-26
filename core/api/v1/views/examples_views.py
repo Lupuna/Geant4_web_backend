@@ -18,8 +18,8 @@ from api.v1.serializers.examples_serializers import (
     ExampleCommandPOSTSerializer,
     ExampleCommandUpdateStatusSerializer
 )
-from file_client.example_csv_client import ExampleRendererClient
 from file_client.exceptions import FileClientException
+from file_client.files_clients import ReadOnlyClient
 from geant_examples.documents import ExampleDocument
 from geant_examples.models import Example, UserExampleCommand, ExampleCommand
 from .mixins import ElasticMixin
@@ -91,7 +91,7 @@ class ExampleCommandViewSet(ModelViewSet):
         request.data['params'] = key_s3
         filename = key_s3 + '.zip'
 
-        client = ExampleRendererClient(filename)
+        client = ReadOnlyClient(filename)
         try:
             response = client.download()
         except FileClientException as e:

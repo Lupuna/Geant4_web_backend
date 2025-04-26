@@ -1,8 +1,15 @@
+import uuid
+from io import BytesIO
+from unittest.mock import patch
+
+from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from api.v1.views.geant_documentation_views import ArticleViewSet, ElementViewSet, SubscriptionViewSet
+from file_client.exceptions import FileClientException
 from geant_documentation.models import Article, Category, Chapter, Subscription, Element
 from tests.test_api.test_v1.test_views.auth_test_base import AuthSettingsTest
 
@@ -34,6 +41,7 @@ class ArticleViewSetTestCase(AuthSettingsTest):
     def test_retrieve_action(self):
         view = self.view.as_view({'get': 'retrieve'})
         request = self.factory.get(self.detail_url)
+        force_authenticate(request, user=self.user)
         response = view(request, pk=self.article.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('subscriptions', response.data)
@@ -135,8 +143,10 @@ class SubscriptionViewSetTestCase(AuthSettingsTest):
         )
 
     def test_list_subscriptions(self):
+        self.login_user()
         view = self.view.as_view({'get': 'list'})
         request = self.factory.get(self.list_url)
+        force_authenticate(request, user=self.user)
         response = view(request, article_pk=self.article.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
@@ -144,6 +154,7 @@ class SubscriptionViewSetTestCase(AuthSettingsTest):
     def test_retrieve_subscription(self):
         view = self.view.as_view({'get': 'retrieve'})
         request = self.factory.get(self.detail_url)
+        force_authenticate(request, user=self.user)
         response = view(request, article_pk=self.article.id, pk=self.subscription.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], self.subscription.title)
@@ -222,6 +233,7 @@ class ElementViewSetTestCase(AuthSettingsTest):
     def test_list_elements(self):
         view = self.view.as_view({'get': 'list'})
         request = self.factory.get(self.list_url)
+        force_authenticate(request, user=self.user)
         response = view(request, article_pk=self.article.id, subscription_pk=self.subscription.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
@@ -229,6 +241,7 @@ class ElementViewSetTestCase(AuthSettingsTest):
     def test_retrieve_element(self):
         view = self.view.as_view({'get': 'retrieve'})
         request = self.factory.get(self.detail_url)
+        force_authenticate(request, user=self.user)
         response = view(request, subscription_pk=self.subscription.id, pk=self.element.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['text'], self.element.text)
@@ -266,3 +279,77 @@ class ElementViewSetTestCase(AuthSettingsTest):
         response = view(request, subscription_pk=self.subscription.id, pk=self.element.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Element.objects.filter(id=self.element.id).exists())
+
+
+class FileViewSetTestCase(AuthSettingsTest):
+    def setUp(self):
+        self.uuid = str(uuid.uuid4())
+        self.user.is_staff = True
+        self.user.save()
+
+    @patch('api.v1.views.geant_documentation_views.render_and_upload_documentation_image_task.delay')
+    @patch('api.v1.views.geant_documentation_views.handle_file_upload')
+    def test_create_webp_ok(self, mock_handle, mock_task):
+        self.login_user()
+        file = create_temp_file()
+        mock_handle.return_value = "/fake/path/file.png"
+
+        url = reverse('file-manage', args=[self.uuid, 'csv'])
+        response = self.client.post(url, data={'file': file}, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        mock_handle.assert_called_once()
+
+    @patch('api.v1.views.geant_documentation_views.render_and_upload_documentation_graphic_task.delay')
+    @patch('api.v1.views.geant_documentation_views.handle_file_upload')
+    def test_create_csv_ok(self, mock_handle, mock_task):
+        self.login_user()
+        file = create_temp_file()
+        mock_handle.return_value = "/fake/path/file.csv"
+
+        url = reverse('file-manage', args=[self.uuid, 'csv'])
+        response = self.client.post(url, data={'file': file}, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        mock_handle.assert_called_once()
+        mock_task.assert_called_once_with("/fake/path/file.csv", self.uuid)
+
+    @patch('file_client.files_clients.ReadOnlyClient.delete')
+    def test_delete_ok(self, mock_delete):
+        self.login_user()
+        url = reverse('file-manage', args=[self.uuid, 'csv'])
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {"detail": "Image deleted"})
+        mock_delete.assert_called_once()
+
+    @patch('file_client.files_clients.ReadOnlyClient.download')
+    def test_retrieve_ok(self, mock_download):
+        self.login_user()
+        mock_download.return_value = BytesIO(b'binary content')
+        url = reverse('file-manage', args=[self.uuid, 'webp'])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.get('Content-Disposition'), f'attachment; filename="{self.uuid}.webp"')
+
+    @patch('file_client.files_clients.ReadOnlyClient.download')
+    def test_retrieve_not_found(self, mock_download):
+        self.login_user()
+        mock_download.side_effect = FileClientException(404, {"detail": "Not found on disk"})
+
+        url = reverse('file-manage', args=[self.uuid, 'webp'])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data, {"detail": "Not found on disk"})
+
+
+def create_temp_file():
+    image = Image.new('RGB', (100, 100), color='blue')
+    file_io = BytesIO()
+    image.save(file_io, format='PNG')
+    file_io.seek(0)
+    return SimpleUploadedFile("test_file.png", file_io.read(), content_type="image/png")
+

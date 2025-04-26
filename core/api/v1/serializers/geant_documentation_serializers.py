@@ -1,19 +1,35 @@
 from django.db import transaction
 from drf_writable_nested import WritableNestedModelSerializer
 from rest_framework import serializers
+from rest_framework.reverse import reverse_lazy
 
 from geant_documentation.models import Article, Category, Chapter, Element, File, Subscription
 
 
+class RealFileSerializer(serializers.Serializer):
+    file = serializers.FileField(required=True)
+
+
 class FileSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
     class Meta:
         model = File
-        fields = ('id', 'uuid', 'format')
+        fields = ('id', 'uuid', 'format', 'url')
         read_only_fields = ('id', 'uuid')
+
+    def get_url(self, obj):
+        request = self.context.get('request')
+        if not request:
+            return None
+        return request.build_absolute_uri(
+            reverse_lazy('file-manage', kwargs={'uuid': obj.uuid, 'file_format': obj.format})
+        )
 
 
 class ElementSerializer(WritableNestedModelSerializer):
     files = FileSerializer(many=True)
+
 
     class Meta:
         model = Element

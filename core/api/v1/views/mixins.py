@@ -1,9 +1,14 @@
+from abc import abstractmethod
+from typing import Callable
+
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django_elasticsearch_dsl import Document
 from elasticsearch_dsl import Q
 from rest_framework.exceptions import ValidationError as DRFValidationError
+
+from file_client.utils import handle_file_upload
 
 
 class ElasticMixin:
@@ -84,6 +89,9 @@ class ValidationHandlingMixin:
         except IntegrityError as e:
             raise DRFValidationError({'error': str(e)})
 
+        if hasattr(self, 'post_create'):
+            self.post_create(instance)
+
         return instance
 
     def perform_update(self, serializer, **kwargs):
@@ -93,5 +101,8 @@ class ValidationHandlingMixin:
             raise DRFValidationError({'error': e.messages})
         except IntegrityError as e:
             raise DRFValidationError({'error': str(e)})
+
+        if hasattr(self, 'post_update'):
+            instance = self.post_update(instance)
 
         return instance
