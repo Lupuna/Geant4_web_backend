@@ -3,11 +3,9 @@ from django.db.models.signals import post_save, post_delete
 from django.test import TestCase
 from loguru import logger
 
-from geant_examples.models import Command, Example
+from geant_examples.models import Example
 from geant_examples.signals import (
     delete_example,
-    delete_command,
-    save_command,
     save_example
 )
 
@@ -20,16 +18,8 @@ class Base(TestCase):
 
         settings.ELASTICSEARCH_DSL_AUTOSYNC = False
         post_save.disconnect(
-            receiver=save_command,
-            sender=Command
-        )
-        post_save.disconnect(
             receiver=save_example,
             sender=Example
-        )
-        post_delete.disconnect(
-            receiver=delete_command,
-            sender=Command
         )
         post_delete.disconnect(
             receiver=delete_example,
@@ -39,16 +29,8 @@ class Base(TestCase):
     @classmethod
     def tearDownClass(cls):
         post_save.connect(
-            receiver=save_command,
-            sender=Command
-        )
-        post_save.connect(
             receiver=save_example,
             sender=Example
-        )
-        post_delete.connect(
-            receiver=delete_command,
-            sender=Command
         )
         post_delete.connect(
             receiver=delete_example,

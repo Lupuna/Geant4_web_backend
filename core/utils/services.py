@@ -30,8 +30,6 @@ class DatabaseSynchronizer:
         response = requests.get(
             url=settings.GEANT_BACKEND_GET_EXAMPLE_URL.format(title=self.example.title_not_verbose)
         )
-        response.raise_for_status()
-
         data = response.json()
         if data.get("detail") == "Example not found":
             return -1
@@ -52,20 +50,17 @@ class DatabaseSynchronizer:
     @retry(wait=wait_fixed(3), stop=stop_after_attempt(5), reraise=True)
     def create_example(self):
         json = self.prepare_data()
-        try:
-            response = requests.post(
-                url=settings.GEANT_BACKEND_CREATE_EXAMPLE_URL,
-                json=json,
-                timeout=5
-            )
-            response.raise_for_status()
-        except requests.Timeout as e:
-            logger.error(e)
-        else:
-            logger.info("success create example %s on Backend service." % self.example.title_not_verbose)
+        response = requests.post(
+            url=settings.GEANT_BACKEND_CREATE_EXAMPLE_URL,
+            json=json,
+            timeout=5
+        )
+        response.raise_for_status()
+        logger.info("success create example %s on Backend service." % self.example.title_not_verbose)
 
     def run(self):
         backend_example_id = self.get_example_from_backend()
+
         if backend_example_id != -1:
             self.drop_example(backend_example_id)
 
