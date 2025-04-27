@@ -68,36 +68,39 @@ class FileViewSet(ViewSet):
     )
     def create(self, request, *args, **kwargs):
         serializer = RealFileSerializer(data=request.data, partial=True)
-        if serializer.is_valid(raise_exception=True):
-            old_path = handle_file_upload(
-                serializer.validated_data.get('file'))
+        serializer.is_valid(raise_exception=True)
+        old_path = handle_file_upload(
+            serializer.validated_data.get('file'))
 
-            uuid = str(kwargs['uuid'])
-            match kwargs['file_format']:
-                case 'webp':
-                    render_and_upload_documentation_image_task.delay(old_path, uuid)
-                case 'csv':
-                    render_and_upload_documentation_graphic_task.delay(old_path, uuid)
+        uuid = str(kwargs['uuid'])
+        match kwargs['file_format']:
+            case 'webp':
+                render_and_upload_documentation_image_task.delay(
+                    old_path, uuid)
+            case 'csv':
+                render_and_upload_documentation_graphic_task.delay(
+                    old_path, uuid)
 
-            return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
+        return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
 
     @extend_schema(
         request=file_schema
     )
     def update(self, request, *args, **kwargs):
         serializer = RealFileSerializer(data=request.data, partial=True)
-        if serializer.is_valid(raise_exception=True):
-            old_path = handle_file_upload(
-                serializer.validated_data.get('file'))
+        serializer.is_valid(raise_exception=True)
+        old_path = handle_file_upload(
+            serializer.validated_data.get('file'))
+        uuid = str(kwargs['uuid'])
+        match kwargs['file_format']:
+            case 'webp':
+                render_and_update_documentation_image_task.delay(
+                    old_path, uuid)
+            case 'csv':
+                render_and_update_documentation_graphic_task.delay(
+                    old_path, uuid)
 
-            uuid = str(kwargs['uuid'])
-            match kwargs['file_format']:
-                case 'webp':
-                    render_and_update_documentation_image_task.delay(old_path, uuid)
-                case 'csv':
-                    render_and_update_documentation_graphic_task.delay(old_path, uuid)
-
-            return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
+        return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
 
     def destroy(self, request, *args, **kwargs):
         uuid = str(kwargs['uuid'])
@@ -108,7 +111,8 @@ class FileViewSet(ViewSet):
         uuid = str(kwargs['uuid'])
         client = ReadOnlyClient(uuid, file_format=kwargs['file_format'])
         try:
-            response = FileResponse(client.download(), as_attachment=True, filename=uuid + f'.{client.format}')
+            response = FileResponse(
+                client.download(), as_attachment=True, filename=uuid + f'.{client.format}')
         except FileClientException as e:
             return Response(e.error, status=status.HTTP_404_NOT_FOUND)
         return response

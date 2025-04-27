@@ -87,16 +87,17 @@ class UserProfileTestCase(AuthSettingsTest):
 
     def test_username_already_exists(self):
         self.login_user()
+        user2 = User.objects.create(username='any', email='any@gmail.com')
         data = {
-            'new_username': self.user.username,
+            'new_username': user2.username,
         }
 
         response = self.client.post(
             reverse('user-profile-update-username'), data=data)
 
         self.assertNotEqual(response.status_code, 200)
-        self.assertEqual(response.data, {'non_field_errors': [ErrorDetail(
-            string='User with this username already exists', code='invalid')]})
+        self.assertEqual(response.data, [ErrorDetail(
+            string='DETAIL:  Key (username)=(any) already exists.', code='invalid')])
 
 
 class ConfirmEmailUpdateAPIViewTestCase(AuthSettingsTest):
@@ -131,8 +132,8 @@ class ConfirmEmailUpdateAPIViewTestCase(AuthSettingsTest):
         confirm_url = reverse('confirm-email-update', kwargs={'token': token})
         confirm_response = self.client.get(confirm_url)
         self.assertEqual(confirm_response.status_code, 400)
-        self.assertEqual(confirm_response.data, {
-                         'error': 'This email already in use'})
+        self.assertEqual(confirm_response.data, [ErrorDetail(
+            string='This email already in use', code='invalid')])
 
 
 class UserExampleViewTestCase(AuthSettingsTest):

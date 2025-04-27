@@ -12,7 +12,8 @@ from api.v1.views.auth_views import (
     RegistrationConfirmAPIView,
     GetAuthInfoAPIView
 )
-from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView
+from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView, CategoryAPIView
+from api.v1.views.tags_views import TagViewSet
 from api.v1.views.geant_documentation_views import ArticleViewSet, ChapterViewSet, CategoryViewSet, SubscriptionViewSet, \
     ElementViewSet, FileViewSet
 from api.v1.views.groups_views import GroupAPIViewSet
@@ -23,6 +24,10 @@ from api.v1.views.users_views import (
     UserProfileImageViewSet,
     ConfirmEmailUpdateAPIView
 )
+
+
+tag_router = SimpleRouter()
+tag_router.register('tags', TagViewSet, basename='tags')
 
 user_update_router = SimpleRouter()
 user_update_router.register(
@@ -38,7 +43,8 @@ example_router.register(r'examples', ExampleViewSet, basename='examples')
 documentation_router = SimpleRouter()
 documentation_router.register(r'articles', ArticleViewSet, basename='articles')
 documentation_router.register(r'chapters', ChapterViewSet, basename='chapters')
-documentation_router.register(r'categories', CategoryViewSet, basename='categories')
+documentation_router.register(
+    r'categories', CategoryViewSet, basename='categories')
 
 documentation_subscription_router = NestedSimpleRouter(
     parent_router=documentation_router, parent_prefix=r'articles', lookup='article')
@@ -62,6 +68,7 @@ urlpatterns = [
     path('', include(user_update_router.urls)),
     path('', include(example_command_router.urls)),
     path('', include(group_router.urls)),
+    path('', include(tag_router.urls)),
     path('documentations/', include(documentation_router.urls)),
     path('documentations/', include(documentation_subscription_element_router.urls)),
     path('documentations/', include(documentation_subscription_router.urls)),
@@ -82,7 +89,8 @@ urlpatterns = [
          PasswordRecoveryConfirmAPIView.as_view(), name='confirm-password-recovery'),
     path(
         'profile/image/',
-        UserProfileImageViewSet.as_view(actions=UserProfileImageViewSet.get_action_map()),
+        UserProfileImageViewSet.as_view(
+            actions=UserProfileImageViewSet.get_action_map()),
         name='user-profile-image'
     ),
     path(
@@ -101,5 +109,7 @@ urlpatterns = [
         name='update-example-status'
     ),
     path('profile/my_examples/', UserExampleView.as_view(), name='user-examples'),
-    path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized')
+    path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized'),
+    path('example/categories/', CategoryAPIView.as_view(),
+         name='example-categories')
 ]

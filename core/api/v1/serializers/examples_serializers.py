@@ -8,6 +8,7 @@ from api.v1.serializers.validators import m2m_validator
 from geant_examples.models import Example, Tag, ExampleCommand, UserExampleCommand, Command, CommandValue
 from geant_examples.validators import title_not_verbose_view
 
+
 class TagSerializer(serializers.Serializer):
     title = serializers.CharField()
 
@@ -23,12 +24,14 @@ class ExampleCommandGETSerializer(serializers.Serializer):
     users = UserQuickInfoSerializer(many=True)
     key_s3 = serializers.CharField()
 
+
 class CommandValueSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommandValue
         fields = (
             "value",
         )
+
 
 class CommandSerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,6 +41,7 @@ class CommandSerializer(serializers.ModelSerializer):
             "default",
             "order_index",
         )
+
 
 class DetailCommandSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,6 +55,7 @@ class DetailCommandSerializer(serializers.ModelSerializer):
             "values",
         )
 
+
 class DetailExampleSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title_verbose = serializers.CharField()
@@ -61,6 +66,7 @@ class DetailExampleSerializer(serializers.Serializer):
     category = serializers.CharField()
     example_commands = ExampleCommandGETSerializer(many=True)
     commands = DetailCommandSerializer(many=True)
+
 
 class ExampleCommandPOSTSerializer(serializers.ModelSerializer):
     params = serializers.CharField(source='key_s3')
@@ -95,6 +101,7 @@ class ExampleCommandPOSTSerializer(serializers.ModelSerializer):
 
         return ex_command
 
+
 class ExampleGETSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title_verbose = serializers.CharField()
@@ -105,33 +112,18 @@ class ExampleGETSerializer(serializers.Serializer):
     category = serializers.CharField()
     example_commands = ExampleCommandGETSerializer(many=True)
 
+
 class ExamplePOSTSerializer(serializers.ModelSerializer):
-    title_verbose = serializers.CharField(required=True)
-    title_not_verbose = serializers.CharField(required=True)
     tags = TagSerializer(many=True, required=False)
 
     class Meta:
         model = Example
         fields = ('title_verbose', 'title_not_verbose',
-                  'description', 'tags', 'category',)
+                  'description', 'tags', 'category', )
 
-    def validate_tags(self, value):
+    def validate_tags(self, value: list[dict]):
         if value:
             return m2m_validator(value, Tag, 'title')
-
-        return value
-
-    def validate_title_not_verbose(self, value):
-        title_not_verbose_view(value)
-
-        if self.Meta.model.objects.filter(title_not_verbose=value).exists():
-            raise ValidationError('This title_not_verbose already in use')
-
-        return value
-
-    def validate_title_verbose(self, value):
-        if self.Meta.model.objects.filter(title_verbose=value).exists():
-            raise ValidationError('This title_verbose already in use')
 
         return value
 
@@ -143,6 +135,7 @@ class ExamplePOSTSerializer(serializers.ModelSerializer):
             example.tags.add(*tags)
 
         return example
+
 
 class ExamplePATCHSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
@@ -169,10 +162,8 @@ class ExamplePATCHSerializer(serializers.ModelSerializer):
         return updated_instance
 
     def validate_tags(self, value):
-        if value:
-            return m2m_validator(value, Tag, 'title')
+        return ExamplePOSTSerializer().validate_tags(value)
 
-        return value
 
 class ExampleForUserSerializer(serializers.Serializer):
     title_verbose = serializers.SerializerMethodField(
@@ -208,6 +199,7 @@ class ExampleForUserSerializer(serializers.Serializer):
 
     def get_tags(self, obj):
         return TagSerializer(obj.example_command.example.tags.all(), many=True).data
+
 
 class ExampleCommandUpdateStatusSerializer(serializers.Serializer):
     key_s3 = serializers.CharField()

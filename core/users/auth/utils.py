@@ -61,11 +61,10 @@ def get_token_info_or_return_failure(raw_token, token_expire_time: int, salt) ->
             secret_key=settings.SECRET_KEY)
         decoded_token = decoded_token_serializer.loads(
             raw_token, salt=salt, max_age=token_expire_time)
-    except SignatureExpired:
-        return response_cookies({'error': 'Token expired'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-    except BadSignature:
-        return response_cookies({'error': 'Invalid token'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-
+    except SignatureExpired as expr_err:
+        raise ValidationError(str(expr_err))
+    except BadSignature as bad_sign_err:
+        raise ValidationError(str(bad_sign_err))
     return decoded_token
 
 
