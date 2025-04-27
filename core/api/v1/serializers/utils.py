@@ -16,6 +16,24 @@ def bulk_create_children(parent: Model, child_data: list[dict], child_model: Typ
     child_model.objects.bulk_create(objs)
 
 
+def get_serializer_model(serializer: serializers.Serializer):
+    if issubclass(serializer.__class__, serializers.ModelSerializer):
+        model = serializer.Meta.model
+    else:
+        model = serializer.instance.__class__
+    return model
+
+
+def get_unique_model_fields(model: Model):
+    return [field.name for field in model._meta.fields if field.unique]
+
+
+def get_unique_error_field(unique_fields, integrity_error_message: str):
+    for field in unique_fields:
+        if f'({field})' in integrity_error_message:
+            return field
+
+
 def obj_can_exist(save_method):
     """If you do not want use validation of uniqueness on serialization level,
             you can decorate save method in serializer by this decorator.
@@ -23,24 +41,15 @@ def obj_can_exist(save_method):
 
     @wraps(save_method)
     def wrapper(self, *args, **kwargs):
-        if issubclass(self.__class__, serializers.ModelSerializer):
-            model = self.Meta.model
-        else:
-            model = self.instance.__class__
+        model = get_serializer_model(self)
 
         try:
             with transaction.atomic():
                 new_obj = save_method(self, *args, **kwargs)
         except IntegrityError as err:
-            unique_fields = [
-                field.name for field in model._meta.fields if field.unique]
+            unique_fields = get_unique_model_fields(model)
             str_err = str(err)
-
-            for field in unique_fields:
-                if f'({field})' in str_err:
-                    error_field_name = field
-                    break
-
+            error_field_name = get_unique_error_field(unique_fields, str_err)
             error_value = self.validated_data[error_field_name]
             new_obj = model.objects.get(**{error_field_name: error_value})
         return new_obj
