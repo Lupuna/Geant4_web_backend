@@ -1,20 +1,23 @@
-from django.http import FileResponse
 from django.conf import settings
 from django.db.utils import IntegrityError
+from django.http import FileResponse
 
-from rest_framework.parsers import MultiPartParser
-from rest_framework.viewsets import GenericViewSet, ViewSet
-from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
+
+from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.exceptions import ValidationError
+from rest_framework.views import APIView
+from rest_framework.viewsets import GenericViewSet, ViewSet
 
 from .mixins import ElasticMixin, QueryParamsMixin, CookiesMixin
 
+from api.v1.serializers.examples_serializers import ExampleForUserSerializer
 from api.v1.serializers.users_serializers import (
     UserProfileSerializer,
     LoginUpdateSerializer,
@@ -22,21 +25,23 @@ from api.v1.serializers.users_serializers import (
     UserProfileImageSerializer,
     PasswordProfileUpdateSerializer
 )
-from api.v1.serializers.examples_serializers import ExampleForUserSerializer
-
 from file_client.exceptions import FileClientException
-from file_client.profile_image_client import ProfileImageRendererClient
+from file_client.files_clients import ProfileImageRendererClient
 from file_client.schema import image_schema
-from file_client.tasks import render_and_upload_task, render_and_update_task
+from file_client.tasks import render_and_upload_profile_image_task, render_and_update_profile_image_task
 from file_client.utils import handle_file_upload
 
-from users.models import User
-from users.auth.utils import response_cookies, get_tokens_for_user, put_token_on_blacklist, get_token_info_or_return_failure
-
-from geant_examples.models import UserExampleCommand
 from geant_examples.documents import ExampleDocument
+from geant_examples.models import UserExampleCommand
 
-from drf_spectacular.utils import extend_schema
+from users.auth.utils import (
+    response_cookies,
+    get_tokens_for_user,
+    put_token_on_blacklist,
+    get_token_info_or_return_failure
+)
+from users.models import User
+from .mixins import ElasticMixin
 
 
 @extend_schema(
@@ -75,7 +80,7 @@ class UserProfileViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
     tags=['UserProfile']
 )
 class ConfirmEmailUpdateAPIView(APIView):
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def try_update_email(self, user, new_email):
         try:
@@ -111,7 +116,7 @@ class UserProfileImageViewSet(ViewSet):
         return {
             'post': 'create',
             'patch': 'update',
-            'get': 'download',
+            'get': 'retrieve',
             'delete': 'destroy'
         }
 
@@ -126,7 +131,6 @@ class UserProfileImageViewSet(ViewSet):
         old_path = handle_file_upload(
             serializer.validated_data.get('image'))
         render_and_upload_task.delay(old_path, str(user.uuid))
-
         return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
 
     @extend_schema(
@@ -140,7 +144,6 @@ class UserProfileImageViewSet(ViewSet):
         old_path = handle_file_upload(
             serializer.validated_data.get('image'))
         render_and_update_task.delay(old_path, str(user.uuid))
-
         return Response({"detail": "Image processing started"}, status=status.HTTP_202_ACCEPTED)
 
     def destroy(self, request):
@@ -148,12 +151,12 @@ class UserProfileImageViewSet(ViewSet):
         self.image_client_class(name=str(user.uuid)).delete()
         return Response({"detail": "Image deleted"}, status=status.HTTP_200_OK)
 
-    def download(self, request):
+    def retrieve(self, request):
         user = self.get_user()
         client = self.image_client_class(name=str(user.uuid))
         try:
             response = FileResponse(client.download(), as_attachment=True, filename=str(
-                user.uuid)+f'.{client.format}')
+                user.uuid) + f'.{client.format}')
         except FileClientException as e:
             response = Response(e.error, status=status.HTTP_404_NOT_FOUND)
         return response

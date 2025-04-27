@@ -19,9 +19,8 @@ from django.urls import path, include
 from django.conf import settings
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('panel-for-admin/', admin.site.urls),
     path('api/', include('api.urls')),
     path('schema/', SpectacularAPIView.as_view(), name='api_schema'),
     path('docs/', SpectacularSwaggerView.as_view(url_name='api_schema'),

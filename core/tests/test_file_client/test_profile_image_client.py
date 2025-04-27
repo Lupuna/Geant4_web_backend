@@ -8,7 +8,7 @@ from django.conf import settings
 from file_client.S3_client import S3FileLoader
 from file_client.base_file_client import render_then_cleanup
 from file_client.exceptions import FileClientException
-from file_client.profile_image_client import ProfileImageRendererClient
+from file_client.files_clients import ProfileImageRendererClient
 
 
 class ProfileImageRendererClientTestCase(TestCase):
@@ -108,7 +108,7 @@ class ProfileImageRendererClientTestCase(TestCase):
         self.client.cleanup()
         self.assertEqual(mock_remove.call_count, 2)
 
-    @patch("file_client.profile_image_client.Image.open")
+    @patch("file_client.files_clients.Image.open")
     def test_render_raises_file_not_found(self, mock_open):
         mock_open.side_effect = FileNotFoundError
 

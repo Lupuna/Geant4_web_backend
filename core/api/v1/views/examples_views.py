@@ -1,33 +1,37 @@
 import requests
 
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
+
+from cacheops import invalidate_model
+from django.conf import settings
+from django.http import FileResponse
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.decorators import action
+from rest_framework.viewsets import ModelViewSet
 
-from .mixins import ElasticMixin
-
+from api.tasks import send_celery_mail
 from api.v1.serializers.examples_serializers import (
     ExamplePOSTSerializer,
     ExampleGETSerializer,
     ExamplePATCHSerializer,
     ExampleCommandGETSerializer,
     ExampleCommandPOSTSerializer,
-    ExampleCommandUpdateStatusSerializer
+    ExampleCommandUpdateStatusSerializer,
+    DetailExampleSerializer
 )
-from api.tasks import send_celery_mail
 
-from file_client.example_csv_client import ExampleRendererClient
 from file_client.exceptions import FileClientException
+from file_client.files_clients import ReadOnlyClient
 
 from geant_examples.models import Example, UserExampleCommand, ExampleCommand
 from geant_examples.documents import ExampleDocument
 
-from drf_spectacular.utils import extend_schema
+from .mixins import ElasticMixin
 
-from django.conf import settings
-from django.http import FileResponse
+
 from django.db.models.query import QuerySet
 
 from cacheops import invalidate_model
@@ -41,9 +45,26 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
     http_method_names = ['get', 'post', 'patch', 'delete']
     elastic_document = ExampleDocument
 
+    @extend_schema(exclude=True)
+    @action(detail=False, methods=['patch'], url_path="change-synchronized", permission_classes=[])
+    def change_synchronized_status(self, request, pk=None):
+        title_not_verbose = request.query_params.get("title_not_verbose", None)
+        try:
+            example = Example.objects.get(title_not_verbose=title_not_verbose)
+            example.synchronized = False
+            example.save()
+        except Exception as e:
+            return Response({"message": f"error. {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"message": "success."}, status=status.HTTP_200_OK)
+
+
+
     def get_serializer(self, *args, **kwargs):
         match self.request.method:
             case 'GET':
+                if self.detail:
+                    return DetailExampleSerializer(*args, **kwargs)
                 return ExampleGETSerializer(*args, **kwargs)
             case 'POST':
                 return ExamplePOSTSerializer(*args, **kwargs)
@@ -91,7 +112,7 @@ class ExampleCommandViewSet(ModelViewSet):
         request.data['params'] = key_s3
         filename = key_s3 + '.zip'
 
-        client = ExampleRendererClient(filename)
+        client = ReadOnlyClient(filename)
         try:
             response = client.download()
         except FileClientException as e:

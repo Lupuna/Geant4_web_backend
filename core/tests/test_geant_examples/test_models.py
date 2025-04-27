@@ -1,11 +1,12 @@
-from django.test import TestCase
-
-from geant_examples.models import Example, UserExampleCommand, Tag, ExampleCommand
-from users.models import User
+from django.db.utils import IntegrityError
 from django.utils.translation import gettext_lazy as _
 
+from geant_examples.models import Example, UserExampleCommand, Tag, ExampleCommand, Command, CommandValue
+from tests.base import Base
+from users.models import User
 
-class ExampleTestCase(TestCase):
+
+class ExampleTestCase(Base):
 
     def setUp(self):
         self.example = Example.objects.create(
@@ -22,7 +23,7 @@ class ExampleTestCase(TestCase):
         self.assertEqual(self.example._meta.verbose_name_plural, _("Examples"))
 
 
-class UserExampleCommandTestCase(TestCase):
+class UserExampleCommandTestCase(Base):
 
     def setUp(self):
         self.user = User.objects.create_user(
@@ -55,7 +56,7 @@ class UserExampleCommandTestCase(TestCase):
                          ('user', 'creation_date'))
 
 
-class TagTestCase(TestCase):
+class TagTestCase(Base):
 
     def setUp(self):
         self.tag = Tag.objects.create(
@@ -70,7 +71,7 @@ class TagTestCase(TestCase):
         self.assertEqual(self.tag._meta.verbose_name_plural, _("Tags"))
 
 
-class ExampleCommandTestCase(TestCase):
+class ExampleCommandTestCase(Base):
     def setUp(self):
         self.example = Example.objects.create(
             title_verbose='test_verbose',
@@ -94,3 +95,64 @@ class ExampleCommandTestCase(TestCase):
             self.example_command._meta.verbose_name, _("ExampleCommand"))
         self.assertEqual(
             self.example_command._meta.verbose_name_plural, _("ExampleCommands"))
+
+
+class CommandTestCase(Base):
+    def setUp(self):
+        self.example = Example.objects.create(
+            title_verbose='test_verbose',
+            title_not_verbose='TSU_XX_00'
+        )
+        self.command = Command.objects.create(
+            example=self.example,
+            title="test_title",
+            default="default",
+            order_index=1
+        )
+
+    def test_str_method(self):
+        self.assertEqual(
+            self.command.__str__(), self.command.title
+        )
+
+    def test_meta_options(self):
+        self.assertEqual(self.command._meta.verbose_name, _("Command"))
+        self.assertEqual(self.command._meta.verbose_name_plural, _("Commands"))
+        self.assertEqual(self.command._meta.ordering, ("order_index",))
+        self.assertEqual(len(self.command._meta.constraints), 1)
+
+    def test_unique_constraint(self):
+        with self.assertRaises(IntegrityError):
+            Command.objects.create(
+                title="new_command_title",
+                example=self.example,
+                default="new_command_default",
+                order_index=self.command.order_index
+            )
+
+
+class CommandValueTestCase(Base):
+    def setUp(self):
+        self.example = Example.objects.create(
+            title_verbose='test_verbose',
+            title_not_verbose='TSU_XX_00'
+        )
+        self.command = Command.objects.create(
+            example=self.example,
+            title="test_title",
+            default="default",
+            order_index=1
+        )
+        self.cmd_value = CommandValue.objects.create(
+            value="some_value",
+            command=self.command
+        )
+
+    def test_str_method(self):
+        self.assertEqual(
+            self.cmd_value.__str__(), f"{self.cmd_value.value} for {self.command.title} command"
+        )
+
+    def test_meta_options(self):
+        self.assertEqual(self.cmd_value._meta.verbose_name, _("Value for command"))
+        self.assertEqual(self.cmd_value._meta.verbose_name_plural, _("Values for command"))

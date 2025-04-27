@@ -14,14 +14,14 @@ import socket
 import sys
 from datetime import timedelta
 from pathlib import Path
+
 from dotenv import load_dotenv
 from loguru import logger
-from core.loguru_handler import InterceptHandler
 
+from core.loguru_handler import InterceptHandler
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -39,7 +39,6 @@ DEBUG = os.getenv('IS_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = ["localhost", '127.0.0.1', 'web-app', '92.63.76.159']
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -55,13 +54,16 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'debug_toolbar',
     'drf_spectacular',
-    'django_celery_beat',
+    #'django_celery_beat',
     'django_elasticsearch_dsl',
+    'dbbackup',
 
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
     'geant_examples.apps.GeantExamplesConfig',
+    'geant_documentation.apps.GeantDocumentationConfig',
     'cacheops',
+    'utils',
 ]
 
 MIDDLEWARE = [
@@ -111,7 +113,6 @@ DATABASES = {
     }
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -130,7 +131,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -141,7 +141,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -260,8 +259,12 @@ INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 STORAGE_URL = os.getenv('STORAGE_URL')
 PATH_TO_LOCAL_STORAGE = os.getenv('PATH_TO_LOCAL_STORAGE')
 WEB_BACKEND_URL = os.getenv('WEB_BACKEND_URL')
-BACKEND_URL = os.getenv('BACKEND_URL')
-GEANT_BACKEND_RUN_EXAMPLE_URL = BACKEND_URL + '/examples/run/'
+GEANT_BACKEND_URL = os.getenv('BACKEND_URL')
+GEANT_BACKEND_RUN_EXAMPLE_URL = GEANT_BACKEND_URL + '/examples/run/'
+GEANT_BACKEND_GET_EXAMPLE_URL = GEANT_BACKEND_URL + "/examples/by/{title}"
+GEANT_BACKEND_CREATE_EXAMPLE_URL = GEANT_BACKEND_URL + "/examples/"
+GEANT_BACKEND_DELETE_EXAMPLE_URL = GEANT_BACKEND_URL + "/examples/{id}"
+
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -273,9 +276,7 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-if DEBUG:
-    ELASTICSEARCH_DSL_AUTOSYNC = False
-
+ELASTICSEARCH_DSL_AUTOSYNC = True
 ELASTICSEARCH_ANALYZER_SETTINGS = {
     "filter": {
         "russian_stop": {
@@ -341,8 +342,21 @@ ELASTIC_PARAMS_CONF = {
                     'category',
                 ],
                 'search': 'query',
-                'pagination': [1, 2]
+                'pagination': ['page', 'page_size']
             },
+        },
+        'ArticleDocument': {
+            'params': {
+                'filter': [
+                    'chapter',
+                    'category',
+                    'chosen',
+                ],
+                'search': 'query',
+                'pagination': ['page', 'page_size']
+            }
         }
     }
 }
+
+DBBACKUP_STORAGE = 'core.storage.BackupStorage'

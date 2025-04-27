@@ -5,6 +5,9 @@ from functools import wraps
 
 from django.db.utils import IntegrityError
 from django.db import transaction
+from django.db.models import Model
+
+from typing import Type
 
 
 def obj_can_exist(save_method):
@@ -57,3 +60,8 @@ def check_the_same_obj(obj, validated_data: dict):
         if not obj_field or obj_field != val:
             return False
     return True
+
+
+def bulk_create_children(parent: Model, child_data: list[dict], child_model: Type[Model], parent_field: str):
+    objs = [child_model(**{parent_field: parent}, **data) for data in child_data]
+    child_model.objects.bulk_create(objs)
