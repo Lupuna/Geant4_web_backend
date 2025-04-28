@@ -43,8 +43,7 @@ class DatabaseSynchronizer:
             return
 
         url = settings.GEANT_BACKEND_DELETE_EXAMPLE_URL.format(id=backend_example_id)
-        response = requests.delete(url)
-        response.raise_for_status()
+        requests.delete(url)
         logger.info("success delete %s example from Backend." % self.example.title_not_verbose)
 
     @retry(wait=wait_fixed(3), stop=stop_after_attempt(5), reraise=True)
@@ -55,8 +54,13 @@ class DatabaseSynchronizer:
             json=json,
             timeout=5
         )
-        response.raise_for_status()
-        logger.info("success create example %s on Backend service." % self.example.title_not_verbose)
+        if response.ok:
+            logger.info("success create example %s on Backend service." % self.example.title_not_verbose)
+        else:
+            self.example.synchronized = False
+            self.example.save()
+
+            logger.info("failed sync example %s." % self.example.title_not_verbose)
 
     def run(self):
         backend_example_id = self.get_example_from_backend()

@@ -6,4 +6,4 @@ class GeantExamplesConfig(AppConfig):
     name = 'geant_examples'
 
     def ready(self):
-        pass
+        from . import signals
