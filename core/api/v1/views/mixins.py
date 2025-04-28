@@ -114,7 +114,12 @@ class CookiesMixin:
     request_cookies = {}
     response_cookies = {}
 
+    def check_request(self):
+        if not self.request:
+            raise AttributeError('Request was not provided')
+
     def check_request_cookies(self, *keys):
+        self.check_request()
         if not keys:
             self.request_cookies = self.request.COOKIES
 
