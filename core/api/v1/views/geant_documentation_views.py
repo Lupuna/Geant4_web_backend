@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.http import FileResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -201,7 +200,6 @@ class ArticleViewSet(ElasticMixin, ValidationHandlingMixin, ModelViewSet):
             after_search = self.elastic_search(self.request, search)
             after_filter = self.elastic_filter(self.request, after_search)
             return after_filter.to_queryset()
-
         return Article.objects.select_related('category', 'chapter').prefetch_related(
             'subscriptions',
             'subscriptions__elements',
