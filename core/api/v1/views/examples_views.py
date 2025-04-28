@@ -1,10 +1,13 @@
 import requests
 
-
 from cacheops import invalidate_model
+
 from django.conf import settings
 from django.http import FileResponse
+from django.db.models.query import QuerySet
+
 from drf_spectacular.utils import extend_schema
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -26,12 +29,8 @@ from file_client.exceptions import FileClientException
 from file_client.files_clients import ReadOnlyClient
 from geant_examples.documents import ExampleDocument
 from geant_examples.models import Example, UserExampleCommand, ExampleCommand
+
 from .mixins import ElasticMixin
-
-
-from django.db.models.query import QuerySet
-
-from cacheops import invalidate_model
 
 
 @extend_schema(
@@ -55,8 +54,6 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
 
         return Response({"message": "success."}, status=status.HTTP_200_OK)
 
-
-
     def get_serializer(self, *args, **kwargs):
         match self.request.method:
             case 'GET':
@@ -70,9 +67,9 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
 
     def get_queryset(self):
         elastic_document_class = self.get_elastic_document_class()
+        self.setup_elastic_document_conf()
         search = elastic_document_class.search()
         result_search = self.elastic_full_query_handling(self.request, search)
-
         return result_search.to_queryset()
 
 
@@ -86,7 +83,6 @@ class ExampleCommandViewSet(ModelViewSet):
     def get_serializer(self, *args, **kwargs):
         if self.request.method in ['GET', ]:
             return ExampleCommandGETSerializer(*args, **kwargs)
-
         if self.request.method in ['POST', ]:
             kwargs.setdefault('context', self.get_serializer_context())
             return ExampleCommandPOSTSerializer(*args, **kwargs)
@@ -95,12 +91,10 @@ class ExampleCommandViewSet(ModelViewSet):
         context = super().get_serializer_context()
         context.update(
             {'example_pk': int(self.kwargs['example_pk']), 'user': self.request.user})
-
         return context
 
     def get_queryset(self, *prefetch_lookups) -> QuerySet:
         example = int(self.kwargs.get('example_pk'))
-
         return ExampleCommand.objects.filter(example=example).prefetch_related(*prefetch_lookups)
 
     @extend_schema(request=ExampleCommandPOSTSerializer)
@@ -181,34 +175,31 @@ class ExampleCommandUpdateStatusAPIView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = ExampleCommandUpdateStatusSerializer(data=request.data)
 
-        if serializer.is_valid():
-            key_s3 = serializer.data.get('key_s3')
-            err_body = serializer.data.get('err_body', None)
+        serializer.is_valid(raise_exception=True)
+        key_s3 = serializer.data.get('key_s3')
+        err_body = serializer.data.get('err_body', None)
 
-            if err_body:
-                new_status = UserExampleCommand.StatusChoice.failure
-            else:
-                new_status = UserExampleCommand.StatusChoice.executed
+        if err_body:
+            new_status = UserExampleCommand.StatusChoice.failure
+        else:
+            new_status = UserExampleCommand.StatusChoice.executed
 
-            users_example_commands = UserExampleCommand.objects.filter(
-                example_command__key_s3=key_s3).prefetch_related('user', 'example_command')
-            ex_command = users_example_commands.first().example_command
-            user_emails = ex_command.users.values_list('email', flat=True)
-            old_status = users_example_commands.first().get_status_display()
-            title_verbose = users_example_commands.first().example_command.example.title_verbose
-            users_example_commands.update(status=new_status)
-            invalidate_model(UserExampleCommand)
-            message = f'The simulation of the example "{title_verbose}" with the key {key_s3} changed the status from "{old_status}" to "{new_status.label}"'
-            topic = 'Simulation status'
-            send_celery_mail.delay(
-                topic,
-                message,
-                list(user_emails)
-            )
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        users_example_commands = UserExampleCommand.objects.filter(
+            example_command__key_s3=key_s3).prefetch_related('user', 'example_command')
+        ex_command = users_example_commands.first().example_command
+        user_emails = ex_command.users.values_list('email', flat=True)
+        old_status = users_example_commands.first().get_status_display()
+        title_verbose = users_example_commands.first().example_command.example.title_verbose
+        users_example_commands.update(status=new_status)
+        invalidate_model(UserExampleCommand)
+        message = f'The simulation of the example "{title_verbose}" with the key {key_s3} changed the status from "{old_status}" to "{new_status.label}"'
+        topic = 'Simulation status'
+        send_celery_mail.delay(
+            topic,
+            message,
+            list(user_emails)
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(

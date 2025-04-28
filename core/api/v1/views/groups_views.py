@@ -28,10 +28,6 @@ class GroupAPIViewSet(ModelViewSet):
     def delete_objs(self, request, *args, **kwargs):
         serializer = self.get_serializer(
             instance=self.get_object(), data=request.data, context={'delete': True})
-
-        if serializer.is_valid():
-            delete_info = serializer.save()
-
-            return response_cookies(delete_info, status=status.HTTP_200_OK)
-
-        return response_cookies(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid()
+        delete_info = serializer.save()
+        return response_cookies(delete_info, status=status.HTTP_200_OK)
