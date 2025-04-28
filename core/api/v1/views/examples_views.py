@@ -37,6 +37,7 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
     permission_classes = (IsAuthenticated,)
     http_method_names = ['get', 'post', 'patch', 'delete']
     elastic_document = ExampleDocument
+    elastic_search_fields = settings.ELASTICSEARCH_ANALYZER_FIELDS_EXAMPLES
 
     def get_serializer(self, *args, **kwargs):
         match self.request.method:
