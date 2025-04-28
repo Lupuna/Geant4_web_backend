@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.http import FileResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
