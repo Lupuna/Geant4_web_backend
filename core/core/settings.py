@@ -319,13 +319,21 @@ ELASTICSEARCH_ANALYZER_SETTINGS = {
         }
     }
 }
-ELASTICSEARCH_ANALYZER_FIELDS = [
+ELASTICSEARCH_ANALYZER_FIELDS_EXAMPLES = [
     "description.english",
     "description.russian",
     "description",
     "title_verbose.english",
     "title_verbose.russian",
     "title_verbose"
+]
+ELASTICSEARCH_ANALYZER_FIELDS_DOCUMENTATIONS = [
+    "description.english",
+    "description.russian",
+    "description",
+    "title.english",
+    "title.russian",
+    "title"
 ]
 ELASTICSEARCH_DSL = {
     'default': {
