@@ -196,6 +196,7 @@ class ArticleViewSet(ElasticMixin, ValidationHandlingMixin, ModelViewSet):
 
     def get_queryset(self):
         if self.action == 'list':
+            self.setup_elastic_document_conf()
             search = self.elastic_document.search()
             after_search = self.elastic_search(self.request, search)
             after_filter = self.elastic_filter(self.request, after_search)
