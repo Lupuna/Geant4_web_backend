@@ -48,11 +48,12 @@ class ElasticMixin:
     def elastic_search(self, request, search):
         params = request.query_params
         search_param = self.elastic_document_conf['params']['search']
+        fields = self.elastic_document_conf['fields']
         target = params.get(search_param, None)
 
         if target:
             q = Q(
-                "multi_match", query=target, fields=settings.ELASTICSEARCH_ANALYZER_FIELDS,
+                "multi_match", query=target, fields=fields,
                 fuzziness="auto"
             )
             search = search.query(q)
