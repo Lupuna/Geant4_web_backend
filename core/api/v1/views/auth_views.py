@@ -3,19 +3,27 @@ import datetime
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.utils import timezone
+
 from drf_spectacular.utils import extend_schema
+
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from api.tasks import send_celery_mail
+from api.v1.serializers.utils import check_attrs
 from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSerializer
 from api.v1.serializers.users_serializers import UserEmailSerializer, PasswordUpdateSerializer
+
 from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies, \
     get_token_info_or_return_failure, make_disposable_url
+
+from .mixins import CookiesMixin
+
 from users.models import User
 
 
@@ -23,36 +31,32 @@ from users.models import User
     tags=['Auth endpoint']
 )
 class RegistrationAPIView(APIView):
+    def check_the_same_user(self, user, validated_data: dict):
+        unique_fields = ['username', 'email']
+        check_data = {k: v for k, v in validated_data.items()
+                      if k in unique_fields}
+        return check_attrs(user, check_data)
+
+    def get_user(self, serializer: RegistrationSerializer) -> User:
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        same_user = self.check_the_same_user(user, serializer.validated_data)
+        if not same_user or user.is_active:
+            raise ValidationError('User with provided data already exists')
+        return user
+
     @extend_schema(request=RegistrationSerializer)
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
-
-        if serializer.is_valid():
-            username = serializer.validated_data['username']
-            user_email = serializer.validated_data['email']
-            disposable_url = make_disposable_url(settings.FRONTEND_URL + '/auth/registration/confirm/',
-                                                 settings.REGISTRATION_CONFIRM_SALT, {'username': username})
-            message = f'For confirm registration follow the link\n{disposable_url}'
-            try:
-                user = User.objects.get(username=username)
-            except User.DoesNotExist:
-                serializer.save()
-                send_celery_mail.delay(
-                    'Confirm registration', message, [user_email])
-
-                return response_cookies({'detail': 'Follow the link in mail to accept your registartion'},
-                                        status.HTTP_201_CREATED)
-
-            if not user.is_active:
-                send_celery_mail.delay(
-                    'Confirm registration', message, [user_email])
-
-                return response_cookies({'detail': 'Follow the link in mail to accept your registartion'},
-                                        status.HTTP_200_OK)
-
-            return response_cookies({'error': 'User already exists'}, status=status.HTTP_400_BAD_REQUEST)
-
-        return response_cookies(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user = self.get_user(serializer)
+        disposable_url = make_disposable_url(settings.FRONTEND_URL + '/auth/registration/confirm/',
+                                             settings.REGISTRATION_CONFIRM_SALT, {'username': user.username})
+        message = f'For confirm registration follow the link\n{disposable_url}'
+        send_celery_mail.delay(
+            'Confirm registration', message, [user.email])
+        response = response_cookies(
+            {'detail': 'Follow the link in mail to accept your registartion'}, status.HTTP_200_OK)
+        return response
 
 
 @extend_schema(
@@ -62,93 +66,80 @@ class RegistrationConfirmAPIView(APIView):
     def get(self, request, token, *args, **kwargs):
         token_info = get_token_info_or_return_failure(
             token, 300, settings.REGISTRATION_CONFIRM_SALT)
-
-        if isinstance(token_info, dict):
-            username = token_info.get('username')
-            user = User.objects.get(username=username)
-            user.is_active = True
-            user.save()
-
-            return response_cookies({'detail': 'Registration successfully!'}, status=status.HTTP_200_OK)
-
-        return token_info
-
-
-@extend_schema(
-    tags=['Auth endpoint']
-)
-class LoginAPIView(APIView):
-    authentication_classes = []
-
-    @extend_schema(request=LoginSerializer)
-    def post(self, request):
-        remember_user = request.data.get('remember_me', False)
-        user = authenticate(request)
-
-        if user is None:
-            potential_refresh = request.COOKIES.get('refresh', None)
-            potential_access = request.COOKIES.get('access', None)
-
-            if (potential_access or potential_refresh):
-                cookie_keys = ['refresh', 'access']
-                response = response_cookies({'error': 'User does not exist or given incorrect data'},
-                                            status.HTTP_400_BAD_REQUEST, cookies_data=cookie_keys, delete=True)
-
-            response = response_cookies(
-                {'error': 'User does not exist or given incorrect data'}, status.HTTP_400_BAD_REQUEST)
-
-            return response
-
-        tokens_data = [user]
-
-        if not remember_user:
-            tokens_data.append({'exp': int(datetime.datetime.timestamp(
-                timezone.now() + datetime.timedelta(seconds=3600)))})
-
-        tokens = get_tokens_for_user(*tokens_data)
+        username = token_info.get('username')
+        user = User.objects.get(username=username)
+        user.is_active = True
+        user.save()
         response = response_cookies(
-            {'detail': 'Logged in successfully'}, status.HTTP_200_OK, cookies_data=tokens)
-
+            {'detail': 'Registration successfully!'}, status=status.HTTP_200_OK)
         return response
 
 
 @extend_schema(
     tags=['Auth endpoint']
 )
-class LogoutAPIView(APIView):
-    def get(self, request):
-        raw_refresh = request.COOKIES.get('refresh', None)
-        cookie_to_remove = ['refresh', 'access']
+class LoginAPIView(APIView, CookiesMixin):
+    authentication_classes = []
 
-        if not raw_refresh:
-            return response_cookies({'error': 'Refresh token require'}, status=status.HTTP_400_BAD_REQUEST)
+    @extend_schema(request=LoginSerializer)
+    def post(self, request):
+        remember_user = request.data.get('remember_me', False)
+        user = authenticate(request)
+        check_request_cookies = self.check_request_cookies()
 
-        try:
-            put_token_on_blacklist(refresh_token=raw_refresh)
-        except ValidationError:
-            return response_cookies({'error': 'Invalid refresh token'}, status.HTTP_400_BAD_REQUEST,
-                                    cookies_data=cookie_to_remove, delete=True)
+        if user is None:
+            response = response_cookies(
+                {'error': 'User does not exist or given incorrect data'}, status.HTTP_400_BAD_REQUEST)
+            if check_request_cookies:
+                response = self.get_response_del_cookies(
+                    response.data, response.status_code)
+            return response
 
-        return response_cookies({'detail': 'Logged out'}, status.HTTP_200_OK, cookies_data=cookie_to_remove,
-                                delete=True)
+        tokens_data = [user]
+        if not remember_user:
+            tokens_data.append({'exp': int(datetime.datetime.timestamp(
+                timezone.now() + datetime.timedelta(seconds=3600)))})
+        tokens = get_tokens_for_user(*tokens_data)
+        self.response_cookies.update(tokens)
+        response = self.get_response_set_cookies(
+            {'detail': 'Logged in successfully'}, status.HTTP_200_OK)
+        return response
 
 
 @extend_schema(
     tags=['Auth endpoint']
 )
-class GetAccessTokenView(APIView):
+class LogoutAPIView(APIView, CookiesMixin):
+    def get_logout_response(self):
+        try:
+            put_token_on_blacklist(self.request_cookies.get('refresh'))
+            response = self.get_response_del_cookies(
+                {'detail': 'Logged out'}, status.HTTP_200_OK)
+        except ValidationError:
+            response = self.get_response_del_cookies(
+                {'error': 'Invalid refresh token'}, status.HTTP_400_BAD_REQUEST)
+        return response
+
+    def get(self, request):
+        self.check_request_cookies()
+        response = self.get_logout_response()
+        return response
+
+
+@extend_schema(
+    tags=['Auth endpoint']
+)
+class GetAccessTokenView(APIView, CookiesMixin):
     def get(self, request, **kwargs):
-        raw_refresh = request.COOKIES.get('refresh', None)
-        serializer = TokenRefreshSerializer(data={'refresh': raw_refresh})
-        if serializer.is_valid():
-            tokens = {
-                'refresh': serializer.validated_data['refresh'], 'access': serializer.validated_data['access']}
-            response = response_cookies(
-                {'detail': 'Given new tokens'}, status=status.HTTP_200_OK, cookies_data=tokens)
-
-            return response
-
-        return response_cookies({'error(token validating)': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        self.check_request_cookies('refresh')
+        serializer = TokenRefreshSerializer(data=self.request_cookies)
+        serializer.is_valid(raise_exception=True)
+        tokens = {
+            'refresh': serializer.validated_data['refresh'], 'access': serializer.validated_data['access']}
+        self.response_cookies = tokens
+        response = self.get_response_set_cookies(
+            {'detail': 'Given new tokens'}, status=status.HTTP_200_OK)
+        return response
 
 
 @extend_schema(
@@ -158,26 +149,22 @@ class PasswordRecoveryAPIView(APIView):
     @extend_schema(request=UserEmailSerializer)
     def post(self, request, *args, **kwargs):
         serializer = UserEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user_email = serializer.validated_data['email']
+        user = User.objects.get(email=user_email)
+        response = response_cookies(
+            {'error': 'User with this email is not active'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
-        if serializer.is_valid():
-            user_email = serializer.validated_data['email']
-            user = User.objects.get(email=user_email)
+        if user.is_active:
+            dicposable_url = make_disposable_url(
+                settings.FRONTEND_URL + '/auth/password_recovery/confirm/', settings.PASSWORD_RECOVERY_SALT, {'username': user.username})
+            message = f'For password recovery follow link\n{dicposable_url}'
+            send_celery_mail.delay(
+                'Password recovery', message, [user_email])
+            response = response_cookies(
+                {'detail': 'We sent mail on your email to recovery password'}, status=status.HTTP_200_OK)
 
-            if user.is_active:
-                dicposable_url = make_disposable_url(
-                    settings.FRONTEND_URL + '/auth/password_recovery/confirm/', settings.PASSWORD_RECOVERY_SALT,
-                    {'username': user.username})
-                message = f'For password recovery follow link\n{dicposable_url}'
-                send_celery_mail.delay(
-                    'Password recovery', message, [user_email])
-
-                return response_cookies({'detail': 'We sent mail on your email to recovery password'},
-                                        status=status.HTTP_200_OK)
-
-            return response_cookies({'error': 'User with this email is not active'},
-                                    status=status.HTTP_406_NOT_ACCEPTABLE)
-
-        return response_cookies({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return response
 
 
 @extend_schema(
@@ -188,41 +175,45 @@ class PasswordRecoveryConfirmAPIView(APIView):
     def post(self, request, token, *args, **kwargs):
         token_info = get_token_info_or_return_failure(
             token, 300, settings.PASSWORD_RECOVERY_SALT)
-
-        if isinstance(token_info, dict):
-            username = token_info.get('username')
-            user = User.objects.get(username=username)
-            serializer = PasswordUpdateSerializer(
-                instance=user, data=request.data)
-
-            if serializer.is_valid():
-                serializer.save()
-
-                return response_cookies({'detail': 'Password recovered successfully'}, status=status.HTTP_200_OK,
-                                        cookies_data=['access', 'refresh'], delete=True)
-
-            return response_cookies({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        return token_info
+        username = token_info.get('username')
+        user = User.objects.get(username=username)
+        serializer = PasswordUpdateSerializer(
+            instance=user, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        response = response_cookies(
+            {'detail': 'Password recovered successfully'}, status=status.HTTP_200_OK)
+        return response
 
 
 @extend_schema(
     tags=['Auth endpoint']
 )
-class GetAuthInfoAPIView(APIView):
+class GetAuthInfoAPIView(APIView, CookiesMixin):
     permission_classes = []
+    authentication_classes = []
+
+    def check_jwt_token(self, token):
+        try:
+            result = bool(JWTAuthentication().get_validated_token(token))
+        except InvalidToken:
+            result = False
+        return result
+
+    def check_jwt_tokens(self, tokens):
+        tokens_checkers = []
+        for token in tokens:
+            tokens_checkers.append(self.check_jwt_token(token))
+        if not tokens_checkers:
+            tokens_checkers.append(False)
+        return tokens_checkers
 
     def get(self, request, *args, **kwargs):
-        refresh = request.COOKIES.get('refresh', None)
-        access = request.COOKIES.get('access', None)
-
-        if refresh and access:
-            for token in (access, refresh,):
-                try:
-                    JWTAuthentication().get_validated_token(token)
-                except InvalidToken:
-                    return response_cookies({'detail': False}, status=status.HTTP_401_UNAUTHORIZED)
-
-            return response_cookies({'detail': True}, status=status.HTTP_200_OK)
-
-        return response_cookies({'detail': False}, status=status.HTTP_401_UNAUTHORIZED)
+        self.check_request_cookies('refresh', 'access')
+        tokens = self.request_cookies.values()
+        tokens_are_valid = self.check_jwt_tokens(tokens)
+        data = {'detail': all(tokens_are_valid)}
+        if not len(tokens_are_valid) == 2:
+            data.update({'detail': False})
+        response = Response(data)
+        return response

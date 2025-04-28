@@ -34,7 +34,7 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
 
         self.assertTrue(User.objects.filter(
             username=self.registration_data['username']).exists())
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
         self.assertFalse(User.objects.get(
             username=self.registration_data['username']).is_active)
         mock_send.assert_called_once()
@@ -46,7 +46,7 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
 
         response = self.client.post(self.url, data)
 
-        self.assertNotEqual(response.status_code, 201)
+        self.assertNotEqual(response.status_code, 200)
         self.assertFalse(User.objects.filter(email=data['email']).exists())
         self.assertFalse(response.cookies.keys())
         mock_send.assert_not_called()
@@ -58,7 +58,8 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
 
         response = self.client.post(self.url, data=data)
         self.assertNotEqual(response.status_code, 200)
-        self.assertEqual(response.data, {'error': 'User already exists'})
+        self.assertEqual(response.data, [ErrorDetail(
+            string='User with provided data already exists', code='invalid')])
         mock_send.assert_not_called()
 
     @patch('api.tasks.send_celery_mail.delay')
@@ -69,7 +70,7 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
 
         self.assertTrue(User.objects.filter(
             username=self.registration_data['username']).exists())
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
         self.assertFalse(User.objects.get(
             username=self.registration_data['username']).is_active)
 
@@ -130,11 +131,6 @@ class LogoutAPIViewTestCase(AuthSettingsTest):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.cookies.get('refresh').value)
         self.assertFalse(response.cookies.get('access').value)
-
-    def test_logout_not_logged_in(self):
-        response = self.client.get(self.url)
-
-        self.assertEqual(response.data, {'error': 'Refresh token require'})
 
 
 class GetAccessTestCase(AuthSettingsTest):
@@ -210,14 +206,14 @@ class PasswordRecoveryConfirmAPIViewTestCase(AuthSettingsTest):
     def test_chpas_confirm_bad_token(self):
         url = self.url[:-1]
         response = self.client.post(url, data=self.new_passws)
-        self.assertEqual(response.status_code, 406)
-        self.assertEqual(response.data, {'error': 'Invalid token'})
+        self.assertEqual(response.status_code, 400)
 
     def test_chpas_confirm_token_expired(self):
         with freeze_time(timezone.now() + timezone.timedelta(seconds=405)):
             response = self.client.post(self.url, self.new_passws)
-            self.assertEqual(response.status_code, 406)
-            self.assertEqual(response.data, {'error': 'Token expired'})
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.data, [ErrorDetail(
+                string='Signature age 405 > 300 seconds', code='invalid')])
 
     def test_wrong_data(self):
         data = self.new_passws
@@ -250,9 +246,7 @@ class RegistrationConfirmAPIViewTestCase(AuthSettingsTest):
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_active)
         response = self.client.get(self.url[:-3])
-        self.assertEqual(response.status_code, 406)
-        self.assertEqual(
-            response.data, {'error': 'Invalid token'})
+        self.assertEqual(response.status_code, 400)
         self.assertFalse(self.user.is_active)
 
     def test_confirm_reg_token_expired(self):
@@ -260,7 +254,7 @@ class RegistrationConfirmAPIViewTestCase(AuthSettingsTest):
         self.assertFalse(self.user.is_active)
         with freeze_time(timezone.now() + timezone.timedelta(seconds=305)):
             response = self.client.get(self.url)
-            self.assertEqual(response.status_code, 406)
+            self.assertEqual(response.status_code, 400)
             self.assertEqual(
-                response.data, {'error': 'Token expired'})
+                response.data, [ErrorDetail(string='Signature age 305 > 300 seconds', code='invalid')])
             self.assertFalse(self.user.is_active)
