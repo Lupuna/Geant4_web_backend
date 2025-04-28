@@ -52,7 +52,7 @@ class ElasticMixin:
 
         if target:
             q = Q(
-                "multi_match", query=target, fields=self.elastic_search_fields,
+                "multi_match", query=target, fields=settings.ELASTICSEARCH_ANALYZER_FIELDS,
                 fuzziness="auto"
             )
             search = search.query(q)
