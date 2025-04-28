@@ -41,6 +41,7 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
     permission_classes = (IsAuthenticated,)
     http_method_names = ['get', 'post', 'patch', 'delete']
     elastic_document = ExampleDocument
+    elastic_search_fields = settings.ELASTICSEARCH_ANALYZER_FIELDS_EXAMPLES
 
     @extend_schema(exclude=True)
     @action(detail=False, methods=['patch'], url_path="change-synchronized", permission_classes=[])

@@ -199,6 +199,7 @@ class UserExampleView(GenericAPIView, ElasticMixin):
         'example_command__example')
     serializer_class = ExampleForUserSerializer
     elastic_document = ExampleDocument
+    elastic_search_fields = settings.ELASTICSEARCH_ANALYZER_FIELDS_EXAMPLES
 
     def get_queryset(self):
         search = self.elastic_document.search()
