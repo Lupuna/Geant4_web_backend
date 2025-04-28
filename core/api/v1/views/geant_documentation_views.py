@@ -193,8 +193,6 @@ class SubscriptionViewSet(ValidationHandlingMixin, ModelViewSet):
 )
 class ArticleViewSet(ElasticMixin, ValidationHandlingMixin, ModelViewSet):
     elastic_document = ArticleDocument
-    elastic_search_fields = settings.ELASTICSEARCH_ANALYZER_FIELDS_DOCUMENTATIONS
-
 
     def get_queryset(self):
         if self.action == 'list':
