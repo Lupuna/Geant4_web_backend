@@ -2,17 +2,15 @@ from django.test import TestCase
 from django.conf import settings
 from django.utils import timezone
 
-from unittest.mock import MagicMock, patch
-
 from users.auth import utils
 from users.models import User
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from rest_framework.response import Response
 
-from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from itsdangerous import URLSafeTimedSerializer
 
 from freezegun import freeze_time
 
@@ -52,16 +50,13 @@ class TokenInfoTestCase(TestCase):
         self.assertIsInstance(token_info_ok, dict)
 
         with freeze_time(timezone.now() + timezone.timedelta(seconds=400)):
-            token_expired_info = utils.get_token_info_or_return_failure(
-                token, 300, salt='test-salt')
-            self.assertIsInstance(token_expired_info, Response)
-            self.assertEqual(token_expired_info.data, {
-                             'error': 'Token expired'})
+            with self.assertRaises(ValidationError):
+                token_expired_info = utils.get_token_info_or_return_failure(
+                    token, 300, salt='test-salt')
 
-        token_bad_sign_info = utils.get_token_info_or_return_failure(
-            token, 200, 'bad-salt')
-        self.assertIsInstance(token_bad_sign_info, Response)
-        self.assertEqual(token_bad_sign_info.data, {'error': 'Invalid token'})
+        with self.assertRaises(ValidationError):
+            token_bad_sign_info = utils.get_token_info_or_return_failure(
+                token, 200, 'bad-salt')
 
 
 class MailSenderTestCase(TestCase):

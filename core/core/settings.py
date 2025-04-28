@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'debug_toolbar',
     'drf_spectacular',
-    #'django_celery_beat',
+    # 'django_celery_beat',
     'django_elasticsearch_dsl',
     'dbbackup',
 
@@ -319,22 +319,7 @@ ELASTICSEARCH_ANALYZER_SETTINGS = {
         }
     }
 }
-ELASTICSEARCH_ANALYZER_FIELDS_EXAMPLES = [
-    "description.english",
-    "description.russian",
-    "description",
-    "title_verbose.english",
-    "title_verbose.russian",
-    "title_verbose"
-]
-ELASTICSEARCH_ANALYZER_FIELDS_DOCUMENTATIONS = [
-    "description.english",
-    "description.russian",
-    "description",
-    "title.english",
-    "title.russian",
-    "title"
-]
+
 ELASTICSEARCH_DSL = {
     'default': {
         'hosts': 'http://elasticsearch:9200'
@@ -352,6 +337,14 @@ ELASTIC_PARAMS_CONF = {
                 'search': 'query',
                 'pagination': ['page', 'page_size']
             },
+            'fields': [
+                "description.english",
+                "description.russian",
+                "description",
+                "title_verbose.english",
+                "title_verbose.russian",
+                "title_verbose"
+            ]
         },
         'ArticleDocument': {
             'params': {
@@ -362,7 +355,15 @@ ELASTIC_PARAMS_CONF = {
                 ],
                 'search': 'query',
                 'pagination': ['page', 'page_size']
-            }
+            },
+            'fields': [
+                "description.english",
+                "description.russian",
+                "description",
+                "title.english",
+                "title.russian",
+                "title"
+            ]
         }
     }
 }
