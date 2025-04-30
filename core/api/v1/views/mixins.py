@@ -1,14 +1,11 @@
-from abc import abstractmethod
-from typing import Callable
-
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django_elasticsearch_dsl import Document
-from elasticsearch_dsl import Q
-from rest_framework.exceptions import ValidationError as DRFValidationError
 
-from file_client.utils import handle_file_upload
+from elasticsearch_dsl import Q
+
+from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from users.auth.utils import response_cookies
 
@@ -61,20 +58,18 @@ class ElasticMixin:
         return search
 
     def elastic_pagination(self, request, search):
-        page_param_name, page_size_param_name = self.elastic_document_conf[
-            'params']['pagination']
+        page_param_name = self.elastic_document_conf['params']['pagination']
         page = int(request.query_params.get(page_param_name, 1))
-        page_size = int(request.query_params.get(page_size_param_name, 10))
+        page_size = self.elastic_document_conf['pagination_page_size']
         start = (page - 1) * page_size
         search = search.extra(from_=start, size=page_size)
-
         return search
 
     def elastic_full_query_handling(self, request, search):
+        print(search.__dict__)
         for action in self.elastic_document_conf['params']:
             search = getattr(self, f'elastic_{action}', search)(
                 request, search)
-
         return search
 
 
