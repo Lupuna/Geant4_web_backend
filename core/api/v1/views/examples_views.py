@@ -1,4 +1,5 @@
 import requests
+import math
 
 from cacheops import invalidate_model
 
@@ -31,6 +32,7 @@ from geant_examples.documents import ExampleDocument
 from geant_examples.models import Example, UserExampleCommand, ExampleCommand
 
 from .mixins import ElasticMixin
+from .utils import get_response_data_with_pages_count
 
 
 @extend_schema(
@@ -71,6 +73,13 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
         search = elastic_document_class.search()
         result_search = self.elastic_full_query_handling(self.request, search)
         return result_search.to_queryset()
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        new_response_data = get_response_data_with_pages_count(
+            self, Example, response.data)
+        response.data = new_response_data
+        return response
 
 
 @extend_schema(

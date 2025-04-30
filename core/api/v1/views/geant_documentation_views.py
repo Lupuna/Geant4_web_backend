@@ -14,7 +14,9 @@ from api.v1.serializers.geant_documentation_serializers import (
     ChapterSerializer,
     CategorySerializer, RealFileSerializer
 )
-from api.v1.views.mixins import ElasticMixin, ValidationHandlingMixin
+from .mixins import ElasticMixin, ValidationHandlingMixin
+from .utils import get_response_data_with_pages_count
+
 from core.permissions import IsStaffPermission
 from file_client.exceptions import FileClientException
 from file_client.files_clients import ReadOnlyClient
@@ -26,6 +28,7 @@ from file_client.tasks import (
     render_and_update_documentation_image_task
 )
 from file_client.utils import handle_file_upload
+
 from geant_documentation.documents import ArticleDocument
 from geant_documentation.models import Article, Subscription, Chapter, Category, Element
 
@@ -218,3 +221,10 @@ class ArticleViewSet(ElasticMixin, ValidationHandlingMixin, ModelViewSet):
         else:
             permission_classes = [IsAuthenticated, IsStaffPermission]
         return [permission() for permission in permission_classes]
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        new_response_data = get_response_data_with_pages_count(
+            self, Article, response.data)
+        response.data = new_response_data
+        return response
