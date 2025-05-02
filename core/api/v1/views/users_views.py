@@ -7,7 +7,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -218,3 +218,12 @@ class UserExampleView(GenericAPIView, ElasticMixin, QueryParamsMixin):
             instance=self.get_queryset(), many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+@extend_schema(
+    tags=['User uheck is_staff']
+)
+class UserStaff(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        return Response({'is_staff': request.user.is_staff})

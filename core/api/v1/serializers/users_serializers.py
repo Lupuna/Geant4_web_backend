@@ -1,13 +1,10 @@
 from django.conf import settings
-
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from api.tasks import send_celery_mail
-
 from users.auth.utils import make_disposable_url
 from users.models import User
-
 from .utils import raise_validation_error_instead_integrity
 
 
@@ -15,8 +12,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('email', 'username', 'first_name',
-                  'last_name', 'is_employee')
-        read_only_fields = ('is_employee',)
+                  'last_name', 'is_staff')
+        read_only_fields = ('is_staff',)
 
 
 class UserUuidSerializer(serializers.ModelSerializer):
