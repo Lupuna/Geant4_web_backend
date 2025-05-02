@@ -335,7 +335,7 @@ ELASTIC_PARAMS_CONF = {
                     'category',
                 ],
                 'search': 'query',
-                'pagination': ['page', 'page_size']
+                'pagination': 'page'
             },
             'fields': [
                 "description.english",
@@ -344,7 +344,8 @@ ELASTIC_PARAMS_CONF = {
                 "title_verbose.english",
                 "title_verbose.russian",
                 "title_verbose"
-            ]
+            ],
+            'pagination_page_size': 1
         },
         'ArticleDocument': {
             'params': {
@@ -354,7 +355,7 @@ ELASTIC_PARAMS_CONF = {
                     'chosen',
                 ],
                 'search': 'query',
-                'pagination': ['page', 'page_size']
+                'pagination': 'page'
             },
             'fields': [
                 "description.english",
@@ -363,7 +364,8 @@ ELASTIC_PARAMS_CONF = {
                 "title.english",
                 "title.russian",
                 "title"
-            ]
+            ],
+            'pagination_page_size': 10
         }
     }
 }
