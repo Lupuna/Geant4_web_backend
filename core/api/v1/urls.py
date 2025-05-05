@@ -22,7 +22,7 @@ from api.v1.views.users_views import (
     UserProfileUpdateImportantInfoViewSet,
     UserExampleView,
     UserProfileImageViewSet,
-    ConfirmEmailUpdateAPIView
+    ConfirmEmailUpdateAPIView, UserStaff
 )
 
 
@@ -111,5 +111,6 @@ urlpatterns = [
     path('profile/my_examples/', UserExampleView.as_view(), name='user-examples'),
     path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized'),
     path('example/categories/', CategoryAPIView.as_view(),
-         name='example-categories')
+         name='example-categories'),
+    path('check-is-staff/', UserStaff.as_view(), name='check-is-staff'),
 ]
