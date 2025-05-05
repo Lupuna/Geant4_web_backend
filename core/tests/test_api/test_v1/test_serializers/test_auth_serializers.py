@@ -1,3 +1,4 @@
+from django.db.models import Model
 from django.test import TestCase
 
 from api.v1.serializers.auth_serializers import RegistrationSerializer

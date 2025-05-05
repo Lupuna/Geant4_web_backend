@@ -1,6 +1,6 @@
+from django.conf import settings
 from django_elasticsearch_dsl import Document, fields
 from django_elasticsearch_dsl.registries import registry
-from django.conf import settings
 
 from geant_documentation.models import Article
 
@@ -40,9 +40,13 @@ class ArticleDocument(Document):
 
     category = fields.KeywordField(multi=True)
     chapter = fields.KeywordField()
+    chosen = fields.KeywordField()
 
     class Django:
         model = Article
+
+    def prepare_chosen(self, instance):
+        return instance.chosen
 
     def prepare_category(self, instance):
         return instance.category.title if instance.category else ""
