@@ -212,11 +212,11 @@ class ArticleViewSet(ElasticMixin, ValidationHandlingMixin, ModelViewSet):
 
     def get_queryset(self):
         if self.action == 'list':
+            elastic_document_class = self.get_elastic_document_class()
             self.setup_elastic_document_conf()
-            search = self.elastic_document.search()
-            after_search = self.elastic_search(self.request, search)
-            after_filter = self.elastic_filter(self.request, after_search)
-            return after_filter.to_queryset()
+            search = elastic_document_class.search()
+            result_search = self.elastic_full_query_handling(self.request, search)
+            return result_search.to_queryset()
         return Article.objects.select_related('category', 'chapter').prefetch_related(
             'subscriptions',
             'subscriptions__elements',
