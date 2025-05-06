@@ -209,7 +209,7 @@ class UserExampleView(GenericAPIView, ElasticMixin, QueryParamsMixin):
         after_filter = self.elastic_filter(self.request, after_search)
         ex_queryset = after_filter.to_queryset()
         user_ex_commands = super().get_queryset().filter(
-            user=self.request.user, example_command__example__in=ex_queryset).no_cache()
+            user=self.request.user, example_command__example__in=ex_queryset).nocache()
         user_ex_commands = self.sort_by_ord(user_ex_commands)
         return user_ex_commands
 
