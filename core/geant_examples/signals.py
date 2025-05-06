@@ -11,17 +11,8 @@ def save_example(sender, instance, created, **kwargs):
         sync = DatabaseSynchronizer(example=instance)
         sync.run()
 
+
 @receiver(post_delete, sender=Example)
 def delete_example(sender, instance, **kwargs):
     sync = DatabaseSynchronizer(example=instance)
     sync.drop_example()
-
-
-
-
-
-
-
-
-
-

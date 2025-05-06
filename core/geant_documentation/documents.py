@@ -46,7 +46,7 @@ class ArticleDocument(Document):
         model = Article
 
     def prepare_chosen(self, instance):
-        return instance.chosen
+        return str(instance.chosen).lower()
 
     def prepare_category(self, instance):
         return instance.category.title if instance.category else ""
