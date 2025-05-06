@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from geant_examples.models import Example
+from geant_examples.models import Example, Command
 from utils.services import DatabaseSynchronizer
 
 
@@ -11,7 +11,14 @@ def save_example(sender, instance, created, **kwargs):
         sync = DatabaseSynchronizer(example=instance)
         sync.run()
 
+        
+@receiver(post_save, sender=Command)
+def save_command(sender, instance, created, **kwargs):
+    example = instance.example
+    example.synchronized = False
+    example.save()
 
+    
 @receiver(post_delete, sender=Example)
 def delete_example(sender, instance, **kwargs):
     sync = DatabaseSynchronizer(example=instance)
