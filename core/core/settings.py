@@ -193,24 +193,24 @@ CACHES = {
 }
 CACHE_LIVE_TIME = 60 * 60
 CACHEOPS_REDIS = CACHES['default']['LOCATION']
-CACHEOPS = {
-    'users.user': {
-        'ops': 'all',
-        'timeout': CACHE_LIVE_TIME
-    },
-    'geant_examples.*': {
-        'ops': 'all',
-        'timeout': CACHE_LIVE_TIME
-    },
-    'geant_tests_storage.*': {
-        'ops': 'all',
-        'timeout': CACHE_LIVE_TIME
-    },
-    'geant_documentation.*': {
-        'ops': 'all',
-        'timeout': CACHE_LIVE_TIME
-    }
-}
+# CACHEOPS = {
+#     'users.user': {
+#         'ops': 'all',
+#         'timeout': CACHE_LIVE_TIME
+#     },
+#     'geant_examples.*': {
+#         'ops': 'all',
+#         'timeout': CACHE_LIVE_TIME
+#     },
+#     'geant_tests_storage.*': {
+#         'ops': 'all',
+#         'timeout': CACHE_LIVE_TIME
+#     },
+#     'geant_documentation.*': {
+#         'ops': 'all',
+#         'timeout': CACHE_LIVE_TIME
+#     }
+# }
 
 CELERY_BROKER_URL = CACHES['default']['LOCATION']
 CELERY_TASK_ALWAYS_EAGER = True
