@@ -3,6 +3,8 @@ from django.db.models.signals import post_save, post_delete
 from django.test import TestCase
 from loguru import logger
 
+from geant_documentation.models import File
+from geant_documentation.signals import destroy_file
 from geant_examples.models import Example, Command
 from geant_examples.signals import (
     delete_example,
@@ -36,6 +38,11 @@ class Base(TestCase):
             sender=Command
         )
 
+        post_delete.disconnect(
+            receiver=destroy_file,
+            sender=File
+        )
+
     @classmethod
     def tearDownClass(cls):
         post_save.connect(
@@ -53,6 +60,10 @@ class Base(TestCase):
         post_delete.connect(
             receiver=delete_command,
             sender=Command
+        )
+        post_delete.connect(
+            receiver=destroy_file,
+            sender=File
         )
         settings.ELASTICSEARCH_DSL_AUTOSYNC = True
 

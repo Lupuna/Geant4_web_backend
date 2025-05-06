@@ -7,6 +7,7 @@ from geant_examples.models import Example, Command
 from utils.services import DatabaseSynchronizer
 from tests.base import Base
 
+
 class DatabaseSynchronizerTestCase(Base):
     def setUp(self):
         self.example = Example.objects.create(

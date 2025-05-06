@@ -23,3 +23,10 @@ def save_command(sender, instance, created, **kwargs):
 def delete_example(sender, instance, **kwargs):
     sync = DatabaseSynchronizer(example=instance)
     sync.drop_example()
+
+
+@receiver(post_delete, sender=Command)
+def delete_command(sender, instance, **kwargs):
+    example = instance.example
+    example.synchronized = False
+    example.save()

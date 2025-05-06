@@ -12,8 +12,6 @@ from geant_documentation.models import File, Element, Category, Chapter, Article
 from tests.base import Base
 
 
-# TODO не забыть добавить в сенин Base класс сигналы всякие интересные
-
 
 class FileSerializerTestCase(Base):
     def setUp(self):
