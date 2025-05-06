@@ -1,5 +1,4 @@
 import requests
-import math
 
 from cacheops import invalidate_model
 
@@ -72,7 +71,7 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
         self.setup_elastic_document_conf()
         search = elastic_document_class.search()
         result_search = self.elastic_full_query_handling(self.request, search)
-        return result_search.to_queryset()
+        return result_search.to_queryset().no_cache()
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
