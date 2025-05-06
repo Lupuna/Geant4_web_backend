@@ -37,7 +37,7 @@ PASSWORD_RECOVERY_SALT = os.getenv('PASSWORD_RECOVERY_SALT')
 EMAIL_UPDATE_SALT = os.getenv('EMAIL_UPDATE_SALT')
 DEBUG = os.getenv('IS_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = ["localhost", '127.0.0.1', 'web-app', '92.63.76.159']
+ALLOWED_HOSTS = ["localhost", '127.0.0.1', 'web-app', '92.63.76.159', 'geant4-dev-frontend.tsu.ru']
 
 # Application definition
 
