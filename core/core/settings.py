@@ -206,6 +206,10 @@ CACHEOPS = {
     'geant_tests_storage.*': {
         'ops': 'all',
         'timeout': CACHE_LIVE_TIME
+    },
+    'geant_documentation.*': {
+        'ops': 'all',
+        'timeout': CACHE_LIVE_TIME
     }
 }
 
