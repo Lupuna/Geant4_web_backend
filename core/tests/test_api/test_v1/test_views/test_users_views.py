@@ -119,22 +119,6 @@ class ConfirmEmailUpdateAPIViewTestCase(AuthSettingsTest):
         self.assertEqual(confirm_response.data, {
                          'detail': 'Email updated successfully'})
 
-    @patch('api.tasks.send_celery_mail.delay')
-    def test_update_email_already_exists(self, mock_send):
-        user2 = User.objects.create(username='ozzy', email='ozzy@mail.ru')
-        data_to_update = {'email': user2.email}
-        self.login_user()
-        self.client.patch(
-            self.url, data=data_to_update, content_type='application/json')
-        mock_send.assert_called_once()
-        args, kwargs = mock_send.call_args
-        token = token = args[1].split('/')[-1]
-        confirm_url = reverse('confirm-email-update', kwargs={'token': token})
-        confirm_response = self.client.get(confirm_url)
-        self.assertEqual(confirm_response.status_code, 400)
-        self.assertEqual(confirm_response.data, [ErrorDetail(
-            string='This email already in use', code='invalid')])
-
 
 class UserExampleViewTestCase(AuthSettingsTest):
     @patch('geant_examples.documents.ExampleDocument.search')

@@ -1,3 +1,4 @@
+import loguru
 from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -40,6 +41,9 @@ class UserProfileCommonUpdateSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         if value == self.instance.email:
             raise ValidationError('You already use this email')
+
+        if User.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
+            raise ValidationError('A user with this email already exists')
 
         return value
 

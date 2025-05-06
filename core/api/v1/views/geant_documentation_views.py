@@ -2,7 +2,7 @@ from django.http import FileResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
@@ -41,6 +41,13 @@ class ChapterViewSet(ModelViewSet):
     queryset = Chapter.objects.all()
     permission_classes = (IsAuthenticated,)
 
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated, IsStaffPermission]
+        return [permission() for permission in permission_classes]
+
 
 @extend_schema(
     tags=['Documentation Categories']
@@ -49,6 +56,13 @@ class CategoryViewSet(ModelViewSet):
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
     permission_classes = (IsAuthenticated,)
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated, IsStaffPermission]
+        return [permission() for permission in permission_classes]
 
 
 @extend_schema(
@@ -122,7 +136,7 @@ class FileViewSet(ViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            permission_classes = [IsAuthenticated]
+            permission_classes = [AllowAny]
         else:
             permission_classes = [IsAuthenticated, IsStaffPermission]
         return [permission() for permission in permission_classes]
@@ -141,7 +155,7 @@ class ElementViewSet(ValidationHandlingMixin, ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            permission_classes = [IsAuthenticated]
+            permission_classes = [AllowAny]
         else:
             permission_classes = [IsAuthenticated, IsStaffPermission]
         return [permission() for permission in permission_classes]
@@ -172,7 +186,7 @@ class SubscriptionViewSet(ValidationHandlingMixin, ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            permission_classes = [IsAuthenticated]
+            permission_classes = [AllowAny]
         else:
             permission_classes = [IsAuthenticated, IsStaffPermission]
         return [permission() for permission in permission_classes]
@@ -215,12 +229,12 @@ class ArticleViewSet(ElasticMixin, ValidationHandlingMixin, ModelViewSet):
 
         return ArticleSerializer
 
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            permission_classes = [IsAuthenticated]
-        else:
-            permission_classes = [IsAuthenticated, IsStaffPermission]
-        return [permission() for permission in permission_classes]
+    # def get_permissions(self):
+    #     if self.action in ['list', 'retrieve']:
+    #         permission_classes = [AllowAny]
+    #     else:
+    #         permission_classes = [IsAuthenticated, IsStaffPermission]
+    #     return [permission() for permission in permission_classes]
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)

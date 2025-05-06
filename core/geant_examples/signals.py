@@ -11,18 +11,14 @@ def save_example(sender, instance, created, **kwargs):
         sync = DatabaseSynchronizer(example=instance)
         sync.run()
 
+        
 @receiver(post_save, sender=Command)
 def save_command(sender, instance, created, **kwargs):
     example = instance.example
     example.synchronized = False
     example.save()
 
-@receiver(post_delete, sender=Command)
-def delete_command(sender, instance, **kwargs):
-    example = instance.example
-    example.synchronized = False
-    example.save()
-
+    
 @receiver(post_delete, sender=Example)
 def delete_example(sender, instance, **kwargs):
     sync = DatabaseSynchronizer(example=instance)
