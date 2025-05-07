@@ -15,7 +15,6 @@ from api.v1.serializers.geant_documentation_serializers import (
     CategorySerializer, RealFileSerializer
 )
 from .mixins import ElasticMixin, ValidationHandlingMixin
-from .utils import get_response_data_with_pages_count
 
 from core.permissions import IsStaffPermission
 from file_client.exceptions import FileClientException
@@ -238,7 +237,6 @@ class ArticleViewSet(ElasticMixin, ValidationHandlingMixin, ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
-        new_response_data = get_response_data_with_pages_count(
-            self, Article, response.data)
+        new_response_data = self.get_response_data_with_pages_count(response.data)
         response.data = new_response_data
         return response

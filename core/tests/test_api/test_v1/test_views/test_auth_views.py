@@ -58,8 +58,7 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
 
         response = self.client.post(self.url, data=data)
         self.assertNotEqual(response.status_code, 200)
-        self.assertEqual(response.data, [ErrorDetail(
-            string='User with provided data already exists', code='invalid')])
+        self.assertEqual(response.data, {'username': [ErrorDetail(string='This value is already taken.', code='invalid')]})
         mock_send.assert_not_called()
 
     @patch('api.tasks.send_celery_mail.delay')

@@ -9,6 +9,8 @@ from rest_framework.exceptions import ValidationError
 
 from functools import wraps
 
+from users.models import User
+
 
 def bulk_create_children(parent: Model, child_data: list[dict], child_model: Type[Model], parent_field: str):
     objs = [child_model(**{parent_field: parent}, **data)
@@ -75,3 +77,12 @@ def check_attrs(obj, attrs: dict):
         if not obj_field or obj_field != val:
             return False
     return True
+
+
+def get_existing_conflicts(data: dict) -> list:
+    conflicts = []
+    if User.objects.filter(username=data.get('username'), is_active=True).exists():
+        conflicts.append('username')
+    if User.objects.filter(email=data.get('email'), is_active=True).exists():
+        conflicts.append('email')
+    return conflicts

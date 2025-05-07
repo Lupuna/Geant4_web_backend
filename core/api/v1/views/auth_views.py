@@ -15,7 +15,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from api.tasks import send_celery_mail
-from api.v1.serializers.utils import check_attrs
+from api.v1.serializers.utils import get_existing_conflicts
 from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSerializer
 from api.v1.serializers.users_serializers import UserEmailSerializer, PasswordUpdateSerializer
 
@@ -31,19 +31,16 @@ from users.models import User
     tags=['Auth endpoint']
 )
 class RegistrationAPIView(APIView):
-    def check_the_same_user(self, user, validated_data: dict):
-        unique_fields = ['username', 'email']
-        check_data = {k: v for k, v in validated_data.items()
-                      if k in unique_fields}
-        return check_attrs(user, check_data)
-
     def get_user(self, serializer: RegistrationSerializer) -> User:
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        same_user = self.check_the_same_user(user, serializer.validated_data)
-        if not same_user or user.is_active:
-            raise ValidationError('User with provided data already exists')
-        return user
+
+        conflicts = get_existing_conflicts(serializer.validated_data)
+        if conflicts:
+            raise ValidationError({
+                field: ["This value is already taken."] for field in conflicts
+            })
+
+        return serializer.save()
 
     @extend_schema(request=RegistrationSerializer)
     def post(self, request):

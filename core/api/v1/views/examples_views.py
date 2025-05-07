@@ -31,7 +31,6 @@ from geant_examples.documents import ExampleDocument
 from geant_examples.models import Example, UserExampleCommand, ExampleCommand
 
 from .mixins import ElasticMixin
-from .utils import get_response_data_with_pages_count
 
 
 @extend_schema(
@@ -75,8 +74,7 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
-        new_response_data = get_response_data_with_pages_count(
-            self, Example, response.data)
+        new_response_data = self.get_response_data_with_pages_count(response.data)
         response.data = new_response_data
         return response
 
