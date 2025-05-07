@@ -187,30 +187,7 @@ class PasswordRecoveryConfirmAPIView(APIView):
     tags=['Auth endpoint']
 )
 class GetAuthInfoAPIView(APIView, CookiesMixin):
-    permission_classes = []
-    authentication_classes = []
-
-    def check_jwt_token(self, token):
-        try:
-            result = bool(JWTAuthentication().get_validated_token(token))
-        except InvalidToken:
-            result = False
-        return result
-
-    def check_jwt_tokens(self, tokens):
-        tokens_checkers = []
-        for token in tokens:
-            tokens_checkers.append(self.check_jwt_token(token))
-        if not tokens_checkers:
-            tokens_checkers.append(False)
-        return tokens_checkers
-
     def get(self, request, *args, **kwargs):
-        self.check_request_cookies('refresh', 'access')
-        tokens = self.request_cookies.values()
-        tokens_are_valid = self.check_jwt_tokens(tokens)
-        data = {'detail': all(tokens_are_valid)}
-        if not len(tokens_are_valid) == 2:
-            data.update({'detail': False})
-        response = Response(data)
+        response = Response({'detail': bool(request.user and request.user.is_authenticated)})
         return response
+
