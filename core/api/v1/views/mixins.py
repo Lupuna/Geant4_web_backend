@@ -8,10 +8,11 @@ from elasticsearch_dsl import Q
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from users.auth.utils import response_cookies
-
+from math import ceil
 
 class ElasticMixin:
     elastic_document_conf = None
+    total_count = None
 
     def get_elastic_document_class(self) -> Document:
         if not hasattr(self, 'elastic_document') or self.elastic_document is None:
@@ -70,7 +71,15 @@ class ElasticMixin:
         for action in self.elastic_document_conf['params']:
             search = getattr(self, f'elastic_{action}', search)(
                 request, search)
+
+        self.total_count = search.count()
         return search
+
+    def get_response_data_with_pages_count(self, response_data: list):
+        page_size = self.elastic_document_conf['pagination_page_size']
+        pages_count = ceil(self.total_count / page_size)
+        response_data.append({'pages_count': pages_count})
+        return response_data
 
 
 class ValidationHandlingMixin:
