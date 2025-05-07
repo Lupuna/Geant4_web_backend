@@ -374,3 +374,8 @@ ELASTIC_PARAMS_CONF = {
 }
 
 DBBACKUP_STORAGE = 'core.storage.BackupStorage'
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://geant4-dev-frontend.tsu.ru:444',
+    'https://92.63.76.159'
+]
