@@ -166,3 +166,6 @@ cython_debug/
 
 # ssl
 .nginx/ssl/
+
+core/files/
+nginx/ssl/
