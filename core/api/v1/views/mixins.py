@@ -125,11 +125,11 @@ class CookiesMixin:
         self.check_request()
         if not keys:
             self.request_cookies = self.request.COOKIES
+        else:
+            self.request_cookies.update({
+                key: self.request.COOKIES.get(key, None) for key in keys if self.request.COOKIES.get(key, None)})
 
-        self.request_cookies.update({
-            key: self.request.COOKIES.get(key, None) for key in keys if self.request.COOKIES.get(key, None)})
-
-        return bool(self.request_cookies)
+        return all(self.request_cookies.get(key) not in [None, ''] for key in keys)
 
     def setup_to_delete_cookies(self):
         self.cookies_to_delete = list(self.request_cookies.keys())
