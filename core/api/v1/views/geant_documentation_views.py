@@ -228,12 +228,12 @@ class ArticleViewSet(ElasticMixin, ValidationHandlingMixin, ModelViewSet):
 
         return ArticleSerializer
 
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            permission_classes = [AllowAny]
-        else:
-            permission_classes = [IsAuthenticated, IsStaffPermission]
-        return [permission() for permission in permission_classes]
+    # def get_permissions(self):
+    #     if self.action in ['list', 'retrieve']:
+    #         permission_classes = [AllowAny]
+    #     else:
+    #         permission_classes = [IsAuthenticated, IsStaffPermission]
+    #     return [permission() for permission in permission_classes]
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
