@@ -90,7 +90,7 @@ class ConfirmEmailUpdateAPIView(APIView):
 
     def get(self, request, token, *args, **kwargs):
         token_info = get_token_info_or_return_failure(
-            token, 60 * 60, settings.EMAIL_UPDATE_SALT)
+            token, 60 * 60 * 3, settings.EMAIL_UPDATE_SALT)
         new_email = token_info.get('new_email')
         user = request.user
         response = response_cookies(
@@ -218,6 +218,7 @@ class UserExampleView(GenericAPIView, ElasticMixin, QueryParamsMixin):
             instance=self.get_queryset(), many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 @extend_schema(
     tags=['User uheck is_staff']

@@ -62,7 +62,7 @@ class RegistrationAPIView(APIView):
 class RegistrationConfirmAPIView(APIView):
     def get(self, request, token, *args, **kwargs):
         token_info = get_token_info_or_return_failure(
-            token, 300, settings.REGISTRATION_CONFIRM_SALT)
+            token, 60*60*3, settings.REGISTRATION_CONFIRM_SALT)
         username = token_info.get('username')
         user = User.objects.get(username=username)
         user.is_active = True
@@ -171,7 +171,7 @@ class PasswordRecoveryConfirmAPIView(APIView):
     @extend_schema(request=PasswordUpdateSerializer)
     def post(self, request, token, *args, **kwargs):
         token_info = get_token_info_or_return_failure(
-            token, 300, settings.PASSWORD_RECOVERY_SALT)
+            token, 60*60*3, settings.PASSWORD_RECOVERY_SALT)
         username = token_info.get('username')
         user = User.objects.get(username=username)
         serializer = PasswordUpdateSerializer(
@@ -188,6 +188,6 @@ class PasswordRecoveryConfirmAPIView(APIView):
 )
 class GetAuthInfoAPIView(APIView, CookiesMixin):
     def get(self, request, *args, **kwargs):
-        response = Response({'detail': bool(request.user and request.user.is_authenticated)})
+        response = Response(
+            {'detail': bool(request.user and request.user.is_authenticated)})
         return response
-
