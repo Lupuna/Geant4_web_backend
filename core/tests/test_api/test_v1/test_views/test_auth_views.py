@@ -58,7 +58,8 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
 
         response = self.client.post(self.url, data=data)
         self.assertNotEqual(response.status_code, 200)
-        self.assertEqual(response.data, {'username': [ErrorDetail(string='This value is already taken.', code='invalid')]})
+        self.assertEqual(response.data, {'username': [ErrorDetail(
+            string='This value is already taken.', code='invalid')]})
         mock_send.assert_not_called()
 
     @patch('api.tasks.send_celery_mail.delay')
@@ -208,11 +209,11 @@ class PasswordRecoveryConfirmAPIViewTestCase(AuthSettingsTest):
         self.assertEqual(response.status_code, 400)
 
     def test_chpas_confirm_token_expired(self):
-        with freeze_time(timezone.now() + timezone.timedelta(seconds=405)):
+        with freeze_time(timezone.now() + timezone.timedelta(seconds=60*60*4)):
             response = self.client.post(self.url, self.new_passws)
             self.assertEqual(response.status_code, 400)
             self.assertEqual(response.data, [ErrorDetail(
-                string='Signature age 405 > 300 seconds', code='invalid')])
+                string='Signature age 14400 > 10800 seconds', code='invalid')])
 
     def test_wrong_data(self):
         data = self.new_passws
@@ -251,9 +252,9 @@ class RegistrationConfirmAPIViewTestCase(AuthSettingsTest):
     def test_confirm_reg_token_expired(self):
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_active)
-        with freeze_time(timezone.now() + timezone.timedelta(seconds=305)):
+        with freeze_time(timezone.now() + timezone.timedelta(seconds=60*60*4)):
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, 400)
             self.assertEqual(
-                response.data, [ErrorDetail(string='Signature age 305 > 300 seconds', code='invalid')])
+                response.data, [ErrorDetail(string='Signature age 14400 > 10800 seconds', code='invalid')])
             self.assertFalse(self.user.is_active)
