@@ -220,7 +220,7 @@ class UserExampleView(GenericAPIView, ElasticMixin, QueryParamsMixin):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 @extend_schema(
-    tags=['User uheck is_staff']
+    tags=['User check is_staff']
 )
 class UserStaff(APIView):
     permission_classes = (IsAuthenticated,)
