@@ -74,7 +74,8 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
-        new_response_data = self.get_response_data_with_pages_count(response.data)
+        new_response_data = self.get_response_data_with_pages_count(
+            response.data)
         response.data = new_response_data
         return response
 
@@ -121,8 +122,18 @@ class ExampleCommandViewSet(ModelViewSet):
             if not ex_commands.exists():
                 response = self._run_example(request, example, params)
             else:
-                response = self._example_executed(ex_commands, user)
-
+                ex_command = ex_commands.first()
+                us_ex_commands = UserExampleCommand.objects.filter(
+                    example_command=ex_command)
+                status_val = us_ex_commands.values_list(
+                    'status', flat=True).first()
+                if status_val == 2:
+                    ex_command.users.add(user)
+                    us_ex_commands.update(
+                        status=UserExampleCommand.StatusChoice.failure)
+                    invalidate_model(UserExampleCommand)
+                    return Response({'detail': 'Example executing was finished in error'}, status=status.HTTP_400_BAD_REQUEST)
+                response = self._example_is_executing(ex_commands, user)
             return response
 
         self._add_user_in_example_command(example, key_s3, user)
@@ -152,7 +163,7 @@ class ExampleCommandViewSet(ModelViewSet):
             headers=response.headers
         )
 
-    def _example_executed(self, ex_commands, user):
+    def _example_is_executing(self, ex_commands, user):
         ex_command = ex_commands.first()
         if user not in ex_command.users.all():
             ex_command.users.add(user)
@@ -169,7 +180,8 @@ class ExampleCommandViewSet(ModelViewSet):
         if user not in ex_command.users.all():
             ex_command.users.add(user)
 
-        us_ex_command = ex_command.users.through.objects.get(user=user)
+        us_ex_command = ex_command.users.through.objects.get(
+            user=user, example_command=ex_command)
         us_ex_command.status = UserExampleCommand.StatusChoice.executed
         us_ex_command.save()
 
