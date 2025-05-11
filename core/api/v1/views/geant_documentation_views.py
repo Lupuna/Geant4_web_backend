@@ -1,6 +1,7 @@
 from django.http import FileResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -14,8 +15,6 @@ from api.v1.serializers.geant_documentation_serializers import (
     ChapterSerializer,
     CategorySerializer, RealFileSerializer
 )
-from .mixins import ElasticMixin, ValidationHandlingMixin
-
 from core.permissions import IsStaffPermission
 from file_client.exceptions import FileClientException
 from file_client.files_clients import ReadOnlyClient
@@ -27,9 +26,9 @@ from file_client.tasks import (
     render_and_update_documentation_image_task
 )
 from file_client.utils import handle_file_upload
-
 from geant_documentation.documents import ArticleDocument
 from geant_documentation.models import Article, Subscription, Chapter, Category, Element
+from .mixins import ElasticMixin, ValidationHandlingMixin
 
 
 @extend_schema(
@@ -39,6 +38,26 @@ class ChapterViewSet(ModelViewSet):
     serializer_class = ChapterSerializer
     queryset = Chapter.objects.all()
     permission_classes = (IsAuthenticated,)
+
+    @extend_schema
+    @action(detail=False, methods=['post'])
+    def bulk_create(self, request):
+        serializer = self.get_serializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_bulk_create(serializer)
+        return Response(serializer.data, status=201)
+
+    @action(detail=False, methods=['delete'])
+    def bulk_delete(self, request):
+        ids = [item.get('id') for item in request.data if 'id' in item]
+        if not ids:
+            return Response({'detail': 'Incorrect id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        deleted_count, _ = Category.objects.filter(id__in=ids).delete()
+        return Response({'deleted': deleted_count}, status=status.HTTP_204_NO_CONTENT)
+
+    def perform_bulk_create(self, serializer):
+        serializer.save()
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -55,6 +74,26 @@ class CategoryViewSet(ModelViewSet):
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
     permission_classes = (IsAuthenticated,)
+
+    @extend_schema
+    @action(detail=False, methods=['post'])
+    def bulk_create(self, request):
+        serializer = self.get_serializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_bulk_create(serializer)
+        return Response(serializer.data, status=201)
+
+    @action(detail=False, methods=['delete'])
+    def bulk_delete(self, request):
+        ids = [item.get('id') for item in request.data if 'id' in item]
+        if not ids:
+            return Response({'detail': 'Incorrect id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        deleted_count, _ = Category.objects.filter(id__in=ids).delete()
+        return Response({'deleted': deleted_count}, status=status.HTTP_204_NO_CONTENT)
+
+    def perform_bulk_create(self, serializer):
+        serializer.save()
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
