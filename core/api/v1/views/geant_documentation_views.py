@@ -2,6 +2,7 @@ from django.http import FileResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -37,9 +38,10 @@ from .mixins import ElasticMixin, ValidationHandlingMixin
 class ChapterViewSet(ModelViewSet):
     serializer_class = ChapterSerializer
     queryset = Chapter.objects.all()
-    permission_classes = (IsAuthenticated,)
 
-    @extend_schema
+    @extend_schema(
+        request=ChapterSerializer(many=True),
+    )
     @action(detail=False, methods=['post'])
     def bulk_create(self, request):
         serializer = self.get_serializer(data=request.data, many=True)
@@ -49,8 +51,8 @@ class ChapterViewSet(ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def bulk_delete(self, request):
-        ids = [item.get('id') for item in request.data if 'id' in item]
-        if not ids:
+        ids = request.data.get('ids')
+        if ids is None:
             return Response({'detail': 'Incorrect id'}, status=status.HTTP_400_BAD_REQUEST)
 
         deleted_count, _ = Category.objects.filter(id__in=ids).delete()
@@ -73,9 +75,10 @@ class ChapterViewSet(ModelViewSet):
 class CategoryViewSet(ModelViewSet):
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
-    permission_classes = (IsAuthenticated,)
 
-    @extend_schema
+    @extend_schema(
+        request=CategorySerializer(many=True),
+    )
     @action(detail=False, methods=['post'])
     def bulk_create(self, request):
         serializer = self.get_serializer(data=request.data, many=True)
@@ -85,8 +88,8 @@ class CategoryViewSet(ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def bulk_delete(self, request):
-        ids = [item.get('id') for item in request.data if 'id' in item]
-        if not ids:
+        ids = request.data.get('ids')
+        if ids is None:
             return Response({'detail': 'Incorrect id'}, status=status.HTTP_400_BAD_REQUEST)
 
         deleted_count, _ = Category.objects.filter(id__in=ids).delete()
