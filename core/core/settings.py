@@ -348,7 +348,7 @@ ELASTIC_PARAMS_CONF = {
                 "title_verbose.russian",
                 "title_verbose"
             ],
-            'pagination_page_size': 1
+            'pagination_page_size': 10
         },
         'ArticleDocument': {
             'params': {
