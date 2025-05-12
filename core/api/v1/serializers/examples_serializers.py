@@ -64,7 +64,6 @@ class DetailExampleSerializer(serializers.Serializer):
     date_to_update = serializers.DateField()
     tags = TagSerializer(many=True)
     category = serializers.CharField()
-    example_commands = ExampleCommandGETSerializer(many=True)
     commands = DetailCommandSerializer(many=True)
 
 
@@ -110,7 +109,6 @@ class ExampleGETSerializer(serializers.Serializer):
     date_to_update = serializers.DateField()
     tags = TagSerializer(many=True)
     category = serializers.CharField()
-    example_commands = ExampleCommandGETSerializer(many=True)
 
 
 class ExamplePOSTSerializer(serializers.ModelSerializer):
