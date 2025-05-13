@@ -10,8 +10,6 @@ from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from api.tasks import send_celery_mail
@@ -84,7 +82,7 @@ class LoginAPIView(APIView, CookiesMixin):
         user = authenticate(request)
         check_request_cookies = self.check_request_cookies()
 
-        if user is None:
+        if user is None or not user.is_active:
             response = response_cookies(
                 {'error': 'User does not exist or given incorrect data'}, status.HTTP_400_BAD_REQUEST)
             if check_request_cookies:
