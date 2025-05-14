@@ -41,7 +41,7 @@ class ElasticMixin:
             q_vals = Q("bool", must=val_filters)
             search = search.filter(q_vals)
 
-        return search
+        return search.filter(Q("bool", must=[Q("term", synchronized=True)]))
 
     def elastic_search(self, request, search):
         params = request.query_params
