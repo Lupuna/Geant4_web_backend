@@ -54,6 +54,7 @@ class RegistrationAPIView(APIView):
         return response
 
 
+
 @extend_schema(
     tags=['Auth endpoint']
 )
