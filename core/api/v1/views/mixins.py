@@ -41,7 +41,7 @@ class ElasticMixin:
             q_vals = Q("bool", must=val_filters)
             search = search.filter(q_vals)
 
-        return search.filter(Q("bool", must=[Q("term", synchronized=True)]))
+        return search
 
     def elastic_search(self, request, search):
         params = request.query_params
@@ -67,12 +67,11 @@ class ElasticMixin:
         return search
 
     def elastic_full_query_handling(self, request, search):
-        print(search.__dict__)
         for action in self.elastic_document_conf['params']:
             search = getattr(self, f'elastic_{action}', search)(
                 request, search)
 
-        self.total_count = search.count()
+        self.total_count = search.filter(Q("bool", must=[Q("term", synchronized=True)])).count()
         return search
 
     def get_response_data_with_pages_count(self, response_data: list):
