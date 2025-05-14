@@ -71,7 +71,7 @@ class ElasticMixin:
             search = getattr(self, f'elastic_{action}', search)(
                 request, search)
 
-        self.total_count = search.filter(Q("bool", must=[Q("term", synchronized=True)])).count()
+        self.total_count = search.count()
         return search
 
     def get_response_data_with_pages_count(self, response_data: list):
