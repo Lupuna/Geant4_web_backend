@@ -67,7 +67,6 @@ class ElasticMixin:
         return search
 
     def elastic_full_query_handling(self, request, search):
-        print(search.__dict__)
         for action in self.elastic_document_conf['params']:
             search = getattr(self, f'elastic_{action}', search)(
                 request, search)

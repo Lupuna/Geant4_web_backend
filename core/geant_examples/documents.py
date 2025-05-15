@@ -39,6 +39,7 @@ class ExampleDocument(Document):
     )
     tags = fields.KeywordField(multi=True)
     category = fields.KeywordField()
+    synchronized = fields.BooleanField()
 
     class Django:
         model = Example
