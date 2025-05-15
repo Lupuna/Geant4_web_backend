@@ -55,7 +55,7 @@ class ChapterViewSet(ModelViewSet):
         if ids is None:
             return Response({'detail': 'Incorrect id'}, status=status.HTTP_400_BAD_REQUEST)
 
-        deleted_count, _ = Category.objects.filter(id__in=ids).delete()
+        deleted_count, _ = Chapter.objects.filter(id__in=ids).delete()
         return Response({'deleted': deleted_count}, status=status.HTTP_204_NO_CONTENT)
 
     def perform_bulk_create(self, serializer):
