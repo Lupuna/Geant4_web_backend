@@ -91,7 +91,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
         fields = ('id', 'category', 'chapter', 'description', 'title', 'chosen')
 
     def get_category(self, obj):
-        return obj.category.title if obj.chapter else None
+        return obj.category.title if obj.category else None
 
     def get_chapter(self, obj):
         return obj.chapter.title if obj.chapter else None
