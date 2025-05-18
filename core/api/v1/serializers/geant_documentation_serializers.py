@@ -3,6 +3,7 @@ from drf_writable_nested import WritableNestedModelSerializer
 from rest_framework import serializers
 from rest_framework.reverse import reverse_lazy
 
+from api.v1.serializers.utils import get_custom_absolute_uri
 from geant_documentation.models import Article, Category, Chapter, Element, File, Subscription
 
 
@@ -22,7 +23,8 @@ class FileSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request:
             return None
-        return request.build_absolute_uri(
+        return get_custom_absolute_uri(
+            request,
             reverse_lazy('file-manage', kwargs={'uuid': obj.uuid, 'file_format': obj.format})
         )
 
