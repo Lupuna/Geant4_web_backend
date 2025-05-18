@@ -86,3 +86,14 @@ def get_existing_conflicts(data: dict) -> list:
     if User.objects.filter(email=data.get('email'), is_active=True).exists():
         conflicts.append('email')
     return conflicts
+
+
+def get_custom_absolute_uri(request, path):
+    host = request.META.get("HTTP_X_FORWARDED_HOST", request.get_host())
+    proto = request.META.get("HTTP_X_FORWARDED_PROTO", request.scheme)
+    port = request.META.get("HTTP_X_FORWARDED_PORT", "")
+
+    if port and port not in ["80", "443"]:
+        host = f"{host}:{port}"
+
+    return f"{proto}://{host}{path}"
