@@ -1,3 +1,5 @@
+import shutil
+
 from PIL import Image
 
 from file_client.base_file_client import BaseRendererUploader
@@ -56,3 +58,5 @@ class DocumentationGraphicClient(BaseRendererUploader):
 
     def render(self):
         super().render()
+
+        shutil.copyfile(self.path, self.new_path)
