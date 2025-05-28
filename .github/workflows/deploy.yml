@@ -24,9 +24,4 @@ jobs:
             git reset --hard HEAD
             git pull origin main          
             docker-compose -f docker-compose.prod.yml up -d --build
-            for i in {1..30}; do
-              curl -s http://localhost:9200 > /dev/null && break
-              sleep 2
-            done
             docker compose -f docker-compose.prod.yml exec web-app python manage.py search_index --rebuild -f
-
