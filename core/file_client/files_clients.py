@@ -51,7 +51,7 @@ class ReadOnlyClient(BaseRendererUploader):
 
 
 class DocumentationGraphicClient(BaseRendererUploader):
-    def __init__(self, name: str, path: str = None, file_format='zip'):
+    def __init__(self, name: str, path: str = None, file_format='csv'):
         super().__init__(name, path, file_format)
 
     def render(self):
