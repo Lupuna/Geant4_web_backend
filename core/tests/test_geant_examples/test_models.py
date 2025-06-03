@@ -112,7 +112,7 @@ class CommandTestCase(Base):
 
     def test_str_method(self):
         self.assertEqual(
-            self.command.__str__(), self.command.title
+            self.command.__str__(), f'{self.command.title} | {self.example}'
         )
 
     def test_meta_options(self):
