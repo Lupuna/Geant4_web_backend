@@ -1,9 +1,9 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from geant_examples.validators import title_not_verbose_view, validate_index_order
 from users.models import User
 
-from geant_examples.validators import title_not_verbose_view, validate_index_order
 
 class Example(models.Model):
     class CategoryChoices(models.TextChoices):
@@ -38,6 +38,7 @@ class Example(models.Model):
     def __str__(self):
         return self.title_not_verbose
 
+
 class Command(models.Model):
     title = models.CharField(max_length=255)
     default = models.CharField(max_length=255)
@@ -64,7 +65,8 @@ class Command(models.Model):
         ]
 
     def __str__(self):
-        return self.title
+        return f"{self.title} | {self.example}"
+
 
 class CommandValue(models.Model):
     command = models.ForeignKey(
@@ -102,6 +104,7 @@ class ExampleCommand(models.Model):
 
     def __str__(self):
         return self.key_s3
+
 
 class UserExampleCommand(models.Model):
     class StatusChoice(models.IntegerChoices):
