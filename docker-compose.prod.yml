@@ -32,6 +32,7 @@ services:
       - "444:444"
     volumes:
       - ./nginx/ssl:/etc/nginx/ssl
+      - ./core/static:/static
     depends_on:
       - web-app
 
