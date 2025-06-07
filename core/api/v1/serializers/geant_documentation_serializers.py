@@ -11,13 +11,14 @@ class RealFileSerializer(serializers.Serializer):
     file = serializers.FileField(required=True)
 
 
-class FileSerializer(serializers.ModelSerializer):
+class FileSerializer(WritableNestedModelSerializer):
     url = serializers.SerializerMethodField()
 
     class Meta:
         model = File
         fields = ('id', 'uuid', 'format', 'url')
-        read_only_fields = ('id', 'uuid')
+        read_only_fields = ('id',)
+        extra_kwargs = {'uuid': {'required': False}}
 
     def get_url(self, obj):
         request = self.context.get('request')
@@ -32,23 +33,10 @@ class FileSerializer(serializers.ModelSerializer):
 class ElementSerializer(WritableNestedModelSerializer):
     files = FileSerializer(many=True)
 
-
     class Meta:
         model = Element
         fields = ('id', 'text', 'element_order', 'type', 'files')
-
-    def create(self, validated_data):
-        with transaction.atomic():
-            instance = super().create(validated_data)
-
-        return instance
-
-    def update(self, instance, validated_data):
-        with transaction.atomic():
-            instance.files.all().delete()
-            instance = super().update(instance, validated_data)
-
-        return instance
+        extra_kwargs = {'id': {'required': False}}
 
 
 class SubscriptionSerializer(WritableNestedModelSerializer):
@@ -57,19 +45,7 @@ class SubscriptionSerializer(WritableNestedModelSerializer):
     class Meta:
         model = Subscription
         fields = ('id', 'title', 'subscription_order', 'elements')
-
-    def create(self, validated_data):
-        with transaction.atomic():
-            instance = super().create(validated_data)
-
-        return instance
-
-    def update(self, instance, validated_data):
-        with transaction.atomic():
-            instance.elements.all().delete()
-            instance = super().update(instance, validated_data)
-
-        return instance
+        extra_kwargs = {'id': {'required': False}}
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -107,16 +83,4 @@ class ArticleSerializer(WritableNestedModelSerializer):
     class Meta:
         model = Article
         fields = '__all__'
-
-    def create(self, validated_data):
-        with transaction.atomic():
-            instance = super().create(validated_data)
-
-        return instance
-
-    def update(self, instance, validated_data):
-        with transaction.atomic():
-            instance.subscriptions.all().delete()
-            instance = super().update(instance, validated_data)
-
-        return instance
+        extra_kwargs = {'id': {'required': False}}
