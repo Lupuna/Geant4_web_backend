@@ -38,6 +38,14 @@ class ElementSerializer(WritableNestedModelSerializer):
         fields = ('id', 'text', 'element_order', 'type', 'files')
         extra_kwargs = {'id': {'required': False}}
 
+    def create(self, validated_data):
+        with transaction.atomic():
+            return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            return super().update(instance, validated_data)
+
 
 class SubscriptionSerializer(WritableNestedModelSerializer):
     elements = ElementSerializer(many=True)
@@ -46,6 +54,14 @@ class SubscriptionSerializer(WritableNestedModelSerializer):
         model = Subscription
         fields = ('id', 'title', 'subscription_order', 'elements')
         extra_kwargs = {'id': {'required': False}}
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            return super().update(instance, validated_data)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -84,3 +100,11 @@ class ArticleSerializer(WritableNestedModelSerializer):
         model = Article
         fields = '__all__'
         extra_kwargs = {'id': {'required': False}}
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            return super().update(instance, validated_data)
