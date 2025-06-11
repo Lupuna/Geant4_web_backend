@@ -46,7 +46,6 @@ class ElementSerializer(WritableNestedModelSerializer):
         with transaction.atomic():
             return super().update(instance, validated_data)
 
-
 class SubscriptionSerializer(WritableNestedModelSerializer):
     elements = ElementSerializer(many=True)
 
