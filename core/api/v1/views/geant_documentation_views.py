@@ -51,7 +51,7 @@ class ChapterViewSet(ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def bulk_delete(self, request):
-        ids = request.data.get('ids')
+        ids = request.data
         if ids is None:
             return Response({'detail': 'Incorrect id'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -88,7 +88,7 @@ class CategoryViewSet(ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def bulk_delete(self, request):
-        ids = request.data.get('ids')
+        ids = request.data
         if ids is None:
             return Response({'detail': 'Incorrect id'}, status=status.HTTP_400_BAD_REQUEST)
 
