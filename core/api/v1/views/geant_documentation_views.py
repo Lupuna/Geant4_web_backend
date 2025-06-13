@@ -1,3 +1,4 @@
+import loguru
 from django.http import FileResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -54,7 +55,7 @@ class ChapterViewSet(ModelViewSet):
         ids = request.data
         if ids is None:
             return Response({'detail': 'Incorrect id'}, status=status.HTTP_400_BAD_REQUEST)
-
+        loguru.logger.error(f'{Chapter.objects.filter(id__in=ids)}')
         deleted_count, _ = Chapter.objects.filter(id__in=ids).delete()
         return Response({'deleted': deleted_count}, status=status.HTTP_204_NO_CONTENT)
 
