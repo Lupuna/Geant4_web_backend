@@ -86,7 +86,6 @@ class ArticleViewSetTestCase(AuthSettingsTest):
         data = {
             'title': self.article.title,
             'description': self.article.description,
-            'chosen': self.article.chosen,
             'category': self.category.id,
             'chapter': self.chapter.id,
             'subscriptions': new_sub_data

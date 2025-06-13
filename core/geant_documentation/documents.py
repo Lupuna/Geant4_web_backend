@@ -40,13 +40,9 @@ class ArticleDocument(Document):
 
     category = fields.KeywordField(multi=True)
     chapter = fields.KeywordField()
-    chosen = fields.KeywordField()
 
     class Django:
         model = Article
-
-    def prepare_chosen(self, instance):
-        return str(instance.chosen).lower()
 
     def prepare_category(self, instance):
         return instance.category.title if instance.category else ""

@@ -1,11 +1,15 @@
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.http import FileResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError as DRFValidationError
+from rest_framework.mixins import CreateModelMixin, UpdateModelMixin, DestroyModelMixin, ListModelMixin
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet, ViewSet
+from rest_framework.viewsets import ModelViewSet, ViewSet, GenericViewSet
 
 from api.v1.serializers.geant_documentation_serializers import (
     ArticleListSerializer,
@@ -13,7 +17,7 @@ from api.v1.serializers.geant_documentation_serializers import (
     SubscriptionSerializer,
     ElementSerializer,
     ChapterSerializer,
-    CategorySerializer, RealFileSerializer
+    CategorySerializer, RealFileSerializer, ArticleUserSerializer
 )
 from core.permissions import IsStaffPermission
 from file_client.exceptions import FileClientException
@@ -27,7 +31,7 @@ from file_client.tasks import (
 )
 from file_client.utils import handle_file_upload
 from geant_documentation.documents import ArticleDocument
-from geant_documentation.models import Article, Subscription, Chapter, Category, Element
+from geant_documentation.models import Article, Subscription, Chapter, Category, Element, ArticleUser
 from .mixins import ElasticMixin, ValidationHandlingMixin
 
 
@@ -242,6 +246,42 @@ class SubscriptionViewSet(ValidationHandlingMixin, ModelViewSet):
             'article_id': self.kwargs['article_pk']
         }
         super().perform_update(serializer, **url_variables)
+
+
+@extend_schema(
+    tags=['Documentations user chosen Articles']
+)
+class ArticleUserViewSet(
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    GenericViewSet
+):
+    permission_classes = (IsAuthenticated, )
+
+    def get_queryset(self):
+        if self.action == 'list':
+            return Article.objects.prefetch_related('category', 'chapter').filter(users=self.request.user)
+        return ArticleUser.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ArticleListSerializer
+        return ArticleUserSerializer
+
+    def perform_create(self, serializer):
+        try:
+            serializer.save(user=self.request.user)
+        except ValidationError as e:
+            raise DRFValidationError({'detail': str(e)})
+        except IntegrityError as e:
+            raise DRFValidationError({'detail': str(e)})
+
+    @action(detail=False, methods=['get'], url_path='chosen')
+    def user_chosen_articles(self, request):
+        queryset = ArticleUser.objects.filter(user=request.user)
+        serializer = ArticleUserSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 @extend_schema(

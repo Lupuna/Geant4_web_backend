@@ -3,6 +3,8 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from users.models import User
+
 
 class Category(models.Model):
     title = models.CharField(unique=True, max_length=255)
@@ -23,22 +25,29 @@ class Article(models.Model):
     description = models.TextField()
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='articles')
     chapter = models.ForeignKey(Chapter, on_delete=models.SET_NULL, null=True, blank=True, related_name='articles')
-    chosen = models.BooleanField(default=False)
+    users = models.ManyToManyField(User, related_name='articles', through='ArticleUser')
 
     def __str__(self):
         return self.title
 
+
+class ArticleUser(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='chosen_articles')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_articles')
+
+    class Meta:
+        unique_together = (('article', 'user'), )
+
     def save(self, *args, **kwargs):
-        self.chosen_check()
+        self.counter_check()
         return super().save(*args, **kwargs)
 
-    def chosen_check(self):
-        if self.chosen:
-            qs = Article.objects.filter(chosen=True)
-            if self.pk:
-                qs = qs.exclude(pk=self.pk)
-            if qs.count() >= 5:
-                raise ValidationError("Max chosen articles is 5.")
+    def counter_check(self):
+        query = ArticleUser.objects.filter(user=self.user, article=self.article)
+        if self.pk:
+            query.exclude(pk=self.pk)
+        if query.count() >= 5:
+            raise ValidationError("Max chosen articles is 5.")
 
 
 class Subscription(models.Model):
