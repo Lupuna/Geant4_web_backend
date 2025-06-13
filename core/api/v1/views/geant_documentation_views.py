@@ -277,11 +277,12 @@ class ArticleUserViewSet(
         except IntegrityError as e:
             raise DRFValidationError({'detail': str(e)})
 
-    @action(detail=False, methods=['get'], url_path='chosen')
-    def user_chosen_articles(self, request):
-        queryset = ArticleUser.objects.filter(user=request.user)
-        serializer = ArticleUserSerializer(queryset, many=True)
-        return Response(serializer.data)
+    def destroy(self, request, *args, **kwargs):
+        article_id = self.kwargs.get(self.lookup_field)
+        deleted, _ = ArticleUser.objects.filter(user=request.user, article=article_id).delete()
+        if deleted:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 
 @extend_schema(
