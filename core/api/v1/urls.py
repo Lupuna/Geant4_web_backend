@@ -15,7 +15,7 @@ from api.v1.views.auth_views import (
 from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView, CategoryAPIView
 from api.v1.views.tags_views import TagViewSet
 from api.v1.views.geant_documentation_views import ArticleViewSet, ChapterViewSet, CategoryViewSet, SubscriptionViewSet, \
-    ElementViewSet, FileViewSet
+    ElementViewSet, FileViewSet, ArticleUserViewSet
 from api.v1.views.groups_views import GroupAPIViewSet
 from api.v1.views.users_views import (
     UserProfileViewSet,
@@ -43,6 +43,7 @@ example_router.register(r'examples', ExampleViewSet, basename='examples')
 documentation_router = SimpleRouter()
 documentation_router.register(r'articles', ArticleViewSet, basename='articles')
 documentation_router.register(r'chapters', ChapterViewSet, basename='chapters')
+documentation_router.register(r'chosen_articles', ArticleUserViewSet, basename='chosen_articles')
 documentation_router.register(
     r'categories', CategoryViewSet, basename='categories')
 

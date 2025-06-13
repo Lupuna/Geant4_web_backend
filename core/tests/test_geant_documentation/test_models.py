@@ -33,45 +33,6 @@ class ArticleTestCase(TestCase):
     def test_str(self):
         self.assertEqual(str(self.article), "My Article")
 
-    def test_chosen_check_allows_up_to_5(self):
-        for i in range(4):
-            article = Article.objects.create(
-                title=f"Chosen Article {i}",
-                description="Some desc",
-                chapter=self.chapter,
-                chosen=True
-            )
-
-        fifth = Article(
-            title="Fifth Chosen",
-            description="Desc",
-            chapter=self.chapter,
-            chosen=True
-        )
-        fifth.save()
-        self.assertEqual(Article.objects.filter(chosen=True).count(), 5)
-
-    def test_chosen_check_raises_on_sixth(self):
-        for i in range(5):
-            article = Article.objects.create(
-                title=f"Chosen Article {i}",
-                description="Some desc",
-                chapter=self.chapter,
-                chosen=True
-            )
-
-        sixth = Article(
-            title="Too many",
-            description="Overflow",
-            chapter=self.chapter,
-            chosen=True
-        )
-
-        with self.assertRaises(ValidationError) as context:
-            sixth.save()
-
-        self.assertIn("Max chosen articles is 5.", str(context.exception))
-
 
 class SubscriptionTestCase(TestCase):
     def setUp(self):

@@ -139,7 +139,6 @@ class ArticleSerializerTestCase(Base):
         article = Article.objects.create(
             title="Article X",
             description="Description",
-            chosen=False,
             category=self.category,
             chapter=self.chapter
         )
@@ -151,7 +150,6 @@ class ArticleSerializerTestCase(Base):
         update_data = {
             "title": "Article Updated",
             "description": "New description",
-            "chosen": True,
             "category": self.category.id,
             "chapter": self.chapter.id,
             "subscriptions": [

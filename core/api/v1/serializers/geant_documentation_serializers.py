@@ -4,7 +4,7 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse_lazy
 
 from api.v1.serializers.utils import get_custom_absolute_uri
-from geant_documentation.models import Article, Category, Chapter, Element, File, Subscription
+from geant_documentation.models import Article, Category, Chapter, Element, File, Subscription, ArticleUser
 
 
 class RealFileSerializer(serializers.Serializer):
@@ -76,13 +76,20 @@ class ChapterSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ArticleUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ArticleUser
+        fields = ('id', 'article')
+
+
 class ArticleListSerializer(serializers.ModelSerializer):
     chapter = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = ('id', 'category', 'chapter', 'description', 'title', 'chosen')
+        fields = ('id', 'category', 'chapter', 'description', 'title')
 
     def get_category(self, obj):
         return obj.category.title if obj.category else None
