@@ -1,12 +1,9 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from users.models import User
-
 from api.v1.serializers.users_serializers import UserQuickInfoSerializer
 from api.v1.serializers.validators import m2m_validator
-from geant_examples.models import Example, Tag, ExampleCommand, UserExampleCommand, Command, CommandValue
-from geant_examples.validators import title_not_verbose_view
+from geant_examples.models import Example, Tag, ExampleCommand,  Command, CommandValue
 
 
 class TagSerializer(serializers.Serializer):
