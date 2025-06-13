@@ -43,11 +43,11 @@ class ArticleUser(models.Model):
         return super().save(*args, **kwargs)
 
     def counter_check(self):
-        query = ArticleUser.objects.filter(user=self.user, article=self.article)
+        query = ArticleUser.objects.filter(user=self.user)
         if self.pk:
             query.exclude(pk=self.pk)
-        if query.count() >= 5:
-            raise ValidationError("Max chosen articles is 5.")
+        if query.count() >= 8:
+            raise ValidationError("Max chosen articles is 8.")
 
 
 class Subscription(models.Model):
