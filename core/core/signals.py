@@ -2,6 +2,7 @@ from django.contrib.auth.models import Group, Permission
 from django.db.models import Q
 
 
+
 custom_models = ['example', 'examplecommand', ]
 query_filter = Q()
 for model in custom_models:
