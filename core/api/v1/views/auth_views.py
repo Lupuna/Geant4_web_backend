@@ -128,10 +128,15 @@ class LogoutAPIView(APIView, CookiesMixin):
 class GetAccessTokenView(APIView, CookiesMixin):
     def get(self, request, **kwargs):
         self.check_request_cookies('refresh')
-        serializer = TokenRefreshSerializer(data=self.request_cookies)
+        refresh = self.request_cookies.get('refresh')
+        if not refresh:
+            raise ValidationError("No refresh token found in cookies")
+
+        serializer = TokenRefreshSerializer(data={'refresh': refresh})
         serializer.is_valid(raise_exception=True)
         tokens = {
-            'refresh': serializer.validated_data['refresh'], 'access': serializer.validated_data['access']}
+            'refresh': serializer.validated_data['refresh'], 'access': serializer.validated_data['access']
+        }
         self.response_cookies = tokens
         response = self.get_response_set_cookies(
             {'detail': 'Given new tokens'}, status=status.HTTP_200_OK)
