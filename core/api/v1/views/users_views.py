@@ -215,7 +215,8 @@ class UserExampleView(GenericAPIView, ElasticMixin, QueryParamsMixin):
 
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer(
-            instance=self.get_queryset(), many=True)
+            instance=self.get_queryset(), many=True
+        )
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
