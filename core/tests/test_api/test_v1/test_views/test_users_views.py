@@ -140,8 +140,8 @@ class UserExampleViewTestCase(AuthSettingsTest):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.data, [{'title_verbose': ex_data['title_verbose'], 'description': '', 'creation_date': str(us_ex_command.creation_date)[:-6].replace(' ', 'T') + 'Z', 'date_to_update': example.date_to_update, 'status': 0, 'tags': [], 'params': {'v': '11'}, 'example_id': 20}
-                            ])
+            response.data, [{'title_verbose': ex_data['title_verbose'], 'description': '', 'creation_date': str(us_ex_command.creation_date)[:-6].replace(' ', 'T') + 'Z', 'date_to_update': example.date_to_update, 'status': 0, 'tags': [], 'params': {'v': '11'}, 'example_id': 20}]
+        )
 
 
 class UserProfileImageViewSetTestCase(AuthSettingsTest):
