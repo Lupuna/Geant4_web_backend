@@ -12,6 +12,7 @@ from api.v1.views.auth_views import (
     RegistrationConfirmAPIView,
     GetAuthInfoAPIView
 )
+
 from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView, CategoryAPIView
 from api.v1.views.tags_views import TagViewSet
 from api.v1.views.geant_documentation_views import ArticleViewSet, ChapterViewSet, CategoryViewSet, SubscriptionViewSet, \
@@ -24,8 +25,6 @@ from api.v1.views.users_views import (
     UserProfileImageViewSet,
     ConfirmEmailUpdateAPIView, UserStaff
 )
-
-
 tag_router = SimpleRouter()
 tag_router.register('tags', TagViewSet, basename='tags')
 

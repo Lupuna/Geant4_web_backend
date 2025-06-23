@@ -3,7 +3,7 @@ from rest_framework.exceptions import ValidationError
 
 from api.v1.serializers.users_serializers import UserQuickInfoSerializer
 from api.v1.serializers.validators import m2m_validator
-from geant_examples.models import Example, Tag, ExampleCommand,  Command, CommandValue
+from geant_examples.models import Example, Tag, ExampleCommand, Command, CommandValue
 
 
 class TagSerializer(serializers.Serializer):
@@ -114,7 +114,7 @@ class ExamplePOSTSerializer(serializers.ModelSerializer):
     class Meta:
         model = Example
         fields = ('title_verbose', 'title_not_verbose',
-                  'description', 'tags', 'category', )
+                  'description', 'tags', 'category',)
 
     def validate_tags(self, value: list[dict]):
         if value:
@@ -171,6 +171,7 @@ class ExampleForUserSerializer(serializers.Serializer):
     status = serializers.IntegerField()
     tags = serializers.SerializerMethodField(method_name='get_tags')
     params = serializers.SerializerMethodField()
+    example_id = serializers.SerializerMethodField(method_name='get_example_id')
 
     def get_title_verbose(self, obj):
         return obj.example_command.example.title_verbose
@@ -194,6 +195,9 @@ class ExampleForUserSerializer(serializers.Serializer):
 
     def get_tags(self, obj):
         return TagSerializer(obj.example_command.example.tags.all(), many=True).data
+
+    def get_example_id(self, obj):
+        return obj.example_command.example.id
 
 
 class ExampleCommandUpdateStatusSerializer(serializers.Serializer):

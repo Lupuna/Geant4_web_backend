@@ -10,6 +10,7 @@ from rest_framework.exceptions import ValidationError as DRFValidationError
 from users.auth.utils import response_cookies
 from math import ceil
 
+
 class ElasticMixin:
     elastic_document_conf = None
     total_count = None
