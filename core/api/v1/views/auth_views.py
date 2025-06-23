@@ -10,6 +10,7 @@ from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from api.tasks import send_celery_mail
@@ -129,7 +130,13 @@ class GetAccessTokenView(APIView, CookiesMixin):
     def get(self, request, **kwargs):
         self.check_request_cookies('refresh')
         serializer = TokenRefreshSerializer(data=self.request_cookies)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError:
+            self.response_cookies = {'refresh': '', 'access': ''}
+            response = self.get_response_del_cookies(
+                {'detail': 'Refresh token expired'}, status=status.HTTP_401_UNAUTHORIZED)
+            return response
         tokens = {
             'refresh': serializer.validated_data['refresh'], 'access': serializer.validated_data['access']
         }
