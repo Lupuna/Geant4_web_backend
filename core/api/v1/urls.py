@@ -1,7 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from api.v1.views.auth_views import (
     RegistrationAPIView,
@@ -82,7 +81,7 @@ urlpatterns = [
     path('registration/confirm/<str:token>', RegistrationConfirmAPIView.as_view(),
          name='confirm-registration'),
     path('login/', LoginAPIView.as_view(), name='login'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='refresh'),
+    path('token/refresh/', GetAccessTokenView.as_view(), name='refresh'),
     path('logout/', LogoutAPIView.as_view(), name='logout'),
     path('password_recovery/', PasswordRecoveryAPIView.as_view(),
          name='password-recovery'),
