@@ -129,15 +129,17 @@ class LogoutAPIView(APIView, CookiesMixin):
 class GetAccessTokenView(APIView, CookiesMixin):
     authentication_classes = []
     permission_classes = []
+
     def get(self, request, **kwargs):
-        self.check_request_cookies('refresh')
+        self.check_request_cookies('refresh', 'access')
         serializer = TokenRefreshSerializer(data=self.request_cookies)
         try:
             serializer.is_valid(raise_exception=True)
         except TokenError:
             self.response_cookies = {'refresh': '', 'access': ''}
             response = self.get_response_del_cookies(
-                {'detail': 'Refresh token expired'}, status=status.HTTP_401_UNAUTHORIZED)
+                {'detail': 'Refresh token expired'}, status=status.HTTP_401_UNAUTHORIZED
+            )
             return response
         tokens = {
             'refresh': serializer.validated_data['refresh'], 'access': serializer.validated_data['access']
