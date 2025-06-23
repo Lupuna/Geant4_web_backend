@@ -136,7 +136,6 @@ class GetAccessTokenView(APIView, CookiesMixin):
         try:
             serializer.is_valid(raise_exception=True)
         except TokenError:
-            self.response_cookies = {'refresh': '', 'access': ''}
             response = self.get_response_del_cookies(
                 {'detail': 'Refresh token expired'}, status=status.HTTP_401_UNAUTHORIZED
             )
