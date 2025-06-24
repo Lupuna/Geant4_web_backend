@@ -22,7 +22,6 @@ from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, respon
     get_token_info_or_return_failure, make_disposable_url
 
 from .mixins import CookiesMixin
-
 from users.models import User
 
 
