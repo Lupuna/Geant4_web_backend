@@ -18,6 +18,7 @@ class ExampleDocument(Document):
     title_verbose = fields.TextField(
         analyzer="edge_ngram_analyzer",
         fields={
+            "keyword": fields.KeywordField(),
             "english": fields.TextField(
                 analyzer="english_analyzer"
             ),
@@ -39,6 +40,7 @@ class ExampleDocument(Document):
     )
     tags = fields.KeywordField(multi=True)
     category = fields.KeywordField()
+    date_to_update = fields.DateField()
     synchronized = fields.BooleanField()
 
     class Django:
@@ -46,3 +48,8 @@ class ExampleDocument(Document):
 
     def prepare_tags(self, instance):
         return [tag.title for tag in instance.tags.all()]
+
+    def prepare_date_to_update(self, instance):
+        return instance.date_to_update.isoformat()
+
+

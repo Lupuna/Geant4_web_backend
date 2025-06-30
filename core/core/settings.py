@@ -339,6 +339,7 @@ ELASTIC_PARAMS_CONF = {
                     'tags',
                     'category',
                 ],
+                'order': 'ordering',
                 'search': 'query',
                 'pagination': 'page'
             },
