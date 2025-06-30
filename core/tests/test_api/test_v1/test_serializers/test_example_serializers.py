@@ -29,7 +29,7 @@ class ExampleForUserSerializerTestCase(Base):
             user=self.user).prefetch_related('example_command__example').first()
         serializer = ExampleForUserSerializer(instance=user_ex_command)
         self.assertEqual(serializer.data, {'title_verbose': 'test_ex', 'description': '', 'creation_date': str(user_ex_command.creation_date)[:-6].replace(' ', 'T') + 'Z',
-                         'date_to_update': self.example.date_to_update, 'status': 0, 'tags': [], 'params': {'v': '11'}, 'example_id': 3})
+                         'date_to_update': self.example.date_to_update, 'status': 0, 'tags': [], 'params': {'v': '11'}, 'example_id': 3,  'categories': {'title': ''}})
 
 
 class ExamplePOSTSerializerTestCase(Base):
@@ -42,8 +42,7 @@ class ExamplePOSTSerializerTestCase(Base):
                 {
                     'title': self.tag.title
                 }
-            ],
-            "category": "Optics"
+            ]
         }
 
     def test_create(self):
@@ -81,7 +80,6 @@ class ExamplePATCHSerializerTestCase(Base):
         self.data = {
             "title_verbose": "test_verbose",
             'title_not_verbose': 'TSU_00',
-            "category": "Optics"
         }
 
     def test_update(self):

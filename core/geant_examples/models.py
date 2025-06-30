@@ -6,13 +6,6 @@ from users.models import User
 
 
 class Example(models.Model):
-    class CategoryChoices(models.TextChoices):
-        electromagnetism = 'Electromagnetism', _('Electromagnetism')
-        hadron_physics = 'Hadron physics', _('Hadron physics')
-        medicine = 'Medicine', _('Medicine')
-        optics = 'Optics', _('Optics')
-        fields = 'Fields', _('Fields')
-        other = 'Other', _('Other')
 
     title_verbose = models.CharField(
         max_length=255, unique=True, blank=False, null=False)
@@ -23,11 +16,12 @@ class Example(models.Model):
     date_to_update = models.DateField(auto_now=True)
     tags = models.ManyToManyField('Tag', related_name='examples', blank=True, default=_(
         'Here can be description of example'))
-    category = models.CharField(
-        max_length=255,
-        choices=CategoryChoices.choices,
-        default=CategoryChoices.other,
-        help_text=_('Category of example')
+    category = models.ForeignKey(
+        'Category',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='examples'
     )
     synchronized = models.BooleanField(default=False)
 
@@ -159,6 +153,20 @@ class Tag(models.Model):
     class Meta:
         verbose_name = _("Tag")
         verbose_name_plural = _("Tags")
+
+    def __str__(self):
+        return self.title
+
+
+class Category(models.Model):
+    title = models.CharField(
+        max_length=255,
+        unique=True
+    )
+
+    class Meta:
+        verbose_name = _("Category")
+        verbose_name_plural = _("Categories")
 
     def __str__(self):
         return self.title
