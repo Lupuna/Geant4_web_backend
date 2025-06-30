@@ -50,6 +50,14 @@ class Command(models.Model):
     )
     min = models.IntegerField(null=True, blank=True)
     max = models.IntegerField(null=True, blank=True)
+    signature = models.CharField(max_length=255, null=True, blank=True)
+    command_list = models.ForeignKey(
+        'CommandList',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='commands'
+    )
 
     class Meta:
         verbose_name = _("Command")
@@ -65,23 +73,34 @@ class Command(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.title} | {self.example}"
+        return f"command {self.title} | example {self.example}"
+
+
+class CommandList(models.Model):
+    title = models.CharField(max_length=255, unique=True)
+
+    class Meta:
+        verbose_name = _("Command List")
+        verbose_name_plural = _("Commands List")
+
+    def __str__(self):
+        return self.title
 
 
 class CommandValue(models.Model):
-    command = models.ForeignKey(
-        Command,
+    command_list = models.ForeignKey(
+        CommandList,
         on_delete=models.CASCADE,
-        related_name="values"
+        related_name='command_values'
     )
     value = models.CharField(max_length=255)
 
     class Meta:
-        verbose_name = _("Value for command")
-        verbose_name_plural = _("Values for command")
+        verbose_name = _("Value for command list")
+        verbose_name_plural = _("Values for command list")
 
     def __str__(self):
-        return f"{self.value} for {self.command.title} command"
+        return f"{self.value} for {self.command_list.title} command list"
 
 
 class ExampleCommand(models.Model):
