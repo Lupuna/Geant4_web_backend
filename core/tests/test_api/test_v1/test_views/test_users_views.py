@@ -136,7 +136,7 @@ class UserExampleViewTestCase(AuthSettingsTest):
         us_ex_command = UserExampleCommand.objects.get(user=self.user)
 
         self.login_user()
-        response = self.client.get(reverse('user-examples'))
+        response = self.client.get(reverse('user-examples-list'))
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
