@@ -1,19 +1,16 @@
-import requests
-
 from math import ceil
+
+import requests
 from cacheops import invalidate_model
-
 from django.conf import settings
+from django.db.models.query import QuerySet, Prefetch
 from django.http import FileResponse
-from django.db.models.query import QuerySet
-
 from drf_spectacular.utils import extend_schema
-
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.decorators import action
 from rest_framework.viewsets import ModelViewSet
 
 from api.tasks import send_celery_mail
@@ -29,8 +26,7 @@ from api.v1.serializers.examples_serializers import (
 from file_client.exceptions import FileClientException
 from file_client.files_clients import ReadOnlyClient
 from geant_examples.documents import ExampleDocument
-from geant_examples.models import Example, UserExampleCommand, ExampleCommand
-
+from geant_examples.models import Example, UserExampleCommand, ExampleCommand, Command, CommandValue
 from .mixins import ElasticMixin
 
 
@@ -67,15 +63,31 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
                 return ExamplePATCHSerializer(*args, **kwargs)
 
     def get_queryset(self):
-        elastic_document_class = self.get_elastic_document_class()
-        self.setup_elastic_document_conf()
-        search = elastic_document_class.search()
-        result_search = self.elastic_full_query_handling(self.request, search)
-        return result_search.to_queryset().filter(synchronized=True)
+        if self.action == 'list':
+            elastic_document_class = self.get_elastic_document_class()
+            self.setup_elastic_document_conf()
+            search = elastic_document_class.search()
+            result_search = self.elastic_full_query_handling(self.request, search)
+            return result_search.to_queryset().filter(synchronized=True)
+        return Example.objects.prefetch_related(
+            'tags',
+            Prefetch(
+                'commands',
+                queryset=Command.objects.prefetch_related(
+                    'command_list',
+                    Prefetch(
+                        'command_list__command_values',
+                        queryset=CommandValue.objects.only('value'),
+                        to_attr='prefetched_command_values'
+                    )
+                )
+            )
+        )
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
-        response.data.append({"pages_count": ceil(len(response.data) / self.elastic_document_conf["pagination_page_size"])})
+        response.data.append(
+            {"pages_count": ceil(len(response.data) / self.elastic_document_conf["pagination_page_size"])})
         return response
 
 
@@ -131,7 +143,8 @@ class ExampleCommandViewSet(ModelViewSet):
                     us_ex_commands.update(
                         status=UserExampleCommand.StatusChoice.failure)
                     invalidate_model(UserExampleCommand)
-                    return Response({'detail': 'Example executing was finished in error'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'detail': 'Example executing was finished in error'},
+                                    status=status.HTTP_400_BAD_REQUEST)
                 response = self._example_is_executing(ex_commands, user)
             return response
 

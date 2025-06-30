@@ -4,6 +4,7 @@ from django.conf import settings
 from loguru import logger
 from tenacity import wait_fixed, retry, stop_after_attempt
 
+
 class DatabaseSynchronizer:
     def __init__(self, example=None, command=None):
         self.example = example or command.example
