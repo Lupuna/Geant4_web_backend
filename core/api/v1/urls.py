@@ -39,6 +39,9 @@ group_router.register(
 example_router = SimpleRouter()
 example_router.register(r'examples', ExampleViewSet, basename='examples')
 
+user_examples = SimpleRouter()
+user_examples.register(r'profile/my_examples', UserExampleView, basename='user-examples')
+
 documentation_router = SimpleRouter()
 documentation_router.register(r'articles', ArticleViewSet, basename='articles')
 documentation_router.register(r'chapters', ChapterViewSet, basename='chapters')
@@ -69,6 +72,7 @@ urlpatterns = [
     path('', include(example_command_router.urls)),
     path('', include(group_router.urls)),
     path('', include(tag_router.urls)),
+    path('', include(user_examples.urls)),
     path('documentations/', include(documentation_router.urls)),
     path('documentations/', include(documentation_subscription_element_router.urls)),
     path('documentations/', include(documentation_subscription_router.urls)),
@@ -108,7 +112,6 @@ urlpatterns = [
         ExampleCommandUpdateStatusAPIView.as_view(),
         name='update-example-status'
     ),
-    path('profile/my_examples/', UserExampleView.as_view(), name='user-examples'),
     path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized'),
     path('example/categories/', CategoryAPIView.as_view(),
          name='example-categories'),

@@ -1,7 +1,7 @@
 from django.db.utils import IntegrityError
 from django.utils.translation import gettext_lazy as _
 
-from geant_examples.models import Example, UserExampleCommand, Tag, ExampleCommand, Command, CommandValue
+from geant_examples.models import Example, UserExampleCommand, Tag, ExampleCommand, Command, CommandValue, CommandList
 from tests.base import Base
 from users.models import User
 
@@ -112,7 +112,7 @@ class CommandTestCase(Base):
 
     def test_str_method(self):
         self.assertEqual(
-            self.command.__str__(), f'{self.command.title} | {self.example}'
+            self.command.__str__(), f'command {self.command.title} | example {self.example}'
         )
 
     def test_meta_options(self):
@@ -137,22 +137,41 @@ class CommandValueTestCase(Base):
             title_verbose='test_verbose',
             title_not_verbose='TSU_XX_00'
         )
+        self.command_list = CommandList.objects.create(title="test_list")
         self.command = Command.objects.create(
             example=self.example,
             title="test_title",
             default="default",
-            order_index=1
+            order_index=1,
+            command_list=self.command_list
         )
         self.cmd_value = CommandValue.objects.create(
             value="some_value",
-            command=self.command
+            command_list=self.command_list
         )
 
     def test_str_method(self):
-        self.assertEqual(
-            self.cmd_value.__str__(), f"{self.cmd_value.value} for {self.command.title} command"
-        )
+        expected = f"{self.cmd_value.value} for {self.command_list.title} command list"
+        self.assertEqual(str(self.cmd_value), expected)
 
     def test_meta_options(self):
-        self.assertEqual(self.cmd_value._meta.verbose_name, _("Value for command"))
-        self.assertEqual(self.cmd_value._meta.verbose_name_plural, _("Values for command"))
+        meta = self.cmd_value._meta
+        self.assertEqual(meta.verbose_name, _("Value for command list"))
+        self.assertEqual(meta.verbose_name_plural, _("Values for command list"))
+
+
+class CommandListTestCase(Base):
+    def setUp(self):
+        self.command_list = CommandList.objects.create(title="Test List")
+
+    def test_str_method(self):
+        self.assertEqual(str(self.command_list), self.command_list.title)
+
+    def test_meta_options(self):
+        meta = self.command_list._meta
+        self.assertEqual(meta.verbose_name, _("Command List"))
+        self.assertEqual(meta.verbose_name_plural, _("Commands List"))
+
+    def test_unique_title_constraint(self):
+        with self.assertRaises(IntegrityError):
+            CommandList.objects.create(title="Test List")

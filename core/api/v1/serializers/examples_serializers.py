@@ -3,7 +3,7 @@ from rest_framework.exceptions import ValidationError
 
 from api.v1.serializers.users_serializers import UserQuickInfoSerializer
 from api.v1.serializers.validators import m2m_validator
-from geant_examples.models import Example, Tag, ExampleCommand, Command, CommandValue
+from geant_examples.models import Example, Tag, ExampleCommand, Command, CommandValue, CommandList
 
 
 class TagSerializer(serializers.Serializer):
@@ -40,7 +40,20 @@ class CommandSerializer(serializers.ModelSerializer):
         )
 
 
+class CommandListSerializer(serializers.ModelSerializer):
+    command_values = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CommandList
+        fields = ('id', 'title', 'command_values')
+
+    def get_command_values(self, obj):
+        return [cv.value for cv in getattr(obj, 'prefetched_command_values', [])]
+
+
 class DetailCommandSerializer(serializers.ModelSerializer):
+    command_list = CommandListSerializer()
+
     class Meta:
         model = Command
         fields = (
@@ -49,7 +62,7 @@ class DetailCommandSerializer(serializers.ModelSerializer):
             "order_index",
             "min",
             "max",
-            "values",
+            "command_list",
         )
 
 

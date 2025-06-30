@@ -1,19 +1,16 @@
 from django.conf import settings
 from django.db.utils import IntegrityError
 from django.http import FileResponse
-
 from drf_spectacular.utils import extend_schema
-
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
-from rest_framework.generics import GenericAPIView, RetrieveAPIView
+from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet, ViewSet
+from rest_framework.viewsets import GenericViewSet, ViewSet, ReadOnlyModelViewSet
 
 from api.v1.serializers.examples_serializers import ExampleForUserSerializer
 from api.v1.serializers.users_serializers import (
@@ -28,10 +25,8 @@ from file_client.files_clients import ProfileImageRendererClient
 from file_client.schema import image_schema
 from file_client.tasks import render_and_upload_profile_image_task, render_and_update_profile_image_task
 from file_client.utils import handle_file_upload
-
 from geant_examples.documents import ExampleDocument
 from geant_examples.models import UserExampleCommand
-
 from users.auth.utils import (
     response_cookies,
     get_tokens_for_user,
@@ -39,7 +34,6 @@ from users.auth.utils import (
     get_token_info_or_return_failure
 )
 from users.models import User
-
 from .mixins import ElasticMixin, QueryParamsMixin, CookiesMixin
 
 
@@ -194,7 +188,8 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
 @extend_schema(
     tags=['UserProfile']
 )
-class UserExampleView(GenericAPIView, ElasticMixin, QueryParamsMixin):
+class UserExampleView(ReadOnlyModelViewSet, ElasticMixin, QueryParamsMixin):
+    permission_classes = (IsAuthenticated,)
     queryset = UserExampleCommand.objects.prefetch_related(
         'example_command__example')
     serializer_class = ExampleForUserSerializer
@@ -202,23 +197,23 @@ class UserExampleView(GenericAPIView, ElasticMixin, QueryParamsMixin):
     order_by = 'creation_date'
 
     def get_queryset(self):
-        document_class = self.get_elastic_document_class()
-        search = document_class.search()
-        self.setup_elastic_document_conf()
-        after_search = self.elastic_search(self.request, search)
-        after_filter = self.elastic_filter(self.request, after_search)
-        ex_queryset = after_filter.to_queryset()
-        user_ex_commands = super().get_queryset().filter(
-            user=self.request.user, example_command__example__in=ex_queryset)
-        user_ex_commands = self.sort_by_ord(user_ex_commands)
-        return user_ex_commands
-
-    def get(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
-            instance=self.get_queryset(), many=True
+        base_query = super().get_queryset().filter(
+            user=self.request.user
+        ).prefetch_related(
+            'example_command__example',
+            'example_command__example__tags'
         )
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if self.action == 'list':
+            document_class = self.get_elastic_document_class()
+            search = document_class.search()
+            self.setup_elastic_document_conf()
+            after_search = self.elastic_search(self.request, search)
+            after_filter = self.elastic_filter(self.request, after_search)
+            ex_queryset = after_filter.to_queryset()
+            user_ex_commands = base_query.filter(example_command__example__in=ex_queryset)
+            user_ex_commands = self.sort_by_ord(user_ex_commands)
+            return user_ex_commands
+        return base_query
 
 
 @extend_schema(
