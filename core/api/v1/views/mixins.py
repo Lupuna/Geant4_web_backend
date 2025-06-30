@@ -59,6 +59,22 @@ class ElasticMixin:
 
         return search
 
+    def elastic_order(self, request, search):
+        ordering_param = self.elastic_document_conf['params'].get('order')
+        ordering_value = request.query_params.get(ordering_param)
+
+        if ordering_value:
+            sort_fields = []
+            for field in ordering_value.split(','):
+                field = field.strip()
+                if field.startswith('-'):
+                    sort_fields.append({field[1:]: {"order": "desc"}})
+                else:
+                    sort_fields.append({field: {"order": "asc"}})
+            search = search.sort(*sort_fields)
+
+        return search
+
     def elastic_pagination(self, request, search):
         page_param_name = self.elastic_document_conf['params']['pagination']
         page = int(request.query_params.get(page_param_name, 1))

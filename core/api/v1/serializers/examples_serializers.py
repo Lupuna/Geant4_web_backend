@@ -63,6 +63,7 @@ class DetailCommandSerializer(serializers.ModelSerializer):
             "min",
             "max",
             "command_list",
+            'signature'
         )
 
 
