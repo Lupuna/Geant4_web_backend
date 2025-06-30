@@ -49,6 +49,9 @@ class ExampleDocument(Document):
     def prepare_tags(self, instance):
         return [tag.title for tag in instance.tags.all()]
 
+    def prepare_category(self, instance):
+        return instance.category.title if instance.category else None
+
     def prepare_date_to_update(self, instance):
         return instance.date_to_update.isoformat()
 

@@ -13,7 +13,7 @@ from api.v1.views.auth_views import (
     GetAuthInfoAPIView
 )
 
-from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView, CategoryAPIView
+from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView, CategoryViewSet as ExampleCategoryViewSet
 from api.v1.views.tags_views import TagViewSet
 from api.v1.views.geant_documentation_views import ArticleViewSet, ChapterViewSet, CategoryViewSet, SubscriptionViewSet, \
     ElementViewSet, FileViewSet, ArticleUserViewSet
@@ -33,11 +33,11 @@ user_update_router.register(
     r'profile', UserProfileUpdateImportantInfoViewSet, basename='user-profile')
 
 group_router = SimpleRouter()
-group_router.register(
-    r'groups', GroupAPIViewSet, basename='groups')
+group_router.register(r'groups', GroupAPIViewSet, basename='groups')
 
 example_router = SimpleRouter()
 example_router.register(r'examples', ExampleViewSet, basename='examples')
+example_router.register(r'categories', ExampleCategoryViewSet, basename='categories')
 
 user_examples = SimpleRouter()
 user_examples.register(r'profile/my_examples', UserExampleView, basename='user-examples')
@@ -47,7 +47,8 @@ documentation_router.register(r'articles', ArticleViewSet, basename='articles')
 documentation_router.register(r'chapters', ChapterViewSet, basename='chapters')
 documentation_router.register(r'chosen_articles', ArticleUserViewSet, basename='chosen_articles')
 documentation_router.register(
-    r'categories', CategoryViewSet, basename='categories')
+    r'categories', CategoryViewSet, basename='categories'
+)
 
 documentation_subscription_router = NestedSimpleRouter(
     parent_router=documentation_router, parent_prefix=r'articles', lookup='article')
@@ -113,7 +114,5 @@ urlpatterns = [
         name='update-example-status'
     ),
     path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized'),
-    path('example/categories/', CategoryAPIView.as_view(),
-         name='example-categories'),
     path('check-is-staff/', UserStaff.as_view(), name='check-is-staff'),
 ]

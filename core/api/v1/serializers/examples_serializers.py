@@ -3,7 +3,7 @@ from rest_framework.exceptions import ValidationError
 
 from api.v1.serializers.users_serializers import UserQuickInfoSerializer
 from api.v1.serializers.validators import m2m_validator
-from geant_examples.models import Example, Tag, ExampleCommand, Command, CommandValue, CommandList
+from geant_examples.models import Example, Tag, ExampleCommand, Command, CommandValue, CommandList, Category
 
 
 class TagSerializer(serializers.Serializer):
@@ -112,6 +112,13 @@ class ExampleCommandPOSTSerializer(serializers.ModelSerializer):
         return ex_command
 
 
+class CategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+
 class ExampleGETSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title_verbose = serializers.CharField()
@@ -119,7 +126,7 @@ class ExampleGETSerializer(serializers.Serializer):
     description = serializers.CharField()
     date_to_update = serializers.DateField()
     tags = TagSerializer(many=True)
-    category = serializers.CharField()
+    category = CategorySerializer()
 
 
 class ExamplePOSTSerializer(serializers.ModelSerializer):
@@ -184,6 +191,7 @@ class ExampleForUserSerializer(serializers.Serializer):
         method_name='get_date_to_update')
     status = serializers.IntegerField()
     tags = serializers.SerializerMethodField(method_name='get_tags')
+    categories = serializers.SerializerMethodField(method_name='get_categories')
     params = serializers.SerializerMethodField()
     example_id = serializers.SerializerMethodField(method_name='get_example_id')
 
@@ -209,6 +217,9 @@ class ExampleForUserSerializer(serializers.Serializer):
 
     def get_tags(self, obj):
         return TagSerializer(obj.example_command.example.tags.all(), many=True).data
+
+    def get_categories(self, obj):
+        return CategorySerializer(obj.example_command.example.category).data
 
     def get_example_id(self, obj):
         return obj.example_command.example.id

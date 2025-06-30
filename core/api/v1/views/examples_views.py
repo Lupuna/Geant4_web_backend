@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from api.tasks import send_celery_mail
 from api.v1.serializers.examples_serializers import (
@@ -21,13 +21,21 @@ from api.v1.serializers.examples_serializers import (
     ExampleCommandGETSerializer,
     ExampleCommandPOSTSerializer,
     ExampleCommandUpdateStatusSerializer,
-    DetailExampleSerializer
+    DetailExampleSerializer, CategorySerializer
 )
 from file_client.exceptions import FileClientException
 from file_client.files_clients import ReadOnlyClient
 from geant_examples.documents import ExampleDocument
-from geant_examples.models import Example, UserExampleCommand, ExampleCommand, Command, CommandValue
+from geant_examples.models import Example, UserExampleCommand, ExampleCommand, Command, CommandValue, Category
 from .mixins import ElasticMixin
+
+@extend_schema(
+    tags=['Example Categories']
+)
+class CategoryViewSet(ReadOnlyModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = CategorySerializer
+    queryset = Category.objects.all()
 
 
 @extend_schema(
@@ -230,15 +238,3 @@ class ExampleCommandUpdateStatusAPIView(APIView):
             list(user_emails)
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-@extend_schema(
-    tags=['Categories']
-)
-class CategoryAPIView(APIView):
-    permission_classes = [IsAuthenticated, ]
-
-    def get(self, request, *args, **kwargs):
-        data = {label: val for label, val in Example.CategoryChoices.choices}
-
-        return Response(data, status=status.HTTP_200_OK)
