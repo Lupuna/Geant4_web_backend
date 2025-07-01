@@ -42,8 +42,8 @@ class Command(models.Model):
         on_delete=models.CASCADE,
         related_name='commands'
     )
-    min = models.IntegerField(null=True, blank=True)
-    max = models.IntegerField(null=True, blank=True)
+    min = models.FloatField(null=True, blank=True)
+    max = models.FloatField(null=True, blank=True)
     signature = models.CharField(max_length=255, null=True, blank=True)
     command_list = models.ForeignKey(
         'CommandList',
