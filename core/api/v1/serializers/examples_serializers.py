@@ -216,7 +216,7 @@ class ExampleForUserSerializer(serializers.Serializer):
         return params
 
     def get_tags(self, obj):
-        return TagSerializer(obj.example_command.example.tags.all(), many=True).data
+        return list(obj.example_command.example.tags.all().values_list('title', flat=True))
 
     def get_categories(self, obj):
         return CategorySerializer(obj.example_command.example.category).data
