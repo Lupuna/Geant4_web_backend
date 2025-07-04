@@ -8,6 +8,7 @@ from django.http import FileResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -28,6 +29,7 @@ from file_client.files_clients import ReadOnlyClient
 from geant_examples.documents import ExampleDocument
 from geant_examples.models import Example, UserExampleCommand, ExampleCommand, Command, CommandValue, Category
 from .mixins import ElasticMixin
+
 
 @extend_schema(
     tags=['Example Categories']
@@ -127,7 +129,7 @@ class ExampleCommandViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         params = request.data.get('params', {})
         user = request.user
-        example = Example.objects.get(id=self.kwargs.get('example_pk'))
+        example = get_object_or_404(Example, id=self.kwargs.get('example_pk'))
         key_s3 = self._generate_key_s3(example.title_not_verbose, params)
         request.data['params'] = key_s3
         filename = key_s3 + '.zip'
