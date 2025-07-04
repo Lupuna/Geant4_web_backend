@@ -182,6 +182,7 @@ class ExamplePATCHSerializer(serializers.ModelSerializer):
 
 
 class ExampleForUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     title_verbose = serializers.SerializerMethodField(
         method_name='get_title_verbose')
     description = serializers.SerializerMethodField(
