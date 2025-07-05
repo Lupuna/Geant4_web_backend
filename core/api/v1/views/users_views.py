@@ -188,13 +188,12 @@ class UserProfileUpdateImportantInfoViewSet(GenericViewSet):
 @extend_schema(
     tags=['UserProfile']
 )
-class UserExampleView(ReadOnlyModelViewSet, ElasticMixin, QueryParamsMixin):
+class UserExampleView(ReadOnlyModelViewSet, ElasticMixin):
     permission_classes = (IsAuthenticated,)
     queryset = UserExampleCommand.objects.prefetch_related(
         'example_command__example')
     serializer_class = ExampleForUserSerializer
     elastic_document = ExampleDocument
-    order_by = 'creation_date'
 
     def get_queryset(self):
         base_query = super().get_queryset().filter(
@@ -207,13 +206,17 @@ class UserExampleView(ReadOnlyModelViewSet, ElasticMixin, QueryParamsMixin):
             document_class = self.get_elastic_document_class()
             search = document_class.search()
             self.setup_elastic_document_conf()
-            after_search = self.elastic_search(self.request, search)
-            after_filter = self.elastic_filter(self.request, after_search)
-            ex_queryset = after_filter.to_queryset()
+            search = self.elastic_full_query_handling(self.request, search)
+            ex_queryset = search.to_queryset()
             user_ex_commands = base_query.filter(example_command__example__in=ex_queryset)
-            user_ex_commands = self.sort_by_ord(user_ex_commands)
             return user_ex_commands
         return base_query
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        new_response_data = self.get_response_data_with_pages_count(response.data)
+        response.data = new_response_data
+        return response
 
 
 @extend_schema(

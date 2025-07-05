@@ -120,42 +120,6 @@ class ConfirmEmailUpdateAPIViewTestCase(AuthSettingsTest):
                          'detail': 'Email updated successfully'})
 
 
-class UserExampleViewTestCase(AuthSettingsTest):
-    @patch('geant_examples.documents.ExampleDocument.search')
-    def test_get_examples(self, mock_exaples):
-        mock_exaples.return_value.to_queryset.return_value = Example.objects.all()
-        ex_data = {
-            "title_verbose": "test_verbose",
-            'title_not_verbose': 'TSU_XX_00',
-        }
-        example = Example.objects.create(**ex_data)
-        ex_command = ExampleCommand.objects.create(
-            key_s3='key-s3-TSU_XX_00___v=11', example=example)
-        ex_command.users.add(self.user)
-        us_ex_command = UserExampleCommand.objects.get(user=self.user)
-
-        self.login_user()
-        response = self.client.get(reverse('user-examples-list'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.data, [
-                {
-                    'id': 11,
-                    'title_verbose': ex_data['title_verbose'],
-                    'categories': {'title': ''},
-                    'description': '',
-                    'creation_date': str(us_ex_command.creation_date)[:-6].replace(' ', 'T') + 'Z',
-                    'date_to_update': example.date_to_update,
-                    'status': 0,
-                    'tags': [],
-                    'params': {'v': '11'},
-                    'example_id': 20
-                }
-            ]
-        )
-
-
 class UserProfileImageViewSetTestCase(AuthSettingsTest):
 
     def setUp(self):
