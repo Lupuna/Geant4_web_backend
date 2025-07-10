@@ -3,25 +3,22 @@ import datetime
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.utils import timezone
-
 from drf_spectacular.utils import extend_schema
-
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from api.tasks import send_celery_mail
-from api.v1.serializers.utils import get_existing_conflicts
 from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSerializer
 from api.v1.serializers.users_serializers import UserEmailSerializer, PasswordUpdateSerializer
-
+from api.v1.serializers.utils import get_existing_conflicts
 from users.auth.utils import get_tokens_for_user, put_token_on_blacklist, response_cookies, \
     get_token_info_or_return_failure, make_disposable_url
-from .mixins import CookiesMixin
 from users.models import User
+from .mixins import CookiesMixin
 
 
 @extend_schema(
@@ -53,14 +50,13 @@ class RegistrationAPIView(APIView):
         return response
 
 
-
 @extend_schema(
     tags=['Auth endpoint']
 )
 class RegistrationConfirmAPIView(APIView):
     def get(self, request, token, *args, **kwargs):
         token_info = get_token_info_or_return_failure(
-            token, 60*60*3, settings.REGISTRATION_CONFIRM_SALT)
+            token, 60 * 60 * 3, settings.REGISTRATION_CONFIRM_SALT)
         username = token_info.get('username')
         user = User.objects.get(username=username)
         user.is_active = True
@@ -92,8 +88,13 @@ class LoginAPIView(APIView, CookiesMixin):
 
         tokens_data = [user]
         if not remember_user:
-            tokens_data.append({'exp': int(datetime.datetime.timestamp(
-                timezone.now() + datetime.timedelta(seconds=3600)))})
+            tokens_data.append(
+                {
+                    'exp': int(
+                        datetime.datetime.timestamp(timezone.now() + datetime.timedelta(seconds=3600))
+                    )
+                }
+            )
         tokens = get_tokens_for_user(*tokens_data)
         self.response_cookies.update(tokens)
         response = self.get_response_set_cookies(
@@ -162,7 +163,8 @@ class PasswordRecoveryAPIView(APIView):
 
         if user.is_active:
             dicposable_url = make_disposable_url(
-                settings.FRONTEND_URL + '/auth/password_recovery/confirm/', settings.PASSWORD_RECOVERY_SALT, {'username': user.username})
+                settings.FRONTEND_URL + '/auth/password_recovery/confirm/', settings.PASSWORD_RECOVERY_SALT,
+                {'username': user.username})
             message = f'For password recovery follow link\n{dicposable_url}'
             send_celery_mail.delay(
                 'Password recovery', message, [user_email])
@@ -179,7 +181,7 @@ class PasswordRecoveryConfirmAPIView(APIView):
     @extend_schema(request=PasswordUpdateSerializer)
     def post(self, request, token, *args, **kwargs):
         token_info = get_token_info_or_return_failure(
-            token, 60*60*3, settings.PASSWORD_RECOVERY_SALT)
+            token, 60 * 60 * 3, settings.PASSWORD_RECOVERY_SALT)
         username = token_info.get('username')
         user = User.objects.get(username=username)
         serializer = PasswordUpdateSerializer(

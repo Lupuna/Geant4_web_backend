@@ -350,7 +350,7 @@ ELASTIC_PARAMS_CONF = {
                 "title_verbose.english",
                 "title_verbose.russian",
                 "title_verbose",
-                "title_verbose.keyword" 
+                "title_verbose.keyword"
             ],
             'pagination_page_size': 10
         },
@@ -362,6 +362,26 @@ ELASTIC_PARAMS_CONF = {
                     'chosen',
                 ],
                 'search': 'query',
+                'pagination': 'page'
+            },
+            'fields': [
+                "description.english",
+                "description.russian",
+                "description",
+                "title.english",
+                "title.russian",
+                "title"
+            ],
+            'pagination_page_size': 10
+        },
+        'UserExampleCommandDocument': {
+            'params': {
+                'filter': [
+                    'tags',
+                    'category',
+                ],
+                'search': 'query',
+                'order': 'ordering',
                 'pagination': 'page'
             },
             'fields': [
