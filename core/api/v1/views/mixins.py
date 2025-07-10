@@ -54,7 +54,7 @@ class ElasticMixin:
         return search
 
     def add_required_filters(self, filter_params: set, request: Request):
-        required_filters = self.elastic_document_conf['params'].get('required_filter')
+        required_filters = self.elastic_document_conf.get('required_filter')
         resolved_required_filters = {}
         if required_filters:
             for key, value in required_filters.items():
