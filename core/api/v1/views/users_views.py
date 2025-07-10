@@ -25,7 +25,6 @@ from file_client.files_clients import ProfileImageRendererClient
 from file_client.schema import image_schema
 from file_client.tasks import render_and_upload_profile_image_task, render_and_update_profile_image_task
 from file_client.utils import handle_file_upload
-from geant_examples.documents import ExampleDocument
 from geant_examples.models import UserExampleCommand
 from users.auth.utils import (
     response_cookies,
@@ -33,8 +32,9 @@ from users.auth.utils import (
     put_token_on_blacklist,
     get_token_info_or_return_failure
 )
+from users.documents import UserExampleCommandDocument
 from users.models import User
-from .mixins import ElasticMixin, QueryParamsMixin, CookiesMixin
+from .mixins import ElasticMixin, CookiesMixin
 
 
 @extend_schema(
@@ -193,7 +193,7 @@ class UserExampleView(ReadOnlyModelViewSet, ElasticMixin):
     queryset = UserExampleCommand.objects.prefetch_related(
         'example_command__example')
     serializer_class = ExampleForUserSerializer
-    elastic_document = ExampleDocument
+    elastic_document = UserExampleCommandDocument
 
     def get_queryset(self):
         base_query = super().get_queryset().filter(

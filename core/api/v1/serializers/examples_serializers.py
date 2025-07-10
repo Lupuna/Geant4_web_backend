@@ -73,9 +73,12 @@ class DetailExampleSerializer(serializers.Serializer):
     title_not_verbose = serializers.CharField()
     description = serializers.CharField()
     date_to_update = serializers.DateField()
-    tags = TagSerializer(many=True)
+    tags = serializers.SerializerMethodField()
     category = serializers.CharField()
     commands = DetailCommandSerializer(many=True)
+
+    def get_tags(self, obj):
+        return list(obj.tags.all().values_list('title', flat=True))
 
 
 class ExampleCommandPOSTSerializer(serializers.ModelSerializer):
@@ -125,9 +128,11 @@ class ExampleGETSerializer(serializers.Serializer):
     title_not_verbose = serializers.CharField()
     description = serializers.CharField()
     date_to_update = serializers.DateField()
-    tags = TagSerializer(many=True)
+    tags = serializers.SerializerMethodField()
     category = CategorySerializer()
 
+    def get_tags(self, obj):
+        return list(obj.tags.all().values_list('title', flat=True))
 
 class ExamplePOSTSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
