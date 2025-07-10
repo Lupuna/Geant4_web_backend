@@ -33,7 +33,8 @@ class ElasticMixin:
     def elastic_filter(self, request, search):
         params = request.query_params
         filter_params = set(
-            self.elastic_document_conf['params']['filter']) & set(params.keys())
+            self.elastic_document_conf['params']['filter']
+        ) & set(params.keys())
 
         for param in filter_params:
             vals = params.get(param, None)
@@ -41,7 +42,6 @@ class ElasticMixin:
             val_filters = [Q("term", **{param: val}) for val in vals]
             q_vals = Q("bool", must=val_filters)
             search = search.filter(q_vals)
-
         return search
 
     def elastic_search(self, request, search):

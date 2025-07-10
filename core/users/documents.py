@@ -44,6 +44,7 @@ class UserExampleCommandDocument(Document):
     category = fields.KeywordField()
     creation_date = fields.DateField()
     synchronized = fields.BooleanField()
+    user = fields.IntegerField()
 
     class Django:
         model = UserExampleCommand
@@ -66,3 +67,6 @@ class UserExampleCommandDocument(Document):
 
     def prepare_synchronized(self, instance):
         return instance.example_command.example.synchronized
+
+    def prepare_user(self, instance):
+        return instance.user.id
