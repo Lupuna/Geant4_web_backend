@@ -6,7 +6,9 @@ from django_elasticsearch_dsl import Document
 from elasticsearch_dsl import Q
 
 from rest_framework.exceptions import ValidationError as DRFValidationError
+from rest_framework.request import Request
 
+from api.v1.serializers.utils import resolve_dot_notation
 from users.auth.utils import response_cookies
 from math import ceil
 
@@ -31,18 +33,38 @@ class ElasticMixin:
             raise KeyError('Need to setup elastic document in settings')
 
     def elastic_filter(self, request, search):
-        params = request.query_params
+        params = request.query_params.copy()
         filter_params = set(
             self.elastic_document_conf['params']['filter']
         ) & set(params.keys())
 
+        resolved_required_filters, filter_params = self.add_required_filters(filter_params, request)
         for param in filter_params:
-            vals = params.get(param, None)
-            vals = vals.split(',')
+            if param in resolved_required_filters:
+                vals = [resolved_required_filters.get(param)]
+            else:
+                vals = params.get(param, None)
+                if vals is None:
+                    continue
+                vals = vals.split(',')
             val_filters = [Q("term", **{param: val}) for val in vals]
             q_vals = Q("bool", must=val_filters)
             search = search.filter(q_vals)
+
         return search
+
+    def add_required_filters(self, filter_params: set, request: Request):
+        required_filters = self.elastic_document_conf['params'].get('required_filter')
+        resolved_required_filters = {}
+        if required_filters:
+            for key, value in required_filters.items():
+                if isinstance(value, str) and value.startswith('request.'):
+                    resolved_value = resolve_dot_notation(request, value.replace('request.', '', 1))
+                else:
+                    resolved_value = value
+                resolved_required_filters[key] = resolved_value
+            filter_params.update(resolved_required_filters.keys())
+        return resolved_required_filters, filter_params
 
     def elastic_search(self, request, search):
         params = request.query_params

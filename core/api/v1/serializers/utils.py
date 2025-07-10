@@ -97,3 +97,8 @@ def get_custom_absolute_uri(request, path):
         host = f"{host}:{port}"
 
     return f"{proto}://{host}{path}"
+
+def resolve_dot_notation(obj, path: str):
+    for part in path.split('.'):
+        obj = getattr(obj, part)
+    return obj

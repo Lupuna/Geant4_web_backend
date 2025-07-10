@@ -78,7 +78,7 @@ class ExampleViewSet(ModelViewSet, ElasticMixin):
             self.setup_elastic_document_conf()
             search = elastic_document_class.search()
             result_search = self.elastic_full_query_handling(self.request, search)
-            return result_search.to_queryset().filter(synchronized=True)
+            return result_search.to_queryset()
         return Example.objects.prefetch_related(
             'tags',
             Prefetch(

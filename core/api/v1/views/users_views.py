@@ -207,7 +207,7 @@ class UserExampleView(ReadOnlyModelViewSet, ElasticMixin):
             search = document_class.search()
             self.setup_elastic_document_conf()
             search = self.elastic_full_query_handling(self.request, search)
-            return search.to_queryset().filter(user=self.request.user.id)
+            return search.to_queryset()
         return base_query
 
     def list(self, request, *args, **kwargs):
