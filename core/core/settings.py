@@ -339,6 +339,7 @@ ELASTIC_PARAMS_CONF = {
                     'tags',
                     'category',
                 ],
+                'required_filter': {'synchronized': 'true'},
                 'order': 'ordering',
                 'search': 'query',
                 'pagination': 'page'
@@ -380,6 +381,7 @@ ELASTIC_PARAMS_CONF = {
                     'tags',
                     'category',
                 ],
+                'required_filter': {'user': 'request.user.id'},
                 'search': 'query',
                 'order': 'ordering',
                 'pagination': 'page'
