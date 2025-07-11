@@ -1,6 +1,5 @@
 from math import ceil
 
-import loguru
 import requests
 from cacheops import invalidate_model
 from django.conf import settings
@@ -208,8 +207,6 @@ class ExampleCommandViewSet(ModelViewSet):
             user=user, example_command=ex_command)
         us_ex_command.status = UserExampleCommand.StatusChoice.executed
         us_ex_command.save()
-        UserExampleCommandDocument().update(us_ex_command, refresh=True)
-
 
 @extend_schema(
     tags=['ExampleCommand endpoint'], request=ExampleCommandUpdateStatusSerializer
