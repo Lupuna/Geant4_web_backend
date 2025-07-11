@@ -43,14 +43,6 @@ class Base(TestCase):
             receiver=destroy_file,
             sender=File
         )
-        post_save.disconnect(
-            receiver=update_document,
-            sender=File
-        )
-        post_delete.disconnect(
-            receiver=delete_document,
-            sender=File
-        )
 
     @classmethod
     def tearDownClass(cls):
@@ -72,14 +64,6 @@ class Base(TestCase):
         )
         post_delete.connect(
             receiver=destroy_file,
-            sender=File
-        )
-        post_save.connect(
-            receiver=update_document,
-            sender=File
-        )
-        post_delete.connect(
-            receiver=delete_document,
             sender=File
         )
         settings.ELASTICSEARCH_DSL_AUTOSYNC = True
