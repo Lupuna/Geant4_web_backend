@@ -1,3 +1,4 @@
+import loguru
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
@@ -50,6 +51,7 @@ class ElasticMixin:
             val_filters = [Q("term", **{param: val}) for val in vals]
             q_vals = Q("bool", must=val_filters)
             search = search.filter(q_vals)
+            loguru.logger.warning(f"Elastic filtering by: {param} = {vals}")
 
         return search
 
