@@ -390,9 +390,10 @@ ELASTIC_PARAMS_CONF = {
                 "description.english",
                 "description.russian",
                 "description",
-                "title.english",
-                "title.russian",
-                "title"
+                "title_verbose.english",
+                "title_verbose.russian",
+                "title_verbose",
+                "title_verbose.keyword"
             ],
             'pagination_page_size': 10
         }

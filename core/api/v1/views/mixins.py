@@ -51,8 +51,6 @@ class ElasticMixin:
             val_filters = [Q("term", **{param: val}) for val in vals]
             q_vals = Q("bool", must=val_filters)
             search = search.filter(q_vals)
-            loguru.logger.warning(f"Elastic filtering by: {param} = {vals}")
-
         return search
 
     def add_required_filters(self, filter_params: set, request: Request):
