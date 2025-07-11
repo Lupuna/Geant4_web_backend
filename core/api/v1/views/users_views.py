@@ -1,3 +1,4 @@
+import loguru
 from django.conf import settings
 from django.db.utils import IntegrityError
 from django.http import FileResponse
@@ -207,7 +208,9 @@ class UserExampleView(ReadOnlyModelViewSet, ElasticMixin):
             search = document_class.search()
             self.setup_elastic_document_conf()
             search = self.elastic_full_query_handling(self.request, search)
-            return search.to_queryset()
+            loguru.logger.critical(search.to_queryset())
+            loguru.logger.critical(base_query)
+            return search.to_queryset(UserExampleCommand.objects)
         return base_query
 
     def list(self, request, *args, **kwargs):
