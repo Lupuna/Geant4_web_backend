@@ -208,8 +208,6 @@ class UserExampleView(ReadOnlyModelViewSet, ElasticMixin):
             search = document_class.search()
             self.setup_elastic_document_conf()
             search = self.elastic_full_query_handling(self.request, search)
-            loguru.logger.critical(search.to_queryset())
-            loguru.logger.critical(base_query)
             return search.to_queryset(UserExampleCommand.objects)
         return base_query
 

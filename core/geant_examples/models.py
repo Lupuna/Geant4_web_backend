@@ -125,7 +125,7 @@ class UserExampleCommand(models.Model):
         executed = 1, _('Completed')
         failure = 2, _('Executing failure')
 
-    user = models.ForeignKey(User, on_delete=models.Case)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     example_command = models.ForeignKey(
         ExampleCommand, on_delete=models.CASCADE)
     creation_date = models.DateTimeField(auto_now_add=True)
