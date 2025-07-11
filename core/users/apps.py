@@ -9,5 +9,5 @@ class UsersConfig(AppConfig):
 
     def ready(self):
         from core.signals import create_default_groups
-        from users.signals import *
+        from users.signals import update_document
         post_migrate.connect(create_default_groups, sender=self)
