@@ -12,7 +12,6 @@ from geant_examples.signals import (
     save_example,
     save_command
 )
-from users.signals import update_document, delete_document
 
 
 class Base(TestCase):
