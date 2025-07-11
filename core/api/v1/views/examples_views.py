@@ -1,5 +1,6 @@
 from math import ceil
 
+import loguru
 import requests
 from cacheops import invalidate_model
 from django.conf import settings
@@ -208,6 +209,9 @@ class ExampleCommandViewSet(ModelViewSet):
         us_ex_command.status = UserExampleCommand.StatusChoice.executed
         us_ex_command.save()
         UserExampleCommandDocument().update(us_ex_command, refresh=True)
+        UserExampleCommandDocument._index.refresh()
+        loguru.logger.critical(UserExampleCommandDocument.get(creation_date=us_ex_command.creation_date.isoformat()))
+
 
 
 @extend_schema(
