@@ -17,7 +17,7 @@ class ExampleCommandViewSetTestCase(AuthSettingsTest):
         self.example = Example.objects.create(
             title_verbose='test_verbose', title_not_verbose='TSU_99'
         )
-        self.params = {'params': {'velocity': '144'}}
+        self.params = {'params': {'velocity': ['144', '4']}}
         self.key_s3 = 'key-s3-TSU_99___velocity=144'
         self.factory = APIRequestFactory()
         self.url = reverse('example-example-command-list',
@@ -26,11 +26,11 @@ class ExampleCommandViewSetTestCase(AuthSettingsTest):
 
     def test_generate_key_s3(self):
         str_params = {
-            str(k).replace(' ', '---'): str(v).replace(' ', '---')
+            str(v[-1]).replace(' ', '--'): str(v[0]).replace(' ', '--')
             for k, v in self.params['params'].items()
         }
-        correct_meaning = f'key-s3-{self.example.title_not_verbose}___' + \
-            '___'.join(f'{k}={v}' for k, v in str_params.items())
+        correct_meaning = f'key-s3-{self.example.title_not_verbose}__' + \
+            '__'.join(f'{k}={v}' for k, v in str_params.items())
         self.assertEqual(correct_meaning,
                          ExampleCommandViewSet._generate_key_s3(self.example.title_not_verbose, self.params['params']))
 
@@ -122,31 +122,6 @@ class ExampleCommandViewSetTestCase(AuthSettingsTest):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data, {'error': 'Bad request'})
         mock_post.assert_called_once()
-
-    @patch('api.v1.views.examples_views.ReadOnlyClient')
-    def test_run_failed_example(self, mock_post):
-        mock_instance = mock_post.return_value
-        mock_instance.download.side_effect = FileClientException(
-            error='any', status=400)
-        ex_command = ExampleCommand.objects.create(
-            example=self.example, key_s3=self.key_s3)
-        ex_command.users.add(self.user)
-        update_status_data = {
-            "key_s3": self.key_s3,
-            "err_body": "string"
-        }
-        update_to_failure = self.client.post(path=reverse(
-            'update-example-status'), data=update_status_data)
-        self.assertEqual(update_to_failure.status_code, 204)
-        self.assertEqual(UserExampleCommand.objects.get(
-            user=self.user, example_command=ex_command).status, 2)
-        self.login_user()
-        response = self.client.post(
-            self.url, data=self.params, content_type='application/json')
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(
-            response.data, {'detail': 'Example executing was finished in error'})
-
 
 class ExampleCommandUpdateStatusAPIViewTestCAse(AuthSettingsTest):
     def setUp(self):

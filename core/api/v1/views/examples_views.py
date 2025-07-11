@@ -131,6 +131,10 @@ class ExampleCommandViewSet(ModelViewSet):
         params = request.data.get('params', {})
         user = request.user
         example = get_object_or_404(Example, id=self.kwargs.get('example_pk'))
+        for command in example.commands.all():
+            if command.title in params.keys():
+                params[command.title] = [params[command.title], command.order_index]
+
         key_s3 = self._generate_key_s3(example.title_not_verbose, params)
         request.data['params'] = key_s3
         filename = key_s3 + '.zip'
@@ -165,15 +169,15 @@ class ExampleCommandViewSet(ModelViewSet):
     @staticmethod
     def _generate_key_s3(title, params):
         str_params = {
-            str(k).replace(' ', '---'): str(v).replace(' ', '---')
+            str(v[-1]): str(v[0]).replace(' ', '--')
             for k, v in params.items()
         }
-        return f'key-s3-{title}___' + '___'.join(f'{k}={v}' for k, v in str_params.items())
+        return f'key-s3-{title}__' + '__'.join(f'{k}={v}' for k, v in str_params.items())
 
     def _run_example(self, request, example, params):
         data = {
             'title': example.title_not_verbose,
-            'commands': [{k: str(v)} for k, v in params.items()]
+            'commands': [{k: str(v[0])} for k, v in params.items()]
         }
         response = requests.post(
             settings.GEANT_BACKEND_RUN_EXAMPLE_URL, json=data)
