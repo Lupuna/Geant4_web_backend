@@ -1,18 +1,17 @@
 from django.conf import settings
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save, post_delete, m2m_changed
 from django.test import TestCase
 from loguru import logger
 
 from geant_documentation.models import File
 from geant_documentation.signals import destroy_file
-from geant_examples.models import Example, Command, UserExampleCommand
+from geant_examples.models import Example, Command, ExampleCommand
 from geant_examples.signals import (
     delete_example,
     delete_command,
     save_example,
-    save_command
+    save_command, update_user_example_command_document
 )
-from users.signals import update_document
 
 
 class Base(TestCase):
@@ -43,9 +42,9 @@ class Base(TestCase):
             receiver=destroy_file,
             sender=File
         )
-        post_save.disconnect(
-            receiver=update_document,
-            sender=UserExampleCommand
+        m2m_changed.disconnect(
+            receiver=update_user_example_command_document,
+            sender=ExampleCommand.users.through
         )
 
     @classmethod
@@ -70,9 +69,9 @@ class Base(TestCase):
             receiver=destroy_file,
             sender=File
         )
-        post_save.connect(
-            receiver=update_document,
-            sender=UserExampleCommand
+        m2m_changed.connect(
+            receiver=update_user_example_command_document,
+            sender=ExampleCommand.users.through
         )
         settings.ELASTICSEARCH_DSL_AUTOSYNC = True
 
