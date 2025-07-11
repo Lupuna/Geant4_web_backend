@@ -5,13 +5,14 @@ from loguru import logger
 
 from geant_documentation.models import File
 from geant_documentation.signals import destroy_file
-from geant_examples.models import Example, Command
+from geant_examples.models import Example, Command, UserExampleCommand
 from geant_examples.signals import (
     delete_example,
     delete_command,
     save_example,
     save_command
 )
+from users.signals import update_document
 
 
 class Base(TestCase):
@@ -42,6 +43,10 @@ class Base(TestCase):
             receiver=destroy_file,
             sender=File
         )
+        post_save.disconnect(
+            receiver=update_document,
+            sender=UserExampleCommand
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -64,6 +69,10 @@ class Base(TestCase):
         post_delete.connect(
             receiver=destroy_file,
             sender=File
+        )
+        post_save.connect(
+            receiver=update_document,
+            sender=UserExampleCommand
         )
         settings.ELASTICSEARCH_DSL_AUTOSYNC = True
 
