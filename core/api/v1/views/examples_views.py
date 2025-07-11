@@ -28,6 +28,7 @@ from file_client.exceptions import FileClientException
 from file_client.files_clients import ReadOnlyClient
 from geant_examples.documents import ExampleDocument
 from geant_examples.models import Example, UserExampleCommand, ExampleCommand, Command, CommandValue, Category
+from users.documents import UserExampleCommandDocument
 from .mixins import ElasticMixin
 
 
@@ -206,6 +207,7 @@ class ExampleCommandViewSet(ModelViewSet):
             user=user, example_command=ex_command)
         us_ex_command.status = UserExampleCommand.StatusChoice.executed
         us_ex_command.save()
+        UserExampleCommandDocument().update(us_ex_command)
 
 
 @extend_schema(
