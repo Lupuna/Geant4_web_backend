@@ -21,7 +21,7 @@ class ExampleForUserSerializerTestCase(Base):
         self.example = Example.objects.create(
             title_verbose='test_ex', title_not_verbose='TSU_XX_00')
         self.ex_command = ExampleCommand.objects.create(
-            example=self.example, key_s3='key-s3-TSU_XX_00___v=11')
+            example=self.example, key_s3='key-s3-TSU_XX_00__v=11')
         self.ex_command.users.add(self.user)
 
     def test_get_data(self):
