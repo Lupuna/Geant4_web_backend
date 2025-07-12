@@ -212,7 +212,7 @@ class ExampleForUserSerializer(serializers.Serializer):
 
     def get_params(self, obj):
         key = obj.example_command.key_s3
-        raw_params = key.split('___', 1)[1].split('___')
+        raw_params = key.split('__', 1)[1].split('__')
 
         if not any(raw_params):
             return {}
