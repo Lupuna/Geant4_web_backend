@@ -40,7 +40,7 @@ class ExampleForUserSerializerTestCase(Base):
                 'tags': [],
                 'params': {'v': '11'},
                 'example_id': 3,
-                'categories': ''
+                'category': ''
              }
         )
 
