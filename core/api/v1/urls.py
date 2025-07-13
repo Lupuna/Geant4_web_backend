@@ -16,7 +16,7 @@ from api.v1.views.auth_views import (
 from api.v1.views.examples_views import ExampleViewSet, ExampleCommandViewSet, ExampleCommandUpdateStatusAPIView, CategoryViewSet as ExampleCategoryViewSet
 from api.v1.views.tags_views import TagViewSet
 from api.v1.views.geant_documentation_views import ArticleViewSet, ChapterViewSet, CategoryViewSet, SubscriptionViewSet, \
-    ElementViewSet, FileViewSet, ArticleUserViewSet
+    ElementViewSet, FileViewSet, ArticleUserViewSet, AllArticleIdAPIView
 from api.v1.views.groups_views import GroupAPIViewSet
 from api.v1.views.users_views import (
     UserProfileViewSet,
@@ -115,4 +115,5 @@ urlpatterns = [
     ),
     path('is_authorized/', GetAuthInfoAPIView.as_view(), name='is-authorized'),
     path('check-is-staff/', UserStaff.as_view(), name='check-is-staff'),
+    path('no-search-path/', AllArticleIdAPIView.as_view(),)
 ]
