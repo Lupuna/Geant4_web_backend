@@ -115,3 +115,10 @@ class ArticleSerializer(WritableNestedModelSerializer):
     def update(self, instance, validated_data):
         with transaction.atomic():
             return super().update(instance, validated_data)
+
+
+class ArticleIdSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Article
+        fields = ('id', )

@@ -197,7 +197,7 @@ class ExampleForUserSerializer(serializers.Serializer):
         method_name='get_date_to_update')
     status = serializers.IntegerField()
     tags = serializers.SerializerMethodField(method_name='get_tags')
-    categories = serializers.SerializerMethodField(method_name='get_categories')
+    categories = serializers.SerializerMethodField()
     params = serializers.SerializerMethodField()
     example_id = serializers.SerializerMethodField(method_name='get_example_id')
 
@@ -225,7 +225,8 @@ class ExampleForUserSerializer(serializers.Serializer):
         return list(obj.example_command.example.tags.all().values_list('title', flat=True))
 
     def get_categories(self, obj):
-        return CategorySerializer(obj.example_command.example.category).data
+        category = obj.example_command.example.category
+        return category.title if category else ''
 
     def get_example_id(self, obj):
         return obj.example_command.example.id

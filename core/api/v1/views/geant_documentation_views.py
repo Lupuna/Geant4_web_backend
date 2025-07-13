@@ -5,10 +5,12 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError as DRFValidationError
+from rest_framework.generics import ListCreateAPIView, ListAPIView
 from rest_framework.mixins import CreateModelMixin, UpdateModelMixin, DestroyModelMixin, ListModelMixin
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ViewSet, GenericViewSet
 
 from api.v1.serializers.geant_documentation_serializers import (
@@ -17,7 +19,7 @@ from api.v1.serializers.geant_documentation_serializers import (
     SubscriptionSerializer,
     ElementSerializer,
     ChapterSerializer,
-    CategorySerializer, RealFileSerializer, ArticleUserSerializer
+    CategorySerializer, RealFileSerializer, ArticleUserSerializer, ArticleIdSerializer
 )
 from core.permissions import IsStaffPermission
 from file_client.exceptions import FileClientException
@@ -322,3 +324,9 @@ class ArticleViewSet(ElasticMixin, ValidationHandlingMixin, ModelViewSet):
         new_response_data = self.get_response_data_with_pages_count(response.data)
         response.data = new_response_data
         return response
+
+
+class AllArticleIdAPIView(ListAPIView):
+    serializer_class = ArticleIdSerializer
+    queryset = Article.objects.all().values('id')
+
