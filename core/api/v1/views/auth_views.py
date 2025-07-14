@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
-from api.tasks import send_celery_mail
+from api.tasks import send_celery_mail, send_celery_mail_advanced
 from api.v1.serializers.auth_serializers import RegistrationSerializer, LoginSerializer
 from api.v1.serializers.users_serializers import UserEmailSerializer, PasswordUpdateSerializer
 from api.v1.serializers.utils import get_existing_conflicts
@@ -42,11 +42,20 @@ class RegistrationAPIView(APIView):
         user = self.get_user(serializer)
         disposable_url = make_disposable_url(settings.FRONTEND_URL + '/auth/registration/confirm/',
                                              settings.REGISTRATION_CONFIRM_SALT, {'username': user.username})
-        message = f'For confirm registration follow the link\n{disposable_url}'
-        send_celery_mail.delay(
-            'Confirm registration', message, [user.email])
+        message = f'Для завршения регистрации перейдите по ссылке\n{disposable_url}'
+        send_celery_mail_advanced.delay(
+            subject='Восстановление пароля для портала Gtant4ru',
+            message=message,
+            recipients=[user.email],
+            html_template='emails/verify_email.html',
+            context={
+                'result_link': disposable_url
+            }
+        )
         response = response_cookies(
-            {'detail': 'Follow the link in mail to accept your registartion'}, status.HTTP_200_OK)
+            {'detail': 'Follow the link in mail to accept your registartion'},
+            status.HTTP_200_OK
+        )
         return response
 
 
@@ -159,18 +168,28 @@ class PasswordRecoveryAPIView(APIView):
         user_email = serializer.validated_data['email']
         user = User.objects.get(email=user_email)
         response = response_cookies(
-            {'error': 'User with this email is not active'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            {'error': 'User with this email is not active'},
+            status=status.HTTP_406_NOT_ACCEPTABLE
+        )
 
         if user.is_active:
             dicposable_url = make_disposable_url(
                 settings.FRONTEND_URL + '/auth/password_recovery/confirm/', settings.PASSWORD_RECOVERY_SALT,
                 {'username': user.username})
-            message = f'For password recovery follow link\n{dicposable_url}'
-            send_celery_mail.delay(
-                'Password recovery', message, [user_email])
+            message = f'Для восстановления пароля перейдите по этой ссылке \n{dicposable_url}'
+            send_celery_mail_advanced.delay(
+                subject='Восстановление пароля для портала Gtant4ru',
+                message=message,
+                recipients=[user_email],
+                html_template='emails/passsword_recovery.html',
+                context={
+                    'result_link': dicposable_url
+                }
+            )
             response = response_cookies(
-                {'detail': 'We sent mail on your email to recovery password'}, status=status.HTTP_200_OK)
-
+                {'detail': 'We sent mail on your email to recovery password'},
+                status=status.HTTP_200_OK
+            )
         return response
 
 

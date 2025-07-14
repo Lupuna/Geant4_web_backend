@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Результат моделирования</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="content">
+      <div class="content_header">
+        <div>Ваше моделирование в Geant4ru под названием: {{ title }}</div>
+        <div class="content_header-description">
+          {% if status == "Completed" %}
+            Завершено
+          {% else %}
+            Завершено с ошибкой
+          {% endif %}
+        </div>
+      </div>
+
+      <p>Посмотреть результаты можно в профиле на сайте</p>
+
+      <a class="content_button" href="{{ result_link }}">
+        Смотреть результат
+      </a>
+    </div>
+  </div>
+</body>
+
+</html>
