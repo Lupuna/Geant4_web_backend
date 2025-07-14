@@ -44,7 +44,7 @@ class RegistrationAPIView(APIView):
                                              settings.REGISTRATION_CONFIRM_SALT, {'username': user.username})
         message = f'Для завршения регистрации перейдите по ссылке\n{disposable_url}'
         send_celery_mail_advanced.delay(
-            subject='Восстановление пароля для портала Gtant4ru',
+            subject='Регистрация на сайте Geant4ru',
             message=message,
             recipients=[user.email],
             html_template='emails/verify_email.html',
