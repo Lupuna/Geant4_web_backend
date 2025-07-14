@@ -1,5 +1,6 @@
 from math import ceil
 
+import loguru
 import requests
 from cacheops import invalidate_model
 from django.conf import settings
@@ -14,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
-from api.tasks import send_celery_mail
+from api.tasks import send_celery_mail_advanced
 from api.v1.serializers.examples_serializers import (
     ExamplePOSTSerializer,
     ExampleGETSerializer,
@@ -28,7 +29,6 @@ from file_client.exceptions import FileClientException
 from file_client.files_clients import ReadOnlyClient
 from geant_examples.documents import ExampleDocument
 from geant_examples.models import Example, UserExampleCommand, ExampleCommand, Command, CommandValue, Category
-from users.documents import UserExampleCommandDocument
 from .mixins import ElasticMixin
 
 
@@ -212,35 +212,55 @@ class ExampleCommandViewSet(ModelViewSet):
         us_ex_command.status = UserExampleCommand.StatusChoice.executed
         us_ex_command.save()
 
+
 @extend_schema(
     tags=['ExampleCommand endpoint'], request=ExampleCommandUpdateStatusSerializer
 )
 class ExampleCommandUpdateStatusAPIView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = ExampleCommandUpdateStatusSerializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
-        key_s3 = serializer.data.get('key_s3')
-        err_body = serializer.data.get('err_body', None)
 
-        if err_body:
-            new_status = UserExampleCommand.StatusChoice.failure
-        else:
-            new_status = UserExampleCommand.StatusChoice.executed
+        key_s3 = serializer.validated_data['key_s3']
+        err_body = serializer.validated_data.get('err_body')
+        new_status = (
+            UserExampleCommand.StatusChoice.failure
+            if err_body
+            else UserExampleCommand.StatusChoice.executed
+        )
+        users_example_commands = UserExampleCommand.objects.select_related(
+            'example_command__example'
+        ).filter(
+            example_command__key_s3=key_s3
+        )
 
-        users_example_commands = UserExampleCommand.objects.filter(
-            example_command__key_s3=key_s3).prefetch_related('user', 'example_command')
-        ex_command = users_example_commands.first().example_command
-        user_emails = ex_command.users.values_list('email', flat=True)
-        old_status = users_example_commands.first().get_status_display()
-        title_verbose = users_example_commands.first().example_command.example.title_verbose
+        if not users_example_commands.exists():
+            return Response({"detail": "Команды не найдены"}, status=status.HTTP_404_NOT_FOUND)
+
+        first_command = users_example_commands[0]
+        example_command = first_command.example_command
+        example_id = example_command.id
+        title_verbose = example_command.example.title_verbose
+        old_status_label = first_command.status
+        user_emails = list(example_command.users.values_list('email', flat=True))
         users_example_commands.update(status=new_status)
         invalidate_model(UserExampleCommand)
-        message = f'The simulation of the example "{title_verbose}" with the key {key_s3} changed the status from "{old_status}" to "{new_status.label}"'
-        topic = 'Simulation status'
-        send_celery_mail.delay(
-            topic,
-            message,
-            list(user_emails)
+        topic = 'Статус симуляции'
+        message = (
+            f'Статус симуляции примера "{title_verbose}" с ключом {key_s3} '
+            f'изменён с "{old_status_label}" на "{new_status.label}"'
         )
+
+        send_celery_mail_advanced.delay(
+            subject=topic,
+            message=message,
+            recipients=user_emails,
+            html_template='emails/result.html',
+            context={
+                'title': title_verbose,
+                'status': new_status.label,
+                'result_link': f"{settings.FRONTEND_URL}/profile/my-example/{example_id}/"
+            }
+        )
+
         return Response(status=status.HTTP_204_NO_CONTENT)
