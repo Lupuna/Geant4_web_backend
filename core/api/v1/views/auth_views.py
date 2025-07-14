@@ -167,6 +167,10 @@ class PasswordRecoveryAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         user_email = serializer.validated_data['email']
         user = User.objects.get(email=user_email)
+        response = response_cookies(
+            {'error': 'User with this email is not active'},
+            status=status.HTTP_406_NOT_ACCEPTABLE
+        )
 
         if user.is_active:
             dicposable_url = make_disposable_url(
@@ -186,11 +190,6 @@ class PasswordRecoveryAPIView(APIView):
                 {'detail': 'We sent mail on your email to recovery password'},
                 status=status.HTTP_200_OK
             )
-
-        response = response_cookies(
-            {'error': 'User with this email is not active'},
-            status=status.HTTP_406_NOT_ACCEPTABLE
-        )
         return response
 
 

@@ -28,7 +28,7 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
         }
         self.url = reverse('registration')
 
-    @patch('api.tasks.send_celery_mail.delay')
+    @patch('api.tasks.send_celery_mail_advanced.delay')
     def test_registration_ok(self, mock_send):
         response = self.client.post(self.url, data=self.registration_data)
 
@@ -62,7 +62,7 @@ class RegistrationAPIViewTestCase(AuthSettingsTest):
             string='This value is already taken.', code='invalid')]})
         mock_send.assert_not_called()
 
-    @patch('api.tasks.send_celery_mail.delay')
+    @patch('api.tasks.send_celery_mail_advanced.delay')
     def test_registration_second_time(self, mock_send):
         self.assertFalse(User.objects.filter(
             email=self.registration_data['email']).exists())
@@ -161,7 +161,7 @@ class GetAccessTestCase(AuthSettingsTest):
 
 
 class PasswordRecoveryAPIViewTestCase(AuthSettingsTest):
-    @patch('api.tasks.send_celery_mail.delay')
+    @patch('api.tasks.send_celery_mail_advanced.delay')
     def test_send_mail(self, mock_send_mail):
         response = self.client.post(
             reverse('password-recovery'), data={'email': self.user.email})
