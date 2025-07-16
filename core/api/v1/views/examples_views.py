@@ -259,7 +259,7 @@ class ExampleCommandUpdateStatusAPIView(APIView):
             context={
                 'title': title_verbose,
                 'status': new_status.label,
-                'result_link': f"{settings.FRONTEND_URL}/profile/my-example/{example_id}/"
+                'result_link': f"{settings.FRONTEND_URL}/profile/"
             }
         )
 

@@ -1,4 +1,3 @@
-import loguru
 from django.conf import settings
 from django.db.utils import IntegrityError
 from django.http import FileResponse
